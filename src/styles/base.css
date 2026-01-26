@@ -401,6 +401,120 @@ button {
   gap: 16px;
 }
 
+.compact-card {
+  padding: 20px;
+}
+
+.compact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.compact-panel {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #eadfc9;
+  padding: 14px;
+  box-shadow: 0 8px 18px rgba(22, 20, 18, 0.08);
+}
+
+.compact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.compact-section {
+  margin-bottom: 12px;
+}
+
+.compact-section h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.compact-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.compact-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #fdf7ea;
+  border: 1px solid #eadfc9;
+}
+
+.compact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.compact-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.compact-actions button {
+  border-radius: 999px;
+  border: 1px solid #d8c5a5;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  min-height: 32px;
+  background: #fff;
+}
+
+.compact-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.compact-form h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.compact-form .field {
+  margin-bottom: 8px;
+}
+
+.compact-form input,
+.compact-form select {
+  min-height: 36px;
+  padding: 8px 10px;
+}
+
+.compact-form .primary {
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 10px;
+}
+
+.compact-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.compact-grid-fields {
+  gap: 6px;
+}
+
 .money-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
