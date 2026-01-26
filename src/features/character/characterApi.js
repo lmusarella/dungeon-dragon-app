@@ -41,3 +41,13 @@ export async function fetchResources(characterId) {
   if (error) throw error;
   return data ?? [];
 }
+
+export async function createResource(payload) {
+  const { data, error } = await supabase
+    .from('resources')
+    .insert(payload)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data;
+}
