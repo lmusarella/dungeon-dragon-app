@@ -7,19 +7,33 @@ import { buildDrawerLayout, buildInput, buildTextarea, createToast, openDrawer, 
 import { fetchWallet, upsertWallet, createTransaction } from '../wallet/walletApi.js';
 import { renderWalletSummary } from '../wallet/wallet.js';
 
-const equipmentStates = [
-  { value: 'equipped', label: 'Equipaggiato' },
-  { value: 'worn', label: 'Indossato' },
-  { value: 'held', label: 'Impugnato' }
+const bodyParts = [
+  { value: 'head', label: 'Testa' },
+  { value: 'eyes', label: 'Occhi' },
+  { value: 'ears', label: 'Orecchie' },
+  { value: 'neck', label: 'Collo' },
+  { value: 'shoulders', label: 'Spalle' },
+  { value: 'back', label: 'Schiena' },
+  { value: 'chest', label: 'Torso' },
+  { value: 'arms', label: 'Braccia' },
+  { value: 'hands', label: 'Mani' },
+  { value: 'wrists', label: 'Polsi' },
+  { value: 'waist', label: 'Vita' },
+  { value: 'legs', label: 'Gambe' },
+  { value: 'feet', label: 'Piedi' },
+  { value: 'ring', label: 'Dita/Anelli' },
+  { value: 'main-hand', label: 'Mano principale' },
+  { value: 'off-hand', label: 'Mano secondaria' }
 ];
 
 const itemCategories = [
-  { value: 'gear', label: 'Equipaggiamento' },
+  { value: 'gear', label: 'Equipaggiamento', equipable: true },
   { value: 'loot', label: 'Loot' },
   { value: 'consumable', label: 'Consumabili' },
-  { value: 'weapon', label: 'Armi' },
-  { value: 'armor', label: 'Armature' },
-  { value: 'magic', label: 'Magici' },
+  { value: 'weapon', label: 'Armi', equipable: true },
+  { value: 'armor', label: 'Armature', equipable: true },
+  { value: 'magic', label: 'Magici', equipable: true },
+  { value: 'jewelry', label: 'Gioielli e ornamenti', equipable: true },
   { value: 'tool', label: 'Strumenti' },
   { value: 'container', label: 'Contenitore' },
   { value: 'misc', label: 'Altro' }
@@ -62,7 +76,7 @@ export async function renderInventory(container) {
   const totalWeight = calcTotalWeight(items);
   const weightUnit = getWeightUnit(activeCharacter);
   const weightStep = weightUnit === 'kg' ? '0.1' : '1';
-  const equippedItems = items.filter((item) => item.equipped_state && item.equipped_state !== 'none');
+  const equippedItems = items.filter((item) => item.equip_slot || item.equipable);
   const attunedCount = items.filter((item) => item.attunement_active).length;
   container.innerHTML = `
     <section class="card compact-card">
@@ -85,6 +99,7 @@ export async function renderInventory(container) {
       <div class="filters">
         <input type="search" placeholder="Cerca" data-search />
         <select data-category></select>
+        <select data-equipable></select>
       </div>
       <div class="carry-widget">
         <span>Carico totale</span>
@@ -112,20 +127,35 @@ export async function renderInventory(container) {
   const listEl = container.querySelector('[data-inventory-list]');
   const searchInput = container.querySelector('[data-search]');
   const categorySelect = container.querySelector('[data-category]');
+  const equipableSelect = container.querySelector('[data-equipable]');
   categories.forEach((cat) => {
     const option = document.createElement('option');
     option.value = cat.value;
-    option.textContent = cat.label;
+    option.textContent = cat.equipable ? `${cat.label} · equipaggiabile` : cat.label;
     categorySelect.appendChild(option);
+  });
+  [
+    { value: '', label: 'Tutti' },
+    { value: 'equipable', label: 'Equipaggiabili' },
+    { value: 'non-equipable', label: 'Non equipaggiabili' }
+  ].forEach((optionData) => {
+    const option = document.createElement('option');
+    option.value = optionData.value;
+    option.textContent = optionData.label;
+    equipableSelect.appendChild(option);
   });
 
   function renderList() {
     const term = searchInput.value.toLowerCase();
     const category = categorySelect.value;
+    const equipableFilter = equipableSelect.value;
     const filtered = items.filter((item) => {
       const matchesTerm = item.name.toLowerCase().includes(term);
       const matchesCategory = !category || item.category === category;
-      return matchesTerm && matchesCategory;
+      const matchesEquipable = !equipableFilter
+        || (equipableFilter === 'equipable' && item.equipable)
+        || (equipableFilter === 'non-equipable' && !item.equipable);
+      return matchesTerm && matchesCategory && matchesEquipable;
     });
 
     listEl.innerHTML = buildInventoryTree(filtered);
@@ -170,15 +200,15 @@ export async function renderInventory(container) {
   renderList();
   searchInput.addEventListener('input', renderList);
   categorySelect.addEventListener('change', renderList);
+  equipableSelect.addEventListener('change', renderList);
 
-  container.querySelectorAll('[data-toggle]')
+  container.querySelectorAll('[data-unequip]')
     .forEach((btn) => btn.addEventListener('click', async () => {
-      const item = items.find((entry) => entry.id === btn.dataset.toggle);
+      const item = items.find((entry) => entry.id === btn.dataset.unequip);
       if (!item) return;
-      const nextState = btn.dataset.state;
       try {
-        await updateItem(item.id, { equipped_state: nextState });
-        createToast('Aggiornato');
+        await updateItem(item.id, { equip_slot: null });
+        createToast('Equip rimosso');
         renderInventory(container);
       } catch (error) {
         createToast('Errore aggiornamento', 'error');
@@ -266,7 +296,8 @@ export async function renderInventory(container) {
           weight: Number(formData.get('weight')),
           value_cp: Number(formData.get('value_cp')),
           category: 'loot',
-          equipped_state: 'none'
+          equipable: false,
+          equip_slot: null
         });
         createToast('Loot aggiunto');
         renderInventory(container);
@@ -320,7 +351,7 @@ function buildItemList(items) {
               ${getCategoryLabel(item.category)} · ${item.qty}x · ${item.weight ?? 0} lb
             </p>
             <div class="tag-row">
-              ${item.equipped_state && item.equipped_state !== 'none' ? `<span class="chip">${item.equipped_state}</span>` : ''}
+              ${item.equipable ? `<span class="chip">equipaggiabile${item.equip_slot ? ` · ${getBodyPartLabel(item.equip_slot)}` : ''}</span>` : ''}
               ${item.attunement_active ? '<span class="chip">attuned</span>' : ''}
             </div>
             </div>
@@ -340,12 +371,13 @@ function buildEquipmentCompact(items) {
   if (!items.length) {
     return '<p class="muted">Nessun oggetto equipaggiato.</p>';
   }
+  const unassigned = items.filter((item) => !item.equip_slot && item.equipable);
   return `
-    ${equipmentStates.map((state) => {
-      const sectionItems = items.filter((item) => item.equipped_state === state.value);
+    ${bodyParts.map((part) => {
+      const sectionItems = items.filter((item) => item.equip_slot === part.value);
       return `
         <div class="compact-section">
-          <h4>${state.label}</h4>
+          <h4>${part.label}</h4>
           ${sectionItems.length ? `
             <ul class="compact-list">
               ${sectionItems.map((item) => `
@@ -355,7 +387,7 @@ function buildEquipmentCompact(items) {
                     <span class="muted">${item.category || 'misc'}</span>
                   </div>
                   <div class="compact-actions">
-                    <button data-toggle="${item.id}" data-state="none">Rimuovi</button>
+                    <button data-unequip="${item.id}">Rimuovi</button>
                     <button data-attune="${item.id}">
                       ${item.attunement_active ? 'Disattiva attune' : 'Attiva attune'}
                     </button>
@@ -367,6 +399,24 @@ function buildEquipmentCompact(items) {
         </div>
       `;
     }).join('')}
+    ${unassigned.length ? `
+      <div class="compact-section">
+        <h4>Equipaggiabili senza slot</h4>
+        <ul class="compact-list">
+          ${unassigned.map((item) => `
+            <li>
+              <div class="compact-info">
+                <span>${item.name}</span>
+                <span class="muted">${item.category || 'misc'}</span>
+              </div>
+              <div class="compact-actions">
+                <button data-unequip="${item.id}">Rimuovi</button>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    ` : ''}
   `;
 }
 
@@ -425,6 +475,10 @@ function getCategoryLabel(category) {
   return categoryLabels.get(category) ?? (category ? category : 'Altro');
 }
 
+function getBodyPartLabel(part) {
+  const match = bodyParts.find((entry) => entry.value === part);
+  return match ? match.label : part;
+}
 
 function openItemDrawer(character, item, items, onSave) {
   const form = document.createElement('form');
@@ -471,18 +525,23 @@ function openItemDrawer(character, item, items, onSave) {
   containerField.appendChild(containerSelect);
   form.appendChild(containerField);
 
-  const equippedField = document.createElement('label');
-  equippedField.className = 'field';
-  equippedField.innerHTML = '<span>Stato equip</span>';
-  const equippedSelect = buildSelect([
-    { value: 'none', label: 'Nessuno' },
-    { value: 'worn', label: 'Indossato' },
-    { value: 'held', label: 'Impugnato' },
-    { value: 'equipped', label: 'Equipaggiato' }
-  ], item?.equipped_state ?? 'none');
-  equippedSelect.name = 'equipped_state';
-  equippedField.appendChild(equippedSelect);
-  form.appendChild(equippedField);
+  const equipableWrapper = document.createElement('div');
+  equipableWrapper.className = 'compact-field-grid';
+  const equipableField = document.createElement('label');
+  equipableField.className = 'checkbox';
+  equipableField.innerHTML = '<input type="checkbox" name="equipable" /> <span>Equipaggiabile</span>';
+  const equipSlotField = document.createElement('label');
+  equipSlotField.className = 'field';
+  equipSlotField.innerHTML = '<span>Punto del corpo</span>';
+  const equipSlotSelect = buildSelect(
+    [{ value: '', label: 'Nessuno' }, ...bodyParts],
+    item?.equip_slot ?? ''
+  );
+  equipSlotSelect.name = 'equip_slot';
+  equipSlotField.appendChild(equipSlotSelect);
+  equipableWrapper.appendChild(equipableField);
+  equipableWrapper.appendChild(equipSlotField);
+  form.appendChild(equipableWrapper);
 
   const attunement = document.createElement('label');
   attunement.className = 'checkbox';
@@ -498,6 +557,14 @@ function openItemDrawer(character, item, items, onSave) {
   form.appendChild(submit);
 
   form.attunement_active.checked = item?.attunement_active ?? false;
+  form.equipable.checked = item?.equipable ?? false;
+  equipSlotSelect.disabled = !form.equipable.checked;
+  form.equipable.addEventListener('change', () => {
+    equipSlotSelect.disabled = !form.equipable.checked;
+    if (!form.equipable.checked) {
+      equipSlotSelect.value = '';
+    }
+  });
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -512,7 +579,8 @@ function openItemDrawer(character, item, items, onSave) {
       value_cp: Number(formData.get('value_cp')),
       category: formData.get('category'),
       container_item_id: formData.get('container_item_id') || null,
-      equipped_state: formData.get('equipped_state'),
+      equipable: formData.get('equipable') === 'on',
+      equip_slot: formData.get('equip_slot') || null,
       attunement_active: formData.get('attunement_active') === 'on',
       notes: formData.get('notes')
     };

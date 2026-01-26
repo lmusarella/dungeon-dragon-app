@@ -3,10 +3,23 @@ import { getState, updateCache } from '../../app/state.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 import { createToast } from '../../ui/components.js';
 
-const states = [
-  { value: 'equipped', label: 'Equipaggiato' },
-  { value: 'worn', label: 'Indossato' },
-  { value: 'held', label: 'Impugnato' }
+const bodyParts = [
+  { value: 'head', label: 'Testa' },
+  { value: 'eyes', label: 'Occhi' },
+  { value: 'ears', label: 'Orecchie' },
+  { value: 'neck', label: 'Collo' },
+  { value: 'shoulders', label: 'Spalle' },
+  { value: 'back', label: 'Schiena' },
+  { value: 'chest', label: 'Torso' },
+  { value: 'arms', label: 'Braccia' },
+  { value: 'hands', label: 'Mani' },
+  { value: 'wrists', label: 'Polsi' },
+  { value: 'waist', label: 'Vita' },
+  { value: 'legs', label: 'Gambe' },
+  { value: 'feet', label: 'Piedi' },
+  { value: 'ring', label: 'Dita/Anelli' },
+  { value: 'main-hand', label: 'Mano principale' },
+  { value: 'off-hand', label: 'Mano secondaria' }
 ];
 
 export async function renderEquipment(container) {
@@ -28,7 +41,7 @@ export async function renderEquipment(container) {
     }
   }
 
-  const equippedItems = items.filter((item) => item.equipped_state && item.equipped_state !== 'none');
+  const equippedItems = items.filter((item) => item.equip_slot || item.equipable);
   const attunedCount = items.filter((item) => item.attunement_active).length;
 
   container.innerHTML = `
@@ -37,19 +50,19 @@ export async function renderEquipment(container) {
         <h2>Equipaggiamento</h2>
         <span class="pill">Attunement attivi: ${attunedCount}</span>
       </header>
-      ${states.map((state) => buildEquipmentSection(state, equippedItems)).join('')}
+      ${bodyParts.map((part) => buildEquipmentSection(part, equippedItems)).join('')}
+      ${buildUnassignedSection(equippedItems)}
       ${!equippedItems.length ? '<p class="muted">Nessun oggetto equipaggiato.</p>' : ''}
     </section>
   `;
 
-  container.querySelectorAll('[data-toggle]')
+  container.querySelectorAll('[data-unequip]')
     .forEach((btn) => btn.addEventListener('click', async () => {
-      const item = items.find((entry) => entry.id === btn.dataset.toggle);
+      const item = items.find((entry) => entry.id === btn.dataset.unequip);
       if (!item) return;
-      const nextState = btn.dataset.state;
       try {
-        await updateItem(item.id, { equipped_state: nextState });
-        createToast('Aggiornato');
+        await updateItem(item.id, { equip_slot: null });
+        createToast('Equip rimosso');
         renderEquipment(container);
       } catch (error) {
         createToast('Errore aggiornamento', 'error');
@@ -70,19 +83,19 @@ export async function renderEquipment(container) {
     }));
 }
 
-function buildEquipmentSection(state, items) {
-  const sectionItems = items.filter((item) => item.equipped_state === state.value);
+function buildEquipmentSection(part, items) {
+  const sectionItems = items.filter((item) => item.equip_slot === part.value);
   if (!sectionItems.length) {
     return `
       <div class="equipment-section">
-        <h3>${state.label}</h3>
+        <h3>${part.label}</h3>
         <p class="muted">Nessun oggetto.</p>
       </div>
     `;
   }
   return `
     <div class="equipment-section">
-      <h3>${state.label}</h3>
+      <h3>${part.label}</h3>
       <ul class="inventory-list">
         ${sectionItems.map((item) => `
           <li>
@@ -94,7 +107,36 @@ function buildEquipmentSection(state, items) {
               </div>
             </div>
             <div class="actions">
-              <button data-toggle="${item.id}" data-state="none">Rimuovi</button>
+              <button data-unequip="${item.id}">Rimuovi</button>
+              <button data-attune="${item.id}">
+                ${item.attunement_active ? 'Disattiva attune' : 'Attiva attune'}
+              </button>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+  `;
+}
+
+function buildUnassignedSection(items) {
+  const unassigned = items.filter((item) => item.equipable && !item.equip_slot);
+  if (!unassigned.length) return '';
+  return `
+    <div class="equipment-section">
+      <h3>Equipaggiabili senza slot</h3>
+      <ul class="inventory-list">
+        ${unassigned.map((item) => `
+          <li>
+            <div class="item-info">
+              ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
+              <div>
+                <strong>${item.name}</strong>
+                <p class="muted">${item.category || 'misc'}</p>
+              </div>
+            </div>
+            <div class="actions">
+              <button data-unequip="${item.id}">Rimuovi</button>
               <button data-attune="${item.id}">
                 ${item.attunement_active ? 'Disattiva attune' : 'Attiva attune'}
               </button>

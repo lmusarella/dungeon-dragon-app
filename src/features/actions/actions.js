@@ -129,7 +129,8 @@ export async function renderActions(container) {
         weight: Number(formData.get('weight')),
         value_cp: Number(formData.get('value_cp')),
         category: 'loot',
-        equipped_state: 'none'
+        equipable: false,
+        equip_slot: null
       });
       createToast('Loot aggiunto');
       lootForm.reset();
