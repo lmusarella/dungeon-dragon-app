@@ -1,6 +1,17 @@
-import { fetchCharacters, fetchResources, updateResourcesReset } from './characterApi.js';
+import {
+  createCharacter,
+  fetchCharacters,
+  fetchResources,
+  updateResourcesReset
+} from './characterApi.js';
 import { getState, setActiveCharacter, setState, updateCache } from '../../app/state.js';
-import { createToast } from '../../ui/components.js';
+import {
+  buildDrawerLayout,
+  buildInput,
+  closeDrawer,
+  createToast,
+  openDrawer
+} from '../../ui/components.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 
 export async function renderHome(container) {
@@ -24,6 +35,7 @@ export async function renderHome(container) {
   }
 
   const activeCharacter = characters.find((char) => char.id === getState().activeCharacterId);
+  const canCreateCharacter = Boolean(user) && !offline;
 
   let resources = state.cache.resources;
   if (!offline && activeCharacter) {
@@ -42,15 +54,19 @@ export async function renderHome(container) {
         <h2>Personaggio</h2>
         ${characters.length > 1 ? '<select data-character-select></select>' : ''}
       </header>
-      ${activeCharacter ? buildCharacterSummary(activeCharacter) : '<p>Nessun personaggio.</p>'}
+      ${activeCharacter ? buildCharacterSummary(activeCharacter) : buildEmptyState(canCreateCharacter, offline)}
     </section>
     <section class="card">
       <h3>Risorse</h3>
-      ${resources.length ? buildResourceList(resources) : '<p>Nessuna risorsa.</p>'}
-      <div class="button-row">
-        <button class="primary" data-rest="short_rest">Riposo breve</button>
-        <button class="primary" data-rest="long_rest">Riposo lungo</button>
-      </div>
+      ${activeCharacter
+    ? (resources.length ? buildResourceList(resources) : '<p>Nessuna risorsa.</p>')
+    : '<p>Nessun personaggio selezionato.</p>'}
+      ${activeCharacter ? `
+        <div class="button-row">
+          <button class="primary" data-rest="short_rest">Riposo breve</button>
+          <button class="primary" data-rest="long_rest">Riposo lungo</button>
+        </div>
+      ` : ''}
     </section>
   `;
 
@@ -66,6 +82,13 @@ export async function renderHome(container) {
     select.addEventListener('change', (event) => {
       setActiveCharacter(event.target.value);
       renderHome(container);
+    });
+  }
+
+  const createButton = container.querySelector('[data-create-character]');
+  if (createButton) {
+    createButton.addEventListener('click', () => {
+      openCharacterDrawer(user, () => renderHome(container));
     });
   }
 
@@ -85,6 +108,80 @@ export async function renderHome(container) {
         createToast('Errore aggiornamento risorse', 'error');
       }
     }));
+}
+
+function buildEmptyState(canCreateCharacter, offline) {
+  if (!canCreateCharacter) {
+    const message = offline
+      ? 'Modalità offline attiva: crea un personaggio quando torni online.'
+      : 'Accedi per creare un personaggio.';
+    return `<p class="muted">${message}</p>`;
+  }
+  return `
+    <div>
+      <p>Non hai ancora un personaggio.</p>
+      <div class="button-row">
+        <button class="primary" data-create-character>Nuovo personaggio</button>
+      </div>
+    </div>
+  `;
+}
+
+function openCharacterDrawer(user, onSave) {
+  if (!user) return;
+  const form = document.createElement('form');
+  form.className = 'drawer-form';
+  form.appendChild(buildInput({ label: 'Nome', name: 'name', placeholder: 'Es. Aria' }));
+  form.appendChild(buildInput({ label: 'Sistema', name: 'system', placeholder: 'Es. D&D 5e' }));
+  form.appendChild(buildInput({ label: 'HP attuali', name: 'hp_current', type: 'number', value: '' }));
+  form.appendChild(buildInput({ label: 'HP massimi', name: 'hp_max', type: 'number', value: '' }));
+  form.appendChild(buildInput({ label: 'Classe Armatura', name: 'ac', type: 'number', value: '' }));
+  form.appendChild(buildInput({ label: 'Velocità', name: 'speed', type: 'number', value: '' }));
+
+  const submit = document.createElement('button');
+  submit.className = 'primary';
+  submit.type = 'submit';
+  submit.textContent = 'Crea';
+  form.appendChild(submit);
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const formData = new FormData(form);
+    const name = formData.get('name')?.trim();
+    if (!name) {
+      createToast('Inserisci un nome per il personaggio', 'error');
+      return;
+    }
+    const toNumberOrNull = (value) => (value === '' ? null : Number(value));
+    const payload = {
+      user_id: user.id,
+      name,
+      system: formData.get('system')?.trim() || null,
+      data: {
+        hp: {
+          current: toNumberOrNull(formData.get('hp_current')),
+          max: toNumberOrNull(formData.get('hp_max'))
+        },
+        ac: toNumberOrNull(formData.get('ac')),
+        speed: toNumberOrNull(formData.get('speed'))
+      }
+    };
+
+    try {
+      const created = await createCharacter(payload);
+      const nextCharacters = [...getState().characters, created];
+      setState({ characters: nextCharacters });
+      setActiveCharacter(created.id);
+      await cacheSnapshot({ characters: nextCharacters });
+      createToast('Personaggio creato');
+      closeDrawer();
+      onSave();
+    } catch (error) {
+      createToast('Errore creazione personaggio', 'error');
+    }
+  });
+
+  openDrawer(buildDrawerLayout('Nuovo personaggio', form));
 }
 
 function buildCharacterSummary(character) {

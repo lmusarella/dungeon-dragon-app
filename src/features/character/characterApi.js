@@ -10,6 +10,16 @@ export async function fetchCharacters(userId) {
   return data ?? [];
 }
 
+export async function createCharacter(payload) {
+  const { data, error } = await supabase
+    .from('characters')
+    .insert(payload)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function updateResourcesReset(characterId, resetOn) {
   const resetTargets = resetOn === 'long_rest'
     ? ['short_rest', 'long_rest']
