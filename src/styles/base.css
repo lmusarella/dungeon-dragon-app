@@ -417,6 +417,17 @@ button {
   gap: 8px;
 }
 
+.detail-card .toggle-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-card .toggle-secondary {
+  font-size: 0.8rem;
+  color: #665a48;
+}
+
 @media (min-width: 768px) {
   .app-main {
     padding: 16px 24px 90px;
