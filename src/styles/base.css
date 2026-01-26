@@ -65,6 +65,23 @@ button {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
+.home-layout {
+  display: grid;
+  gap: 16px;
+}
+
+.home-card {
+  background: linear-gradient(180deg, #fffaf1 0%, #fdf7ea 100%);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  margin: 0;
+  color: #947b5a;
+}
+
 .app-shell {
   display: flex;
   flex-direction: column;
@@ -135,6 +152,15 @@ button {
   border: 1px solid #d6c6ad;
   min-height: 44px;
   background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: #6f4e37;
+  box-shadow: 0 0 0 3px rgba(111, 78, 55, 0.15);
 }
 
 .checkbox {
@@ -194,6 +220,21 @@ button {
   border-radius: 10px;
   padding: 8px 12px;
   min-height: 40px;
+}
+
+.character-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.character-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 2px solid #eadfc9;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
 }
 
 .stat-grid,
@@ -411,6 +452,31 @@ button {
   background: #fdf7ea;
 }
 
+.detail-card--text {
+  align-items: flex-start;
+}
+
+.detail-card--text p {
+  margin: 0;
+}
+
+.resource-info,
+.item-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.resource-avatar,
+.item-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid #eadfc9;
+  background: #fff;
+}
+
 .detail-card label {
   display: flex;
   align-items: center;
@@ -435,6 +501,9 @@ button {
   .card {
     margin: 16px auto;
     max-width: 900px;
+  }
+  .home-layout {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   }
   .drawer-panel {
     width: 420px;
