@@ -32,6 +32,28 @@ npm run preview
 npm run test
 ```
 
+## Troubleshooting
+
+### Errore `MODULE_NOT_FOUND` all'avvio
+
+Se `npm run dev` termina con `MODULE_NOT_FOUND` (spesso su Windows) significa che le
+dipendenze non sono state installate correttamente o non ti trovi nella root del
+progetto. Prova questi passaggi:
+
+1. Verifica di essere nella cartella del progetto (dove c'è `package.json`).
+2. Reinstalla le dipendenze:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+3. Rilancia il dev server:
+
+```bash
+npm run dev
+```
+
 ## Tabelle Supabase (assunte)
 
 - `profiles(id, display_name, created_at)`
