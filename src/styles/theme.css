@@ -1,0 +1,11 @@
+body {
+  background-image: linear-gradient(135deg, rgba(246, 241, 231, 0.92), rgba(253, 247, 234, 0.96));
+}
+
+.card {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><path d="M0 0h200v200H0z" fill="%23fffaf1"/></svg>');
+}
+
+.app-header {
+  background-image: linear-gradient(120deg, #fdf7ea, #f5ebd8);
+}
