@@ -3,7 +3,7 @@ import { getState, updateCache } from '../../app/state.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 import { applyMoneyDelta, calcTotalWeight } from '../../lib/calc.js';
 import { formatWeight } from '../../lib/format.js';
-import { buildDrawerLayout, buildInput, buildTextarea, createToast, openDrawer, closeDrawer, buildSelect, openConfirmModal } from '../../ui/components.js';
+import { buildDrawerLayout, buildInput, buildTextarea, createToast, openDrawer, closeDrawer, buildSelect, openConfirmModal, openFormModal } from '../../ui/components.js';
 import { fetchWallet, upsertWallet, createTransaction } from '../wallet/walletApi.js';
 import { renderWalletSummary } from '../wallet/wallet.js';
 
@@ -13,14 +13,24 @@ const equipmentStates = [
   { value: 'held', label: 'Impugnato' }
 ];
 
-const categories = [
-  { value: '', label: 'Tutte' },
+const itemCategories = [
   { value: 'gear', label: 'Equipaggiamento' },
   { value: 'loot', label: 'Loot' },
   { value: 'consumable', label: 'Consumabili' },
+  { value: 'weapon', label: 'Armi' },
+  { value: 'armor', label: 'Armature' },
+  { value: 'magic', label: 'Magici' },
   { value: 'tool', label: 'Strumenti' },
-  { value: 'container', label: 'Contenitore' }
+  { value: 'container', label: 'Contenitore' },
+  { value: 'misc', label: 'Altro' }
 ];
+
+const categories = [
+  { value: '', label: 'Tutte' },
+  ...itemCategories
+];
+
+const categoryLabels = new Map(itemCategories.map((category) => [category.value, category.label]));
 
 export async function renderInventory(container) {
   const state = getState();
@@ -88,43 +98,15 @@ export async function renderInventory(container) {
           </header>
           ${renderWalletSummary(wallet)}
           <div class="compact-action-grid">
-            <form class="compact-form" data-money-form="pay">
-              <h4>Paga</h4>
-              ${moneyFields()}
-              <button class="primary" type="submit">Paga</button>
-            </form>
-            <form class="compact-form" data-money-form="receive">
-              <h4>Ricevi</h4>
-              ${moneyFields()}
-              <button class="primary" type="submit">Ricevi</button>
-            </form>
+            <button class="primary" type="button" data-money-action="pay">Paga</button>
+            <button class="primary" type="button" data-money-action="receive">Ricevi</button>
           </div>
         </div>
         <div class="compact-panel">
           <header class="compact-header">
             <h3>Loot rapido</h3>
           </header>
-          <form class="compact-form" data-loot-form>
-            <div class="compact-field-grid">
-              <label class="field">
-                <span>Nome</span>
-                <input name="name" required />
-              </label>
-              <label class="field">
-                <span>Quantità</span>
-                <input name="qty" type="number" value="1" />
-              </label>
-              <label class="field">
-                <span>Peso</span>
-                <input name="weight" type="number" value="0" min="0" step="${weightStep}" />
-              </label>
-              <label class="field">
-                <span>Valore (cp)</span>
-                <input name="value_cp" type="number" value="0" />
-              </label>
-            </div>
-            <button class="primary" type="submit">Aggiungi</button>
-          </form>
+          <button class="primary" type="button" data-add-loot>Aggiungi loot</button>
         </div>
       </div>
     </section>
@@ -219,9 +201,13 @@ export async function renderInventory(container) {
       }
     }));
 
-  container.querySelectorAll('[data-money-form]')
-    .forEach((form) => form.addEventListener('submit', async (event) => {
-      event.preventDefault();
+  container.querySelectorAll('[data-money-action]')
+    .forEach((button) => button.addEventListener('click', async () => {
+      const direction = button.dataset.moneyAction;
+      const title = direction === 'pay' ? 'Paga monete' : 'Ricevi monete';
+      const submitLabel = direction === 'pay' ? 'Paga' : 'Ricevi';
+      const formData = await openFormModal({ title, submitLabel, content: moneyFields() });
+      if (!formData) return;
       if (!wallet) {
         wallet = {
           user_id: activeCharacter.user_id,
@@ -233,8 +219,6 @@ export async function renderInventory(container) {
           pp: 0
         };
       }
-      const direction = form.dataset.moneyForm;
-      const formData = new FormData(form);
       const delta = {
         cp: Number(formData.get('cp') || 0),
         sp: Number(formData.get('sp') || 0),
@@ -267,27 +251,33 @@ export async function renderInventory(container) {
       }
     }));
 
-  const lootForm = container.querySelector('[data-loot-form]');
-  lootForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const formData = new FormData(lootForm);
-    try {
-      await createItem({
-        user_id: activeCharacter.user_id,
-        character_id: activeCharacter.id,
-        name: formData.get('name'),
-        qty: Number(formData.get('qty')),
-        weight: Number(formData.get('weight')),
-        value_cp: Number(formData.get('value_cp')),
-        category: 'loot',
-        equipped_state: 'none'
+  const lootButton = container.querySelector('[data-add-loot]');
+  if (lootButton) {
+    lootButton.addEventListener('click', async () => {
+      const formData = await openFormModal({
+        title: 'Aggiungi loot',
+        submitLabel: 'Aggiungi',
+        content: buildLootFields(weightStep)
       });
-      createToast('Loot aggiunto');
-      lootForm.reset();
-    } catch (error) {
-      createToast('Errore loot', 'error');
-    }
-  });
+      if (!formData) return;
+      try {
+        await createItem({
+          user_id: activeCharacter.user_id,
+          character_id: activeCharacter.id,
+          name: formData.get('name'),
+          qty: Number(formData.get('qty')),
+          weight: Number(formData.get('weight')),
+          value_cp: Number(formData.get('value_cp')),
+          category: 'loot',
+          equipped_state: 'none'
+        });
+        createToast('Loot aggiunto');
+        renderInventory(container);
+      } catch (error) {
+        createToast('Errore loot', 'error');
+      }
+    });
+  }
 
   container.querySelector('[data-add-item]').addEventListener('click', () => {
     openItemDrawer(activeCharacter, null, items, renderInventory.bind(null, container));
@@ -330,7 +320,7 @@ function buildItemList(items) {
             <div>
               <strong>${item.name}</strong>
             <p class="muted">
-              ${item.category || 'misc'} · ${item.qty}x · ${item.weight ?? 0} lb
+              ${getCategoryLabel(item.category)} · ${item.qty}x · ${item.weight ?? 0} lb
             </p>
             <div class="tag-row">
               ${item.equipped_state && item.equipped_state !== 'none' ? `<span class="chip">${item.equipped_state}</span>` : ''}
@@ -404,6 +394,33 @@ function moneyFields() {
   `;
 }
 
+function buildLootFields(weightStep) {
+  return `
+    <div class="compact-field-grid">
+      <label class="field">
+        <span>Nome</span>
+        <input name="name" required />
+      </label>
+      <label class="field">
+        <span>Quantità</span>
+        <input name="qty" type="number" value="1" />
+      </label>
+      <label class="field">
+        <span>Peso</span>
+        <input name="weight" type="number" value="0" min="0" step="${weightStep}" />
+      </label>
+      <label class="field">
+        <span>Valore (cp)</span>
+        <input name="value_cp" type="number" value="0" />
+      </label>
+    </div>
+  `;
+}
+
+function getCategoryLabel(category) {
+  return categoryLabels.get(category) ?? (category ? category : 'Altro');
+}
+
 function openItemDrawer(character, item, items, onSave) {
   const form = document.createElement('form');
   form.className = 'drawer-form';
@@ -424,7 +441,16 @@ function openItemDrawer(character, item, items, onSave) {
   }
   form.appendChild(weightField);
   form.appendChild(buildInput({ label: 'Valore (cp)', name: 'value_cp', type: 'number', value: item?.value_cp ?? 0 }));
-  form.appendChild(buildInput({ label: 'Categoria', name: 'category', value: item?.category ?? '' }));
+  const categorySelect = buildSelect(
+    [{ value: '', label: 'Seleziona' }, ...itemCategories],
+    item?.category ?? ''
+  );
+  categorySelect.name = 'category';
+  const categoryField = document.createElement('label');
+  categoryField.className = 'field';
+  categoryField.innerHTML = '<span>Categoria</span>';
+  categoryField.appendChild(categorySelect);
+  form.appendChild(categoryField);
 
   const containerOptions = [{ value: '', label: 'Nessuno' }].concat(
     items.filter((entry) => entry.category === 'container').map((entry) => ({

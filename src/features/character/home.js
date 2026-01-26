@@ -37,7 +37,8 @@ export async function renderHome(container) {
     }
   }
 
-  if (!state.activeCharacterId && characters.length) {
+  const hasActive = characters.some((char) => char.id === state.activeCharacterId);
+  if (!hasActive && characters.length) {
     setActiveCharacter(characters[0].id);
   }
 

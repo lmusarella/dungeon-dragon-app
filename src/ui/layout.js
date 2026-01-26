@@ -11,6 +11,7 @@ export function renderLayout(container) {
         </div>
         <div class="header-actions">
           <a href="#/settings" class="ghost-button">Impostazioni</a>
+          <button class="ghost-button" type="button" data-logout>Logout</button>
         </div>
       </header>
       <div class="offline-banner" data-offline-banner hidden>
@@ -20,9 +21,7 @@ export function renderLayout(container) {
       <nav class="bottom-nav" data-bottom-nav>
         <a href="#/home" data-tab="home">Home</a>
         <a href="#/inventory" data-tab="inventory">Inventario</a>
-        <a href="#/equipment" data-tab="equipment">Equip</a>
         <a href="#/journal" data-tab="journal">Diario</a>
-        <a href="#/actions" data-tab="actions">Azioni</a>
       </nav>
       <div class="drawer" data-drawer>
         <div class="drawer-overlay" data-drawer-close></div>
@@ -40,6 +39,19 @@ export function renderLayout(container) {
             <button class="ghost-button" data-confirm-cancel>Annulla</button>
             <button class="primary" data-confirm-ok>Conferma</button>
           </div>
+        </div>
+      </div>
+      <div class="modal" data-form-modal hidden>
+        <div class="modal-overlay" data-form-overlay></div>
+        <div class="modal-card" role="dialog" aria-modal="true">
+          <h3 data-form-title>Inserisci dati</h3>
+          <form data-form-body>
+            <div data-form-fields></div>
+            <div class="modal-actions">
+              <button class="ghost-button" type="button" data-form-cancel>Annulla</button>
+              <button class="primary" type="submit" data-form-submit>Conferma</button>
+            </div>
+          </form>
         </div>
       </div>
       <div class="toast-container" data-toast-container></div>

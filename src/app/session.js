@@ -1,11 +1,15 @@
 import { supabase } from '../lib/supabase.js';
-import { setState } from './state.js';
+import { resetSessionState, setState } from './state.js';
 
 export async function initSession() {
   const { data } = await supabase.auth.getSession();
   setState({ user: data.session?.user ?? null });
   supabase.auth.onAuthStateChange((_event, session) => {
-    setState({ user: session?.user ?? null });
+    if (session?.user) {
+      setState({ user: session.user });
+    } else {
+      resetSessionState();
+    }
   });
 }
 

@@ -133,3 +133,60 @@ export function openConfirmModal({
     overlay?.addEventListener('click', onCancel);
   });
 }
+
+export function openFormModal({
+  title = 'Inserisci dati',
+  content = '',
+  submitLabel = 'Conferma',
+  cancelLabel = 'Annulla'
+} = {}) {
+  return new Promise((resolve) => {
+    const modal = document.querySelector('[data-form-modal]');
+    if (!modal) {
+      resolve(null);
+      return;
+    }
+    const titleEl = modal.querySelector('[data-form-title]');
+    const formEl = modal.querySelector('[data-form-body]');
+    const fieldsEl = modal.querySelector('[data-form-fields]');
+    const submitButton = modal.querySelector('[data-form-submit]');
+    const cancelButton = modal.querySelector('[data-form-cancel]');
+    const overlay = modal.querySelector('[data-form-overlay]');
+
+    if (titleEl) titleEl.textContent = title;
+    if (submitButton) submitButton.textContent = submitLabel;
+    if (cancelButton) cancelButton.textContent = cancelLabel;
+    if (fieldsEl) {
+      fieldsEl.innerHTML = '';
+      if (typeof content === 'string') {
+        fieldsEl.innerHTML = content;
+      } else if (content) {
+        fieldsEl.appendChild(content);
+      }
+    }
+
+    modal.hidden = false;
+    modal.classList.add('open');
+
+    const cleanup = (result) => {
+      modal.classList.remove('open');
+      modal.hidden = true;
+      formEl?.removeEventListener('submit', onSubmit);
+      cancelButton?.removeEventListener('click', onCancel);
+      overlay?.removeEventListener('click', onCancel);
+      resolve(result);
+    };
+
+    const onSubmit = (event) => {
+      event.preventDefault();
+      const data = formEl ? new FormData(formEl) : null;
+      cleanup(data);
+    };
+
+    const onCancel = () => cleanup(null);
+
+    formEl?.addEventListener('submit', onSubmit);
+    cancelButton?.addEventListener('click', onCancel);
+    overlay?.addEventListener('click', onCancel);
+  });
+}

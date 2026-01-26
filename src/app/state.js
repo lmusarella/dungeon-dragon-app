@@ -1,4 +1,5 @@
 const listeners = new Set();
+const ACTIVE_CHARACTER_STORAGE_KEY = 'dd_active_character';
 
 const state = {
   user: null,
@@ -15,6 +16,25 @@ const state = {
   }
 };
 
+function getStorageKey(userId) {
+  return userId ? `${ACTIVE_CHARACTER_STORAGE_KEY}:${userId}` : ACTIVE_CHARACTER_STORAGE_KEY;
+}
+
+export function getStoredActiveCharacterId(userId) {
+  if (typeof localStorage === 'undefined') return null;
+  return localStorage.getItem(getStorageKey(userId));
+}
+
+export function setStoredActiveCharacterId(userId, id) {
+  if (typeof localStorage === 'undefined') return;
+  const key = getStorageKey(userId);
+  if (id) {
+    localStorage.setItem(key, id);
+  } else {
+    localStorage.removeItem(key);
+  }
+}
+
 export function getState() {
   return state;
 }
@@ -30,7 +50,23 @@ export function subscribe(cb) {
 }
 
 export function setActiveCharacter(id) {
-  state.activeCharacterId = id;
+  state.activeCharacterId = id ?? null;
+  setStoredActiveCharacterId(state.user?.id, state.activeCharacterId);
+  listeners.forEach((cb) => cb(state));
+}
+
+export function resetSessionState() {
+  state.user = null;
+  state.profile = null;
+  state.characters = [];
+  state.activeCharacterId = null;
+  state.cache = {
+    items: [],
+    resources: [],
+    journal: [],
+    wallet: null,
+    tags: []
+  };
   listeners.forEach((cb) => cb(state));
 }
 
