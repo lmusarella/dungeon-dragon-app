@@ -15,6 +15,7 @@ import {
   buildSelect,
   closeDrawer,
   createToast,
+  openConfirmModal,
   openDrawer
 } from '../../ui/components.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
@@ -64,7 +65,7 @@ export async function renderHome(container) {
           ${activeCharacter && canEditCharacter ? '<button data-edit-character>Modifica</button>' : ''}
         </div>
       </header>
-      ${activeCharacter ? buildCharacterSummary(activeCharacter) : buildEmptyState(canCreateCharacter, offline)}
+      ${activeCharacter ? buildCharacterSummary(activeCharacter, canEditCharacter) : buildEmptyState(canCreateCharacter, offline)}
     </section>
     <section class="card">
       <h3>Risorse</h3>
@@ -157,7 +158,8 @@ export async function renderHome(container) {
     .forEach((button) => button.addEventListener('click', async () => {
       const resource = resources.find((entry) => entry.id === button.dataset.deleteResource);
       if (!resource) return;
-      if (!confirm('Eliminare risorsa?')) return;
+      const shouldDelete = await openConfirmModal({ message: 'Eliminare risorsa?' });
+      if (!shouldDelete) return;
       try {
         await deleteResource(resource.id);
         createToast('Risorsa eliminata');
@@ -171,7 +173,8 @@ export async function renderHome(container) {
     .forEach((button) => button.addEventListener('click', async () => {
       const resetOn = button.dataset.rest;
       if (!activeCharacter) return;
-      if (!confirm('Confermi il riposo?')) return;
+      const shouldRest = await openConfirmModal({ message: 'Confermi il riposo?' });
+      if (!shouldRest) return;
       try {
         await updateResourcesReset(activeCharacter.id, resetOn);
         createToast('Risorse aggiornate');
@@ -183,6 +186,83 @@ export async function renderHome(container) {
         createToast('Errore aggiornamento risorse', 'error');
       }
     }));
+
+  const hpAmountInput = container.querySelector('[data-hp-amount]');
+  container.querySelectorAll('[data-hp-action]')
+    .forEach((button) => button.addEventListener('click', async () => {
+      if (!activeCharacter || !canEditCharacter) return;
+      const amount = Number(hpAmountInput?.value);
+      if (!amount || amount <= 0) {
+        createToast('Inserisci un valore valido', 'error');
+        return;
+      }
+      const currentHp = Number(activeCharacter.data?.hp?.current) || 0;
+      const maxHp = activeCharacter.data?.hp?.max;
+      const nextHp = button.dataset.hpAction === 'heal'
+        ? currentHp + amount
+        : Math.max(currentHp - amount, 0);
+      const adjusted = maxHp !== null && maxHp !== undefined
+        ? Math.min(nextHp, Number(maxHp))
+        : nextHp;
+      await saveCharacterData(activeCharacter, {
+        ...activeCharacter.data,
+        hp: {
+          ...activeCharacter.data?.hp,
+          current: adjusted
+        }
+      }, button.dataset.hpAction === 'heal' ? 'PF curati' : 'Danno ricevuto', container);
+    }));
+
+  container.querySelectorAll('[data-skill-toggle]')
+    .forEach((checkbox) => checkbox.addEventListener('change', async (event) => {
+      if (!activeCharacter || !canEditCharacter) return;
+      const skill = event.target.dataset.skillToggle;
+      const currentSkills = activeCharacter.data?.skills || {};
+      await saveCharacterData(activeCharacter, {
+        ...activeCharacter.data,
+        skills: {
+          ...currentSkills,
+          [skill]: event.target.checked
+        }
+      }, null, container);
+    }));
+
+  container.querySelectorAll('[data-saving-toggle]')
+    .forEach((checkbox) => checkbox.addEventListener('change', async (event) => {
+      if (!activeCharacter || !canEditCharacter) return;
+      const ability = event.target.dataset.savingToggle;
+      const currentSaving = activeCharacter.data?.saving_throws || {};
+      await saveCharacterData(activeCharacter, {
+        ...activeCharacter.data,
+        saving_throws: {
+          ...currentSaving,
+          [ability]: event.target.checked
+        }
+      }, null, container);
+    }));
+}
+
+async function saveCharacterData(character, data, message, container) {
+  if (!character) return;
+  const payload = {
+    name: character.name,
+    system: character.system ?? null,
+    data
+  };
+  try {
+    const updated = await updateCharacter(character.id, payload);
+    const nextCharacters = getState().characters.map((char) => (char.id === updated.id ? updated : char));
+    setState({ characters: nextCharacters });
+    await cacheSnapshot({ characters: nextCharacters });
+    if (message) {
+      createToast(message);
+    }
+    if (container) {
+      renderHome(container);
+    }
+  } catch (error) {
+    createToast('Errore aggiornamento personaggio', 'error');
+  }
 }
 
 function buildEmptyState(canCreateCharacter, offline) {
@@ -211,6 +291,8 @@ function openCharacterDrawer(user, onSave, character = null) {
   form.className = 'drawer-form';
   form.appendChild(buildInput({ label: 'Nome', name: 'name', placeholder: 'Es. Aria', value: character?.name ?? '' }));
   form.appendChild(buildInput({ label: 'Sistema', name: 'system', placeholder: 'Es. D&D 5e', value: character?.system ?? '' }));
+  form.appendChild(buildInput({ label: 'Bonus competenza', name: 'proficiency_bonus', type: 'number', value: characterData.proficiency_bonus ?? '' }));
+  form.appendChild(buildInput({ label: 'Iniziativa', name: 'initiative', type: 'number', value: characterData.initiative ?? '' }));
   form.appendChild(buildInput({ label: 'HP attuali', name: 'hp_current', type: 'number', value: hp.current ?? '' }));
   form.appendChild(buildInput({ label: 'HP massimi', name: 'hp_max', type: 'number', value: hp.max ?? '' }));
   form.appendChild(buildInput({ label: 'Classe Armatura', name: 'ac', type: 'number', value: characterData.ac ?? '' }));
@@ -245,6 +327,8 @@ function openCharacterDrawer(user, onSave, character = null) {
       },
       ac: toNumberOrNull(formData.get('ac')),
       speed: toNumberOrNull(formData.get('speed')),
+      proficiency_bonus: toNumberOrNull(formData.get('proficiency_bonus')),
+      initiative: toNumberOrNull(formData.get('initiative')),
       abilities: {
         str: toNumberOrNull(formData.get('ability_str')),
         dex: toNumberOrNull(formData.get('ability_dex')),
@@ -252,7 +336,9 @@ function openCharacterDrawer(user, onSave, character = null) {
         int: toNumberOrNull(formData.get('ability_int')),
         wis: toNumberOrNull(formData.get('ability_wis')),
         cha: toNumberOrNull(formData.get('ability_cha'))
-      }
+      },
+      skills: characterData.skills || {},
+      saving_throws: characterData.saving_throws || {}
     };
     const payload = {
       name,
@@ -285,10 +371,14 @@ function openCharacterDrawer(user, onSave, character = null) {
   openDrawer(buildDrawerLayout(character ? 'Modifica personaggio' : 'Nuovo personaggio', form));
 }
 
-function buildCharacterSummary(character) {
+function buildCharacterSummary(character, canEditCharacter) {
   const data = character.data || {};
   const hp = data.hp || {};
   const abilities = data.abilities || {};
+  const proficiencyBonus = normalizeNumber(data.proficiency_bonus);
+  const initiativeBonus = data.initiative ?? getAbilityModifier(abilities.dex);
+  const skillStates = data.skills || {};
+  const savingStates = data.saving_throws || {};
   const abilityCards = [
     { label: 'Forza', value: abilities.str },
     { label: 'Destrezza', value: abilities.dex },
@@ -314,8 +404,22 @@ function buildCharacterSummary(character) {
         </div>
         <div class="stat-card">
           <span>Velocità</span>
-          <strong>${data.speed ?? '-'} </strong>
+          <strong>${data.speed ?? '-'}</strong>
         </div>
+        <div class="stat-card">
+          <span>Bonus competenza</span>
+          <strong>${formatSigned(proficiencyBonus)}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Iniziativa</span>
+          <strong>${formatSigned(normalizeNumber(initiativeBonus))}</strong>
+        </div>
+      </div>
+      <div class="hp-shortcuts">
+        <strong>PF rapidi</strong>
+        <input type="number" min="1" placeholder="Valore" data-hp-amount ${canEditCharacter ? '' : 'disabled'} />
+        <button class="ghost-button" data-hp-action="heal" ${canEditCharacter ? '' : 'disabled'}>Cura</button>
+        <button class="ghost-button" data-hp-action="damage" ${canEditCharacter ? '' : 'disabled'}>Danno</button>
       </div>
       <div>
         <h4>Statistiche</h4>
@@ -326,6 +430,43 @@ function buildCharacterSummary(character) {
               <strong>${formatAbility(ability.value)}</strong>
             </div>
           `).join('')}
+        </div>
+      </div>
+      <div class="detail-section">
+        <h4>Abilità</h4>
+        <div class="detail-grid">
+          ${skillList.map((skill) => {
+    const proficient = Boolean(skillStates[skill.key]);
+    const total = calculateSkillModifier(abilities[skill.ability], proficiencyBonus, proficient);
+    return `
+            <div class="detail-card">
+              <label>
+                <input type="checkbox" data-skill-toggle="${skill.key}" ${proficient ? 'checked' : ''} ${canEditCharacter ? '' : 'disabled'} />
+                <span>${skill.label}</span>
+              </label>
+              <span class="muted">${abilityShortLabel[skill.ability]}</span>
+              <strong>${formatSigned(total)}</strong>
+            </div>
+          `;
+  }).join('')}
+        </div>
+      </div>
+      <div class="detail-section">
+        <h4>Tiri salvezza</h4>
+        <div class="detail-grid">
+          ${savingThrowList.map((save) => {
+    const proficient = Boolean(savingStates[save.key]);
+    const total = calculateSkillModifier(abilities[save.key], proficiencyBonus, proficient);
+    return `
+            <div class="detail-card">
+              <label>
+                <input type="checkbox" data-saving-toggle="${save.key}" ${proficient ? 'checked' : ''} ${canEditCharacter ? '' : 'disabled'} />
+                <span>${save.label}</span>
+              </label>
+              <strong>${formatSigned(total)}</strong>
+            </div>
+          `;
+  }).join('')}
         </div>
       </div>
     </div>
@@ -425,15 +566,78 @@ function openResourceDrawer(character, onSave, resource = null) {
   openDrawer(buildDrawerLayout(resource ? 'Modifica risorsa' : 'Nuova risorsa', form));
 }
 
+const abilityShortLabel = {
+  str: 'FOR',
+  dex: 'DES',
+  con: 'COS',
+  int: 'INT',
+  wis: 'SAG',
+  cha: 'CAR'
+};
+
+const skillList = [
+  { key: 'acrobatics', label: 'Acrobazia', ability: 'dex' },
+  { key: 'animal_handling', label: 'Addestrare animali', ability: 'wis' },
+  { key: 'arcana', label: 'Arcano', ability: 'int' },
+  { key: 'athletics', label: 'Atletica', ability: 'str' },
+  { key: 'deception', label: 'Inganno', ability: 'cha' },
+  { key: 'history', label: 'Storia', ability: 'int' },
+  { key: 'insight', label: 'Intuizione', ability: 'wis' },
+  { key: 'intimidation', label: 'Intimidire', ability: 'cha' },
+  { key: 'investigation', label: 'Indagare', ability: 'int' },
+  { key: 'medicine', label: 'Medicina', ability: 'wis' },
+  { key: 'nature', label: 'Natura', ability: 'int' },
+  { key: 'perception', label: 'Percezione', ability: 'wis' },
+  { key: 'performance', label: 'Intrattenere', ability: 'cha' },
+  { key: 'persuasion', label: 'Persuasione', ability: 'cha' },
+  { key: 'religion', label: 'Religione', ability: 'int' },
+  { key: 'sleight_of_hand', label: 'Rapidità di mano', ability: 'dex' },
+  { key: 'stealth', label: 'Furtività', ability: 'dex' },
+  { key: 'survival', label: 'Sopravvivenza', ability: 'wis' }
+];
+
+const savingThrowList = [
+  { key: 'str', label: 'Forza' },
+  { key: 'dex', label: 'Destrezza' },
+  { key: 'con', label: 'Costituzione' },
+  { key: 'int', label: 'Intelligenza' },
+  { key: 'wis', label: 'Saggezza' },
+  { key: 'cha', label: 'Carisma' }
+];
+
+function normalizeNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const numberValue = Number(value);
+  return Number.isNaN(numberValue) ? null : numberValue;
+}
+
+function getAbilityModifier(value) {
+  const score = normalizeNumber(value);
+  if (score === null) return null;
+  return Math.floor((score - 10) / 2);
+}
+
+function calculateSkillModifier(score, proficiencyBonus, proficient) {
+  const base = getAbilityModifier(score);
+  if (base === null) return null;
+  const bonus = proficient && proficiencyBonus !== null ? proficiencyBonus : 0;
+  return base + bonus;
+}
+
+function formatSigned(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return '-';
+  return value >= 0 ? `+${value}` : `${value}`;
+}
+
 function formatAbility(value) {
   if (value === null || value === undefined || value === '') return '-';
-  const score = Number(value);
-  if (Number.isNaN(score)) return '-';
+  const score = normalizeNumber(value);
+  if (score === null) return '-';
   const modifier = formatModifier(score);
   return `${score} (${modifier})`;
 }
 
 function formatModifier(score) {
-  const mod = Math.floor((score - 10) / 2);
-  return mod >= 0 ? `+${mod}` : `${mod}`;
+  const mod = getAbilityModifier(score);
+  return formatSigned(mod);
 }

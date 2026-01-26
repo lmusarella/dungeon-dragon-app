@@ -89,3 +89,47 @@ export function buildTextarea({ label, name, value = '', placeholder = '' }) {
   wrapper.appendChild(input);
   return wrapper;
 }
+
+export function openConfirmModal({
+  title = 'Conferma',
+  message,
+  confirmLabel = 'Conferma',
+  cancelLabel = 'Annulla'
+} = {}) {
+  return new Promise((resolve) => {
+    const modal = document.querySelector('[data-confirm-modal]');
+    if (!modal) {
+      resolve(false);
+      return;
+    }
+    const titleEl = modal.querySelector('[data-confirm-title]');
+    const messageEl = modal.querySelector('[data-confirm-message]');
+    const confirmButton = modal.querySelector('[data-confirm-ok]');
+    const cancelButton = modal.querySelector('[data-confirm-cancel]');
+    const overlay = modal.querySelector('[data-confirm-overlay]');
+
+    if (titleEl) titleEl.textContent = title;
+    if (messageEl) messageEl.textContent = message || '';
+    if (confirmButton) confirmButton.textContent = confirmLabel;
+    if (cancelButton) cancelButton.textContent = cancelLabel;
+
+    modal.hidden = false;
+    modal.classList.add('open');
+
+    const cleanup = (result) => {
+      modal.classList.remove('open');
+      modal.hidden = true;
+      confirmButton?.removeEventListener('click', onConfirm);
+      cancelButton?.removeEventListener('click', onCancel);
+      overlay?.removeEventListener('click', onCancel);
+      resolve(result);
+    };
+
+    const onConfirm = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+
+    confirmButton?.addEventListener('click', onConfirm);
+    cancelButton?.addEventListener('click', onCancel);
+    overlay?.addEventListener('click', onCancel);
+  });
+}

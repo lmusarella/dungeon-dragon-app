@@ -268,6 +268,42 @@ button {
   margin-top: 16px;
 }
 
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-card {
+  position: relative;
+  background: #fffaf1;
+  border-radius: 16px;
+  padding: 20px;
+  width: min(360px, 90%);
+  border: 1px solid #e6dcc8;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
 .toast-container {
   position: fixed;
   right: 16px;
@@ -339,6 +375,46 @@ button {
 
 .muted {
   color: #665a48;
+}
+
+.hp-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.hp-shortcuts input {
+  width: 90px;
+}
+
+.detail-section {
+  margin-top: 16px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.detail-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #eadfc9;
+  background: #fdf7ea;
+}
+
+.detail-card label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 @media (min-width: 768px) {

@@ -31,6 +31,17 @@ export function renderLayout(container) {
           <div data-drawer-body></div>
         </div>
       </div>
+      <div class="modal" data-confirm-modal hidden>
+        <div class="modal-overlay" data-confirm-overlay></div>
+        <div class="modal-card" role="dialog" aria-modal="true">
+          <h3 data-confirm-title>Conferma</h3>
+          <p data-confirm-message></p>
+          <div class="modal-actions">
+            <button class="ghost-button" data-confirm-cancel>Annulla</button>
+            <button class="primary" data-confirm-ok>Conferma</button>
+          </div>
+        </div>
+      </div>
       <div class="toast-container" data-toast-container></div>
     </div>
   `;

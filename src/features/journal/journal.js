@@ -11,7 +11,7 @@ import {
 } from './journalApi.js';
 import { getState, updateCache } from '../../app/state.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
-import { buildDrawerLayout, buildInput, buildTextarea, createToast, openDrawer, closeDrawer } from '../../ui/components.js';
+import { buildDrawerLayout, buildInput, buildTextarea, createToast, openDrawer, closeDrawer, openConfirmModal } from '../../ui/components.js';
 
 export async function renderJournal(container) {
   const state = getState();
@@ -82,7 +82,8 @@ export async function renderJournal(container) {
       .forEach((btn) => btn.addEventListener('click', async () => {
         const entry = entries.find((item) => item.id === btn.dataset.delete);
         if (!entry) return;
-        if (!confirm('Eliminare voce?')) return;
+        const shouldDelete = await openConfirmModal({ message: 'Eliminare voce?' });
+        if (!shouldDelete) return;
         try {
           await deleteEntry(entry.id);
           createToast('Voce eliminata');
