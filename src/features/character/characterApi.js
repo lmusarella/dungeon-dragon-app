@@ -20,6 +20,17 @@ export async function createCharacter(payload) {
   return data;
 }
 
+export async function updateCharacter(id, payload) {
+  const { data, error } = await supabase
+    .from('characters')
+    .update(payload)
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function updateResourcesReset(characterId, resetOn) {
   const resetTargets = resetOn === 'long_rest'
     ? ['short_rest', 'long_rest']
@@ -50,4 +61,23 @@ export async function createResource(payload) {
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function updateResource(id, payload) {
+  const { data, error } = await supabase
+    .from('resources')
+    .update(payload)
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteResource(id) {
+  const { error } = await supabase
+    .from('resources')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
 }

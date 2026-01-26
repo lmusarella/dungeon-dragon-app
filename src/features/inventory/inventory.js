@@ -91,6 +91,29 @@ export async function renderInventory(container) {
           createToast('Errore eliminazione', 'error');
         }
       }));
+    listEl.querySelectorAll('[data-use]')
+      .forEach((btn) => btn.addEventListener('click', async () => {
+        const item = items.find((entry) => entry.id === btn.dataset.use);
+        if (!item) return;
+        if (item.qty <= 0) {
+          createToast('Quantità esaurita', 'error');
+          return;
+        }
+        const shouldDelete = item.qty === 1;
+        if (shouldDelete && !confirm('Consumare e rimuovere l\'oggetto?')) return;
+        try {
+          if (shouldDelete) {
+            await deleteItem(item.id);
+            createToast('Consumabile usato');
+          } else {
+            await updateItem(item.id, { qty: item.qty - 1 });
+            createToast('Consumabile usato');
+          }
+          renderInventory(container);
+        } catch (error) {
+          createToast('Errore utilizzo consumabile', 'error');
+        }
+      }));
   }
 
   renderList();
@@ -144,6 +167,7 @@ function buildItemList(items) {
             </div>
           </div>
           <div class="actions">
+            ${item.category === 'consumable' ? `<button data-use="${item.id}">Usa</button>` : ''}
             <button data-edit="${item.id}">Modifica</button>
             <button data-delete="${item.id}">Elimina</button>
           </div>

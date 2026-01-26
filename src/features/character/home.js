@@ -1,8 +1,11 @@
 import {
   createCharacter,
   createResource,
+  deleteResource,
   fetchCharacters,
   fetchResources,
+  updateCharacter,
+  updateResource,
   updateResourcesReset
 } from './characterApi.js';
 import { getState, setActiveCharacter, setState, updateCache } from '../../app/state.js';
@@ -39,6 +42,7 @@ export async function renderHome(container) {
   const activeCharacter = characters.find((char) => char.id === getState().activeCharacterId);
   const canCreateCharacter = Boolean(user) && !offline;
   const canManageResources = Boolean(user) && !offline;
+  const canEditCharacter = Boolean(user) && !offline;
 
   let resources = state.cache.resources;
   if (!offline && activeCharacter) {
@@ -55,14 +59,17 @@ export async function renderHome(container) {
     <section class="card">
       <header class="card-header">
         <h2>Personaggio</h2>
-        ${characters.length > 1 ? '<select data-character-select></select>' : ''}
+        <div class="actions">
+          ${characters.length > 1 ? '<select data-character-select></select>' : ''}
+          ${activeCharacter && canEditCharacter ? '<button data-edit-character>Modifica</button>' : ''}
+        </div>
       </header>
       ${activeCharacter ? buildCharacterSummary(activeCharacter) : buildEmptyState(canCreateCharacter, offline)}
     </section>
     <section class="card">
       <h3>Risorse</h3>
       ${activeCharacter
-    ? (resources.length ? buildResourceList(resources) : '<p>Nessuna risorsa.</p>')
+    ? (resources.length ? buildResourceList(resources, canManageResources) : '<p>Nessuna risorsa.</p>')
     : '<p>Nessun personaggio selezionato.</p>'}
       ${activeCharacter && !canManageResources ? '<p class="muted">Connettiti per aggiungere nuove risorse.</p>' : ''}
       ${activeCharacter ? `
@@ -97,12 +104,68 @@ export async function renderHome(container) {
     });
   }
 
+  const editButton = container.querySelector('[data-edit-character]');
+  if (editButton) {
+    editButton.addEventListener('click', () => {
+      openCharacterDrawer(user, () => renderHome(container), activeCharacter);
+    });
+  }
+
   const addResourceButton = container.querySelector('[data-add-resource]');
   if (addResourceButton) {
     addResourceButton.addEventListener('click', () => {
       openResourceDrawer(activeCharacter, () => renderHome(container));
     });
   }
+
+  container.querySelectorAll('[data-use-resource]')
+    .forEach((button) => button.addEventListener('click', async () => {
+      const resource = resources.find((entry) => entry.id === button.dataset.useResource);
+      if (!resource) return;
+      const maxUses = Number(resource.max_uses) || 0;
+      if (maxUses && resource.used >= maxUses) return;
+      try {
+        await updateResource(resource.id, { used: Math.min(resource.used + 1, maxUses) });
+        createToast('Risorsa usata');
+        renderHome(container);
+      } catch (error) {
+        createToast('Errore utilizzo risorsa', 'error');
+      }
+    }));
+
+  container.querySelectorAll('[data-recover-resource]')
+    .forEach((button) => button.addEventListener('click', async () => {
+      const resource = resources.find((entry) => entry.id === button.dataset.recoverResource);
+      if (!resource) return;
+      try {
+        await updateResource(resource.id, { used: Math.max(resource.used - 1, 0) });
+        createToast('Utilizzo recuperato');
+        renderHome(container);
+      } catch (error) {
+        createToast('Errore recupero risorsa', 'error');
+      }
+    }));
+
+  container.querySelectorAll('[data-edit-resource]')
+    .forEach((button) => button.addEventListener('click', () => {
+      const resource = resources.find((entry) => entry.id === button.dataset.editResource);
+      if (!resource) return;
+      openResourceDrawer(activeCharacter, () => renderHome(container), resource);
+    }));
+
+  container.querySelectorAll('[data-delete-resource]')
+    .forEach((button) => button.addEventListener('click', async () => {
+      const resource = resources.find((entry) => entry.id === button.dataset.deleteResource);
+      if (!resource) return;
+      if (!confirm('Eliminare risorsa?')) return;
+      try {
+        await deleteResource(resource.id);
+        createToast('Risorsa eliminata');
+        renderHome(container);
+      } catch (error) {
+        createToast('Errore eliminazione risorsa', 'error');
+      }
+    }));
 
   container.querySelectorAll('[data-rest]')
     .forEach((button) => button.addEventListener('click', async () => {
@@ -139,21 +202,30 @@ function buildEmptyState(canCreateCharacter, offline) {
   `;
 }
 
-function openCharacterDrawer(user, onSave) {
+function openCharacterDrawer(user, onSave, character = null) {
   if (!user) return;
+  const characterData = character?.data || {};
+  const hp = characterData.hp || {};
+  const abilities = characterData.abilities || {};
   const form = document.createElement('form');
   form.className = 'drawer-form';
-  form.appendChild(buildInput({ label: 'Nome', name: 'name', placeholder: 'Es. Aria' }));
-  form.appendChild(buildInput({ label: 'Sistema', name: 'system', placeholder: 'Es. D&D 5e' }));
-  form.appendChild(buildInput({ label: 'HP attuali', name: 'hp_current', type: 'number', value: '' }));
-  form.appendChild(buildInput({ label: 'HP massimi', name: 'hp_max', type: 'number', value: '' }));
-  form.appendChild(buildInput({ label: 'Classe Armatura', name: 'ac', type: 'number', value: '' }));
-  form.appendChild(buildInput({ label: 'Velocità', name: 'speed', type: 'number', value: '' }));
+  form.appendChild(buildInput({ label: 'Nome', name: 'name', placeholder: 'Es. Aria', value: character?.name ?? '' }));
+  form.appendChild(buildInput({ label: 'Sistema', name: 'system', placeholder: 'Es. D&D 5e', value: character?.system ?? '' }));
+  form.appendChild(buildInput({ label: 'HP attuali', name: 'hp_current', type: 'number', value: hp.current ?? '' }));
+  form.appendChild(buildInput({ label: 'HP massimi', name: 'hp_max', type: 'number', value: hp.max ?? '' }));
+  form.appendChild(buildInput({ label: 'Classe Armatura', name: 'ac', type: 'number', value: characterData.ac ?? '' }));
+  form.appendChild(buildInput({ label: 'Velocità', name: 'speed', type: 'number', value: characterData.speed ?? '' }));
+  form.appendChild(buildInput({ label: 'Forza', name: 'ability_str', type: 'number', value: abilities.str ?? '' }));
+  form.appendChild(buildInput({ label: 'Destrezza', name: 'ability_dex', type: 'number', value: abilities.dex ?? '' }));
+  form.appendChild(buildInput({ label: 'Costituzione', name: 'ability_con', type: 'number', value: abilities.con ?? '' }));
+  form.appendChild(buildInput({ label: 'Intelligenza', name: 'ability_int', type: 'number', value: abilities.int ?? '' }));
+  form.appendChild(buildInput({ label: 'Saggezza', name: 'ability_wis', type: 'number', value: abilities.wis ?? '' }));
+  form.appendChild(buildInput({ label: 'Carisma', name: 'ability_cha', type: 'number', value: abilities.cha ?? '' }));
 
   const submit = document.createElement('button');
   submit.className = 'primary';
   submit.type = 'submit';
-  submit.textContent = 'Crea';
+  submit.textContent = character ? 'Salva' : 'Crea';
   form.appendChild(submit);
 
   form.addEventListener('submit', async (event) => {
@@ -165,40 +237,66 @@ function openCharacterDrawer(user, onSave) {
       return;
     }
     const toNumberOrNull = (value) => (value === '' ? null : Number(value));
+    const nextData = {
+      ...characterData,
+      hp: {
+        current: toNumberOrNull(formData.get('hp_current')),
+        max: toNumberOrNull(formData.get('hp_max'))
+      },
+      ac: toNumberOrNull(formData.get('ac')),
+      speed: toNumberOrNull(formData.get('speed')),
+      abilities: {
+        str: toNumberOrNull(formData.get('ability_str')),
+        dex: toNumberOrNull(formData.get('ability_dex')),
+        con: toNumberOrNull(formData.get('ability_con')),
+        int: toNumberOrNull(formData.get('ability_int')),
+        wis: toNumberOrNull(formData.get('ability_wis')),
+        cha: toNumberOrNull(formData.get('ability_cha'))
+      }
+    };
     const payload = {
-      user_id: user.id,
       name,
       system: formData.get('system')?.trim() || null,
-      data: {
-        hp: {
-          current: toNumberOrNull(formData.get('hp_current')),
-          max: toNumberOrNull(formData.get('hp_max'))
-        },
-        ac: toNumberOrNull(formData.get('ac')),
-        speed: toNumberOrNull(formData.get('speed'))
-      }
+      data: nextData
     };
 
     try {
-      const created = await createCharacter(payload);
-      const nextCharacters = [...getState().characters, created];
-      setState({ characters: nextCharacters });
-      setActiveCharacter(created.id);
-      await cacheSnapshot({ characters: nextCharacters });
-      createToast('Personaggio creato');
+      if (character) {
+        const updated = await updateCharacter(character.id, payload);
+        const nextCharacters = getState().characters.map((char) => (char.id === updated.id ? updated : char));
+        setState({ characters: nextCharacters });
+        await cacheSnapshot({ characters: nextCharacters });
+        createToast('Personaggio aggiornato');
+      } else {
+        const created = await createCharacter({ ...payload, user_id: user.id });
+        const nextCharacters = [...getState().characters, created];
+        setState({ characters: nextCharacters });
+        setActiveCharacter(created.id);
+        await cacheSnapshot({ characters: nextCharacters });
+        createToast('Personaggio creato');
+      }
       closeDrawer();
       onSave();
     } catch (error) {
-      createToast('Errore creazione personaggio', 'error');
+      createToast(character ? 'Errore aggiornamento personaggio' : 'Errore creazione personaggio', 'error');
     }
   });
 
-  openDrawer(buildDrawerLayout('Nuovo personaggio', form));
+  openDrawer(buildDrawerLayout(character ? 'Modifica personaggio' : 'Nuovo personaggio', form));
 }
 
 function buildCharacterSummary(character) {
   const data = character.data || {};
   const hp = data.hp || {};
+  const abilities = data.abilities || {};
+  const abilityCards = [
+    { label: 'Forza', value: abilities.str },
+    { label: 'Destrezza', value: abilities.dex },
+    { label: 'Costituzione', value: abilities.con },
+    { label: 'Intelligenza', value: abilities.int },
+    { label: 'Saggezza', value: abilities.wis },
+    { label: 'Carisma', value: abilities.cha }
+  ];
   return `
     <div class="character-summary">
       <div>
@@ -219,11 +317,22 @@ function buildCharacterSummary(character) {
           <strong>${data.speed ?? '-'} </strong>
         </div>
       </div>
+      <div>
+        <h4>Statistiche</h4>
+        <div class="stat-grid">
+          ${abilityCards.map((ability) => `
+            <div class="stat-card">
+              <span>${ability.label}</span>
+              <strong>${formatAbility(ability.value)}</strong>
+            </div>
+          `).join('')}
+        </div>
+      </div>
     </div>
   `;
 }
 
-function buildResourceList(resources) {
+function buildResourceList(resources, canManageResources) {
   return `
     <ul class="resource-list">
       ${resources.map((res) => `
@@ -232,20 +341,36 @@ function buildResourceList(resources) {
             <strong>${res.name}</strong>
             <p class="muted">${res.reset_on}</p>
           </div>
-          <span>${res.used}/${res.max_uses}</span>
+          <div class="actions">
+            <span>${res.used}/${res.max_uses}</span>
+            ${canManageResources ? buildResourceActions(res) : ''}
+          </div>
         </li>
       `).join('')}
     </ul>
   `;
 }
 
-function openResourceDrawer(character, onSave) {
+function buildResourceActions(resource) {
+  const maxUses = Number(resource.max_uses) || 0;
+  const used = Number(resource.used) || 0;
+  const canUse = maxUses === 0 ? false : used < maxUses;
+  const canRecover = used > 0;
+  return `
+    <button data-use-resource="${resource.id}" ${canUse ? '' : 'disabled'}>Usa</button>
+    <button data-recover-resource="${resource.id}" ${canRecover ? '' : 'disabled'}>Recupera</button>
+    <button data-edit-resource="${resource.id}">Modifica</button>
+    <button data-delete-resource="${resource.id}">Elimina</button>
+  `;
+}
+
+function openResourceDrawer(character, onSave, resource = null) {
   if (!character) return;
   const form = document.createElement('form');
   form.className = 'drawer-form';
-  form.appendChild(buildInput({ label: 'Nome risorsa', name: 'name', placeholder: 'Es. Ispirazione' }));
-  form.appendChild(buildInput({ label: 'Utilizzi massimi', name: 'max_uses', type: 'number', value: 1 }));
-  form.appendChild(buildInput({ label: 'Utilizzi già spesi', name: 'used', type: 'number', value: 0 }));
+  form.appendChild(buildInput({ label: 'Nome risorsa', name: 'name', placeholder: 'Es. Ispirazione', value: resource?.name ?? '' }));
+  form.appendChild(buildInput({ label: 'Utilizzi massimi', name: 'max_uses', type: 'number', value: resource?.max_uses ?? 1 }));
+  form.appendChild(buildInput({ label: 'Utilizzi già spesi', name: 'used', type: 'number', value: resource?.used ?? 0 }));
 
   const resetField = document.createElement('label');
   resetField.className = 'field';
@@ -254,7 +379,7 @@ function openResourceDrawer(character, onSave) {
     { value: 'short_rest', label: 'Riposo breve' },
     { value: 'long_rest', label: 'Riposo lungo' },
     { value: 'none', label: 'Nessun reset' }
-  ], 'long_rest');
+  ], resource?.reset_on ?? 'long_rest');
   resetSelect.name = 'reset_on';
   resetField.appendChild(resetSelect);
   form.appendChild(resetField);
@@ -262,7 +387,7 @@ function openResourceDrawer(character, onSave) {
   const submit = document.createElement('button');
   submit.className = 'primary';
   submit.type = 'submit';
-  submit.textContent = 'Crea';
+  submit.textContent = resource ? 'Salva' : 'Crea';
   form.appendChild(submit);
 
   form.addEventListener('submit', async (event) => {
@@ -283,8 +408,13 @@ function openResourceDrawer(character, onSave) {
     };
 
     try {
-      await createResource(payload);
-      createToast('Risorsa creata');
+      if (resource) {
+        await updateResource(resource.id, payload);
+        createToast('Risorsa aggiornata');
+      } else {
+        await createResource(payload);
+        createToast('Risorsa creata');
+      }
       closeDrawer();
       onSave();
     } catch (error) {
@@ -292,5 +422,18 @@ function openResourceDrawer(character, onSave) {
     }
   });
 
-  openDrawer(buildDrawerLayout('Nuova risorsa', form));
+  openDrawer(buildDrawerLayout(resource ? 'Modifica risorsa' : 'Nuova risorsa', form));
+}
+
+function formatAbility(value) {
+  if (value === null || value === undefined || value === '') return '-';
+  const score = Number(value);
+  if (Number.isNaN(score)) return '-';
+  const modifier = formatModifier(score);
+  return `${score} (${modifier})`;
+}
+
+function formatModifier(score) {
+  const mod = Math.floor((score - 10) / 2);
+  return mod >= 0 ? `+${mod}` : `${mod}`;
 }
