@@ -3,7 +3,7 @@ import { getState, updateCache } from '../../app/state.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 import { calcTotalWeight } from '../../lib/calc.js';
 import { formatWeight } from '../../lib/format.js';
-import { buildDrawerLayout, buildInput, buildTextarea, createToast, openDrawer, closeDrawer, buildSelect } from '../../ui/components.js';
+import { buildDrawerLayout, buildInput, buildTextarea, createToast, openDrawer, closeDrawer, buildSelect, openConfirmModal } from '../../ui/components.js';
 
 const categories = [
   { value: '', label: 'Tutte' },
@@ -82,7 +82,8 @@ export async function renderInventory(container) {
       .forEach((btn) => btn.addEventListener('click', async () => {
         const item = items.find((entry) => entry.id === btn.dataset.delete);
         if (!item) return;
-        if (!confirm('Eliminare oggetto?')) return;
+        const shouldDelete = await openConfirmModal({ message: 'Eliminare oggetto?' });
+        if (!shouldDelete) return;
         try {
           await deleteItem(item.id);
           createToast('Oggetto eliminato');
@@ -100,7 +101,10 @@ export async function renderInventory(container) {
           return;
         }
         const shouldDelete = item.qty === 1;
-        if (shouldDelete && !confirm('Consumare e rimuovere l\'oggetto?')) return;
+        if (shouldDelete) {
+          const confirmUse = await openConfirmModal({ message: 'Consumare e rimuovere l\'oggetto?' });
+          if (!confirmUse) return;
+        }
         try {
           if (shouldDelete) {
             await deleteItem(item.id);
