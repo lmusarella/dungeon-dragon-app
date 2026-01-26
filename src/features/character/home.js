@@ -218,11 +218,40 @@ export async function renderHome(container) {
       if (!activeCharacter || !canEditCharacter) return;
       const skill = event.target.dataset.skillToggle;
       const currentSkills = activeCharacter.data?.skills || {};
+      const currentMastery = activeCharacter.data?.skill_mastery || {};
       await saveCharacterData(activeCharacter, {
         ...activeCharacter.data,
         skills: {
           ...currentSkills,
           [skill]: event.target.checked
+        },
+        skill_mastery: event.target.checked
+          ? currentMastery
+          : {
+            ...currentMastery,
+            [skill]: false
+          }
+      }, null, container);
+    }));
+
+  container.querySelectorAll('[data-skill-mastery]')
+    .forEach((checkbox) => checkbox.addEventListener('change', async (event) => {
+      if (!activeCharacter || !canEditCharacter) return;
+      const skill = event.target.dataset.skillMastery;
+      const masteryEnabled = event.target.checked;
+      const currentSkills = activeCharacter.data?.skills || {};
+      const currentMastery = activeCharacter.data?.skill_mastery || {};
+      await saveCharacterData(activeCharacter, {
+        ...activeCharacter.data,
+        skills: masteryEnabled
+          ? {
+            ...currentSkills,
+            [skill]: true
+          }
+          : currentSkills,
+        skill_mastery: {
+          ...currentMastery,
+          [skill]: masteryEnabled
         }
       }, null, container);
     }));
@@ -286,6 +315,7 @@ function openCharacterDrawer(user, onSave, character = null) {
   if (!user) return;
   const characterData = character?.data || {};
   const hp = characterData.hp || {};
+  const hitDice = characterData.hit_dice || {};
   const abilities = characterData.abilities || {};
   const form = document.createElement('form');
   form.className = 'drawer-form';
@@ -295,6 +325,9 @@ function openCharacterDrawer(user, onSave, character = null) {
   form.appendChild(buildInput({ label: 'Iniziativa', name: 'initiative', type: 'number', value: characterData.initiative ?? '' }));
   form.appendChild(buildInput({ label: 'HP attuali', name: 'hp_current', type: 'number', value: hp.current ?? '' }));
   form.appendChild(buildInput({ label: 'HP massimi', name: 'hp_max', type: 'number', value: hp.max ?? '' }));
+  form.appendChild(buildInput({ label: 'Dado vita (es. d8)', name: 'hit_dice_die', value: hitDice.die ?? '' }));
+  form.appendChild(buildInput({ label: 'Dadi vita totali', name: 'hit_dice_max', type: 'number', value: hitDice.max ?? '' }));
+  form.appendChild(buildInput({ label: 'Dadi vita usati', name: 'hit_dice_used', type: 'number', value: hitDice.used ?? '' }));
   form.appendChild(buildInput({ label: 'Classe Armatura', name: 'ac', type: 'number', value: characterData.ac ?? '' }));
   form.appendChild(buildInput({ label: 'Velocità', name: 'speed', type: 'number', value: characterData.speed ?? '' }));
   form.appendChild(buildInput({ label: 'Forza', name: 'ability_str', type: 'number', value: abilities.str ?? '' }));
@@ -324,6 +357,11 @@ function openCharacterDrawer(user, onSave, character = null) {
       hp: {
         current: toNumberOrNull(formData.get('hp_current')),
         max: toNumberOrNull(formData.get('hp_max'))
+      },
+      hit_dice: {
+        die: formData.get('hit_dice_die')?.trim() || null,
+        max: toNumberOrNull(formData.get('hit_dice_max')),
+        used: toNumberOrNull(formData.get('hit_dice_used'))
       },
       ac: toNumberOrNull(formData.get('ac')),
       speed: toNumberOrNull(formData.get('speed')),
@@ -374,10 +412,12 @@ function openCharacterDrawer(user, onSave, character = null) {
 function buildCharacterSummary(character, canEditCharacter) {
   const data = character.data || {};
   const hp = data.hp || {};
+  const hitDice = data.hit_dice || {};
   const abilities = data.abilities || {};
   const proficiencyBonus = normalizeNumber(data.proficiency_bonus);
   const initiativeBonus = data.initiative ?? getAbilityModifier(abilities.dex);
   const skillStates = data.skills || {};
+  const skillMasteryStates = data.skill_mastery || {};
   const savingStates = data.saving_throws || {};
   const abilityCards = [
     { label: 'Forza', value: abilities.str },
@@ -421,6 +461,28 @@ function buildCharacterSummary(character, canEditCharacter) {
         <button class="ghost-button" data-hp-action="heal" ${canEditCharacter ? '' : 'disabled'}>Cura</button>
         <button class="ghost-button" data-hp-action="damage" ${canEditCharacter ? '' : 'disabled'}>Danno</button>
       </div>
+      <div class="detail-section">
+        <h4>Dadi vita</h4>
+        <div class="detail-grid">
+          <div class="detail-card">
+            <span>${hitDice.die ?? 'Dado'}</span>
+            <strong>${formatHitDice(hitDice)}</strong>
+          </div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h4>Bonus competenza</h4>
+        <div class="detail-grid">
+          <div class="detail-card">
+            <span>Valore base</span>
+            <strong>${formatSigned(proficiencyBonus)}</strong>
+          </div>
+          <div class="detail-card">
+            <span>Maestria</span>
+            <strong>${proficiencyBonus !== null ? formatSigned(proficiencyBonus * 2) : '-'}</strong>
+          </div>
+        </div>
+      </div>
       <div>
         <h4>Statistiche</h4>
         <div class="stat-grid">
@@ -437,13 +499,20 @@ function buildCharacterSummary(character, canEditCharacter) {
         <div class="detail-grid">
           ${skillList.map((skill) => {
     const proficient = Boolean(skillStates[skill.key]);
-    const total = calculateSkillModifier(abilities[skill.ability], proficiencyBonus, proficient);
+    const mastery = Boolean(skillMasteryStates[skill.key]);
+    const total = calculateSkillModifier(abilities[skill.ability], proficiencyBonus, proficient ? (mastery ? 2 : 1) : 0);
     return `
             <div class="detail-card">
-              <label>
-                <input type="checkbox" data-skill-toggle="${skill.key}" ${proficient ? 'checked' : ''} ${canEditCharacter ? '' : 'disabled'} />
-                <span>${skill.label}</span>
-              </label>
+              <div class="toggle-stack">
+                <label>
+                  <input type="checkbox" data-skill-toggle="${skill.key}" ${proficient ? 'checked' : ''} ${canEditCharacter ? '' : 'disabled'} />
+                  <span>${skill.label}</span>
+                </label>
+                <label class="toggle-secondary">
+                  <input type="checkbox" data-skill-mastery="${skill.key}" ${mastery ? 'checked' : ''} ${canEditCharacter && proficient ? '' : 'disabled'} />
+                  <span>Maestria</span>
+                </label>
+              </div>
               <span class="muted">${abilityShortLabel[skill.ability]}</span>
               <strong>${formatSigned(total)}</strong>
             </div>
@@ -456,7 +525,7 @@ function buildCharacterSummary(character, canEditCharacter) {
         <div class="detail-grid">
           ${savingThrowList.map((save) => {
     const proficient = Boolean(savingStates[save.key]);
-    const total = calculateSkillModifier(abilities[save.key], proficiencyBonus, proficient);
+    const total = calculateSkillModifier(abilities[save.key], proficiencyBonus, proficient ? 1 : 0);
     return `
             <div class="detail-card">
               <label>
@@ -617,10 +686,12 @@ function getAbilityModifier(value) {
   return Math.floor((score - 10) / 2);
 }
 
-function calculateSkillModifier(score, proficiencyBonus, proficient) {
+function calculateSkillModifier(score, proficiencyBonus, proficiencyMultiplier) {
   const base = getAbilityModifier(score);
   if (base === null) return null;
-  const bonus = proficient && proficiencyBonus !== null ? proficiencyBonus : 0;
+  const bonus = proficiencyMultiplier > 0 && proficiencyBonus !== null
+    ? proficiencyBonus * proficiencyMultiplier
+    : 0;
   return base + bonus;
 }
 
@@ -640,4 +711,13 @@ function formatAbility(value) {
 function formatModifier(score) {
   const mod = getAbilityModifier(score);
   return formatSigned(mod);
+}
+
+function formatHitDice(hitDice) {
+  if (!hitDice) return '-';
+  const used = hitDice.used ?? '-';
+  const max = hitDice.max ?? '-';
+  const die = hitDice.die ? ` ${hitDice.die}` : '';
+  if (used === '-' && max === '-' && !die) return '-';
+  return `${used} / ${max}${die}`;
 }
