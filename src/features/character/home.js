@@ -13,6 +13,7 @@ import {
   buildDrawerLayout,
   buildInput,
   buildSelect,
+  buildTextarea,
   closeDrawer,
   createToast,
   openConfirmModal,
@@ -57,30 +58,40 @@ export async function renderHome(container) {
   }
 
   container.innerHTML = `
-    <section class="card">
-      <header class="card-header">
-        <h2>Personaggio</h2>
-        <div class="actions">
-          ${characters.length > 1 ? '<select data-character-select></select>' : ''}
-          ${activeCharacter && canEditCharacter ? '<button data-edit-character>Modifica</button>' : ''}
-        </div>
-      </header>
-      ${activeCharacter ? buildCharacterSummary(activeCharacter, canEditCharacter) : buildEmptyState(canCreateCharacter, offline)}
-    </section>
-    <section class="card">
-      <h3>Risorse</h3>
-      ${activeCharacter
+    <div class="home-layout">
+      <section class="card home-card">
+        <header class="card-header">
+          <div>
+            <p class="eyebrow">Scheda</p>
+            <h2>Personaggio</h2>
+          </div>
+          <div class="actions">
+            ${characters.length > 1 ? '<select data-character-select></select>' : ''}
+            ${activeCharacter && canEditCharacter ? '<button data-edit-character>Modifica</button>' : ''}
+          </div>
+        </header>
+        ${activeCharacter ? buildCharacterSummary(activeCharacter, canEditCharacter) : buildEmptyState(canCreateCharacter, offline)}
+      </section>
+      <section class="card home-card">
+        <header class="card-header">
+          <div>
+            <p class="eyebrow">Focus</p>
+            <h3>Risorse e abilità</h3>
+          </div>
+          ${activeCharacter && canManageResources ? '<button class="primary" data-add-resource>Nuova risorsa</button>' : ''}
+        </header>
+        ${activeCharacter
     ? (resources.length ? buildResourceList(resources, canManageResources) : '<p>Nessuna risorsa.</p>')
     : '<p>Nessun personaggio selezionato.</p>'}
-      ${activeCharacter && !canManageResources ? '<p class="muted">Connettiti per aggiungere nuove risorse.</p>' : ''}
-      ${activeCharacter ? `
-        <div class="button-row">
-          ${canManageResources ? '<button class="primary" data-add-resource>Nuova risorsa</button>' : ''}
-          <button class="primary" data-rest="short_rest">Riposo breve</button>
-          <button class="primary" data-rest="long_rest">Riposo lungo</button>
-        </div>
-      ` : ''}
-    </section>
+        ${activeCharacter && !canManageResources ? '<p class="muted">Connettiti per aggiungere nuove risorse.</p>' : ''}
+        ${activeCharacter ? `
+          <div class="button-row">
+            <button class="ghost-button" data-rest="short_rest">Riposo breve</button>
+            <button class="ghost-button" data-rest="long_rest">Riposo lungo</button>
+          </div>
+        ` : ''}
+      </section>
+    </div>
   `;
 
   const select = container.querySelector('[data-character-select]');
@@ -321,6 +332,18 @@ function openCharacterDrawer(user, onSave, character = null) {
   form.className = 'drawer-form';
   form.appendChild(buildInput({ label: 'Nome', name: 'name', placeholder: 'Es. Aria', value: character?.name ?? '' }));
   form.appendChild(buildInput({ label: 'Sistema', name: 'system', placeholder: 'Es. D&D 5e', value: character?.system ?? '' }));
+  form.appendChild(buildInput({
+    label: 'Foto (URL)',
+    name: 'avatar_url',
+    placeholder: 'https://.../ritratto.png',
+    value: characterData.avatar_url ?? ''
+  }));
+  form.appendChild(buildTextarea({
+    label: 'Descrizione',
+    name: 'description',
+    placeholder: 'Aspetto, tratti distintivi, background...',
+    value: characterData.description ?? ''
+  }));
   form.appendChild(buildInput({ label: 'Bonus competenza', name: 'proficiency_bonus', type: 'number', value: characterData.proficiency_bonus ?? '' }));
   form.appendChild(buildInput({ label: 'Iniziativa', name: 'initiative', type: 'number', value: characterData.initiative ?? '' }));
   form.appendChild(buildInput({ label: 'HP attuali', name: 'hp_current', type: 'number', value: hp.current ?? '' }));
@@ -354,6 +377,8 @@ function openCharacterDrawer(user, onSave, character = null) {
     const toNumberOrNull = (value) => (value === '' ? null : Number(value));
     const nextData = {
       ...characterData,
+      avatar_url: formData.get('avatar_url')?.trim() || null,
+      description: formData.get('description')?.trim() || null,
       hp: {
         current: toNumberOrNull(formData.get('hp_current')),
         max: toNumberOrNull(formData.get('hp_max'))
@@ -419,6 +444,7 @@ function buildCharacterSummary(character, canEditCharacter) {
   const skillStates = data.skills || {};
   const skillMasteryStates = data.skill_mastery || {};
   const savingStates = data.saving_throws || {};
+  const passivePerception = calculatePassivePerception(abilities, proficiencyBonus, skillStates, skillMasteryStates);
   const abilityCards = [
     { label: 'Forza', value: abilities.str },
     { label: 'Destrezza', value: abilities.dex },
@@ -429,9 +455,12 @@ function buildCharacterSummary(character, canEditCharacter) {
   ];
   return `
     <div class="character-summary">
-      <div>
-        <h3>${character.name}</h3>
-        <p class="muted">${character.system ?? 'Sistema'} </p>
+      <div class="character-hero">
+        ${data.avatar_url ? `<img class="character-avatar" src="${data.avatar_url}" alt="Ritratto di ${character.name}" />` : ''}
+        <div>
+          <h3>${character.name}</h3>
+          <p class="muted">${character.system ?? 'Sistema'} </p>
+        </div>
       </div>
       <div class="stat-grid">
         <div class="stat-card">
@@ -453,6 +482,16 @@ function buildCharacterSummary(character, canEditCharacter) {
         <div class="stat-card">
           <span>Iniziativa</span>
           <strong>${formatSigned(normalizeNumber(initiativeBonus))}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Percezione passiva</span>
+          <strong>${passivePerception ?? '-'}</strong>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h4>Descrizione</h4>
+        <div class="detail-card detail-card--text">
+          <p>${data.description ? data.description : 'Aggiungi una descrizione del personaggio.'}</p>
         </div>
       </div>
       <div class="hp-shortcuts">
@@ -547,9 +586,12 @@ function buildResourceList(resources, canManageResources) {
     <ul class="resource-list">
       ${resources.map((res) => `
         <li>
-          <div>
-            <strong>${res.name}</strong>
-            <p class="muted">${res.reset_on}</p>
+          <div class="resource-info">
+            ${res.image_url ? `<img class="resource-avatar" src="${res.image_url}" alt="Foto di ${res.name}" />` : ''}
+            <div>
+              <strong>${res.name}</strong>
+              <p class="muted">${res.reset_on}</p>
+            </div>
           </div>
           <div class="actions">
             <span>${res.used}/${res.max_uses}</span>
@@ -579,6 +621,12 @@ function openResourceDrawer(character, onSave, resource = null) {
   const form = document.createElement('form');
   form.className = 'drawer-form';
   form.appendChild(buildInput({ label: 'Nome risorsa', name: 'name', placeholder: 'Es. Ispirazione', value: resource?.name ?? '' }));
+  form.appendChild(buildInput({
+    label: 'Foto (URL)',
+    name: 'image_url',
+    placeholder: 'https://.../risorsa.png',
+    value: resource?.image_url ?? ''
+  }));
   form.appendChild(buildInput({ label: 'Utilizzi massimi', name: 'max_uses', type: 'number', value: resource?.max_uses ?? 1 }));
   form.appendChild(buildInput({ label: 'Utilizzi già spesi', name: 'used', type: 'number', value: resource?.used ?? 0 }));
 
@@ -612,6 +660,7 @@ function openResourceDrawer(character, onSave, resource = null) {
       user_id: character.user_id,
       character_id: character.id,
       name,
+      image_url: formData.get('image_url')?.trim() || null,
       max_uses: Number(formData.get('max_uses')) || 0,
       used: Number(formData.get('used')) || 0,
       reset_on: formData.get('reset_on')
@@ -693,6 +742,14 @@ function calculateSkillModifier(score, proficiencyBonus, proficiencyMultiplier) 
     ? proficiencyBonus * proficiencyMultiplier
     : 0;
   return base + bonus;
+}
+
+function calculatePassivePerception(abilities, proficiencyBonus, skillStates, skillMasteryStates) {
+  const hasProficiency = Boolean(skillStates.perception);
+  const mastery = Boolean(skillMasteryStates.perception);
+  const total = calculateSkillModifier(abilities.wis, proficiencyBonus, hasProficiency ? (mastery ? 2 : 1) : 0);
+  if (total === null) return null;
+  return 10 + total;
 }
 
 function formatSigned(value) {

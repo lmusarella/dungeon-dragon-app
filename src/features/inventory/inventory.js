@@ -160,14 +160,17 @@ function buildItemList(items) {
     <ul class="inventory-list">
       ${items.map((item) => `
         <li>
-          <div>
-            <strong>${item.name}</strong>
+          <div class="item-info">
+            ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
+            <div>
+              <strong>${item.name}</strong>
             <p class="muted">
               ${item.category || 'misc'} · ${item.qty}x · ${item.weight ?? 0} lb
             </p>
             <div class="tag-row">
               ${item.equipped_state && item.equipped_state !== 'none' ? `<span class="chip">${item.equipped_state}</span>` : ''}
               ${item.attunement_active ? '<span class="chip">attuned</span>' : ''}
+            </div>
             </div>
           </div>
           <div class="actions">
@@ -185,6 +188,12 @@ function openItemDrawer(character, item, items, onSave) {
   const form = document.createElement('form');
   form.className = 'drawer-form';
   form.appendChild(buildInput({ label: 'Nome', name: 'name', value: item?.name ?? '' }));
+  form.appendChild(buildInput({
+    label: 'Foto (URL)',
+    name: 'image_url',
+    placeholder: 'https://.../oggetto.png',
+    value: item?.image_url ?? ''
+  }));
   form.appendChild(buildInput({ label: 'Quantità', name: 'qty', type: 'number', value: item?.qty ?? 1 }));
   form.appendChild(buildInput({ label: 'Peso', name: 'weight', type: 'number', value: item?.weight ?? 0 }));
   form.appendChild(buildInput({ label: 'Valore (cp)', name: 'value_cp', type: 'number', value: item?.value_cp ?? 0 }));
@@ -239,6 +248,7 @@ function openItemDrawer(character, item, items, onSave) {
       user_id: character.user_id,
       character_id: character.id,
       name: formData.get('name'),
+      image_url: formData.get('image_url')?.trim() || null,
       qty: Number(formData.get('qty')),
       weight: Number(formData.get('weight')),
       value_cp: Number(formData.get('value_cp')),

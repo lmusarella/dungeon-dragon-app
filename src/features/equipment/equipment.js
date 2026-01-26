@@ -86,9 +86,12 @@ function buildEquipmentSection(state, items) {
       <ul class="inventory-list">
         ${sectionItems.map((item) => `
           <li>
-            <div>
-              <strong>${item.name}</strong>
-              <p class="muted">${item.category || 'misc'}</p>
+            <div class="item-info">
+              ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
+              <div>
+                <strong>${item.name}</strong>
+                <p class="muted">${item.category || 'misc'}</p>
+              </div>
             </div>
             <div class="actions">
               <button data-toggle="${item.id}" data-state="none">Rimuovi</button>
