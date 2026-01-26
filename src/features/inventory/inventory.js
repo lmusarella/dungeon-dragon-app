@@ -1,9 +1,17 @@
 import { fetchItems, createItem, updateItem, deleteItem } from './inventoryApi.js';
 import { getState, updateCache } from '../../app/state.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
-import { calcTotalWeight } from '../../lib/calc.js';
+import { applyMoneyDelta, calcTotalWeight } from '../../lib/calc.js';
 import { formatWeight } from '../../lib/format.js';
 import { buildDrawerLayout, buildInput, buildTextarea, createToast, openDrawer, closeDrawer, buildSelect, openConfirmModal } from '../../ui/components.js';
+import { fetchWallet, upsertWallet, createTransaction } from '../wallet/walletApi.js';
+import { renderWalletSummary } from '../wallet/wallet.js';
+
+const equipmentStates = [
+  { value: 'equipped', label: 'Equipaggiato' },
+  { value: 'worn', label: 'Indossato' },
+  { value: 'held', label: 'Impugnato' }
+];
 
 const categories = [
   { value: '', label: 'Tutte' },
@@ -23,6 +31,7 @@ export async function renderInventory(container) {
   }
 
   let items = state.cache.items;
+  let wallet = state.cache.wallet;
   if (!state.offline) {
     try {
       items = await fetchItems(activeCharacter.id);
@@ -31,9 +40,20 @@ export async function renderInventory(container) {
     } catch (error) {
       createToast('Errore caricamento inventario', 'error');
     }
+    try {
+      wallet = await fetchWallet(activeCharacter.id);
+      updateCache('wallet', wallet);
+      if (wallet) await cacheSnapshot({ wallet });
+    } catch (error) {
+      createToast('Errore caricamento wallet', 'error');
+    }
   }
 
   const totalWeight = calcTotalWeight(items);
+  const weightUnit = getWeightUnit(activeCharacter);
+  const weightStep = weightUnit === 'kg' ? '0.1' : '1';
+  const equippedItems = items.filter((item) => item.equipped_state && item.equipped_state !== 'none');
+  const attunedCount = items.filter((item) => item.attunement_active).length;
 
   container.innerHTML = `
     <section class="card">
@@ -47,9 +67,66 @@ export async function renderInventory(container) {
       </div>
       <div class="carry-widget">
         <span>Carico totale</span>
-        <strong>${formatWeight(totalWeight, getWeightUnit(activeCharacter))}</strong>
+        <strong>${formatWeight(totalWeight, weightUnit)}</strong>
       </div>
       <div data-inventory-list></div>
+    </section>
+    <section class="card compact-card">
+      <div class="compact-grid">
+        <div class="compact-panel">
+          <header class="compact-header">
+            <h3>Equip rapido</h3>
+            <span class="pill">Attunement: ${attunedCount}</span>
+          </header>
+          <div data-equipment-list>
+            ${buildEquipmentCompact(equippedItems)}
+          </div>
+        </div>
+        <div class="compact-panel">
+          <header class="compact-header">
+            <h3>Azioni denaro</h3>
+          </header>
+          ${renderWalletSummary(wallet)}
+          <div class="compact-action-grid">
+            <form class="compact-form" data-money-form="pay">
+              <h4>Paga</h4>
+              ${moneyFields()}
+              <button class="primary" type="submit">Paga</button>
+            </form>
+            <form class="compact-form" data-money-form="receive">
+              <h4>Ricevi</h4>
+              ${moneyFields()}
+              <button class="primary" type="submit">Ricevi</button>
+            </form>
+          </div>
+        </div>
+        <div class="compact-panel">
+          <header class="compact-header">
+            <h3>Loot rapido</h3>
+          </header>
+          <form class="compact-form" data-loot-form>
+            <div class="compact-field-grid">
+              <label class="field">
+                <span>Nome</span>
+                <input name="name" required />
+              </label>
+              <label class="field">
+                <span>Quantità</span>
+                <input name="qty" type="number" value="1" />
+              </label>
+              <label class="field">
+                <span>Peso</span>
+                <input name="weight" type="number" value="0" min="0" step="${weightStep}" />
+              </label>
+              <label class="field">
+                <span>Valore (cp)</span>
+                <input name="value_cp" type="number" value="0" />
+              </label>
+            </div>
+            <button class="primary" type="submit">Aggiungi</button>
+          </form>
+        </div>
+      </div>
     </section>
   `;
 
@@ -92,7 +169,7 @@ export async function renderInventory(container) {
           createToast('Errore eliminazione', 'error');
         }
       }));
-    listEl.querySelectorAll('[data-use]')
+  listEl.querySelectorAll('[data-use]')
       .forEach((btn) => btn.addEventListener('click', async () => {
         const item = items.find((entry) => entry.id === btn.dataset.use);
         if (!item) return;
@@ -100,19 +177,10 @@ export async function renderInventory(container) {
           createToast('Quantità esaurita', 'error');
           return;
         }
-        const shouldDelete = item.qty === 1;
-        if (shouldDelete) {
-          const confirmUse = await openConfirmModal({ message: 'Consumare e rimuovere l\'oggetto?' });
-          if (!confirmUse) return;
-        }
         try {
-          if (shouldDelete) {
-            await deleteItem(item.id);
-            createToast('Consumabile usato');
-          } else {
-            await updateItem(item.id, { qty: item.qty - 1 });
-            createToast('Consumabile usato');
-          }
+          const nextQty = Math.max(item.qty - 1, 0);
+          await updateItem(item.id, { qty: nextQty });
+          createToast('Consumabile usato');
           renderInventory(container);
         } catch (error) {
           createToast('Errore utilizzo consumabile', 'error');
@@ -123,6 +191,103 @@ export async function renderInventory(container) {
   renderList();
   searchInput.addEventListener('input', renderList);
   categorySelect.addEventListener('change', renderList);
+
+  container.querySelectorAll('[data-toggle]')
+    .forEach((btn) => btn.addEventListener('click', async () => {
+      const item = items.find((entry) => entry.id === btn.dataset.toggle);
+      if (!item) return;
+      const nextState = btn.dataset.state;
+      try {
+        await updateItem(item.id, { equipped_state: nextState });
+        createToast('Aggiornato');
+        renderInventory(container);
+      } catch (error) {
+        createToast('Errore aggiornamento', 'error');
+      }
+    }));
+
+  container.querySelectorAll('[data-attune]')
+    .forEach((btn) => btn.addEventListener('click', async () => {
+      const item = items.find((entry) => entry.id === btn.dataset.attune);
+      if (!item) return;
+      try {
+        await updateItem(item.id, { attunement_active: !item.attunement_active });
+        createToast('Attunement aggiornato');
+        renderInventory(container);
+      } catch (error) {
+        createToast('Errore attunement', 'error');
+      }
+    }));
+
+  container.querySelectorAll('[data-money-form]')
+    .forEach((form) => form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!wallet) {
+        wallet = {
+          user_id: activeCharacter.user_id,
+          character_id: activeCharacter.id,
+          cp: 0,
+          sp: 0,
+          ep: 0,
+          gp: 0,
+          pp: 0
+        };
+      }
+      const direction = form.dataset.moneyForm;
+      const formData = new FormData(form);
+      const delta = {
+        cp: Number(formData.get('cp') || 0),
+        sp: Number(formData.get('sp') || 0),
+        ep: Number(formData.get('ep') || 0),
+        gp: Number(formData.get('gp') || 0),
+        pp: Number(formData.get('pp') || 0)
+      };
+      const sign = direction === 'pay' ? -1 : 1;
+      const signedDelta = Object.fromEntries(
+        Object.entries(delta).map(([key, value]) => [key, value * sign])
+      );
+      const nextWallet = applyMoneyDelta(wallet, signedDelta);
+
+      try {
+        const saved = await upsertWallet({ ...nextWallet, user_id: wallet.user_id, character_id: wallet.character_id });
+        await createTransaction({
+          user_id: wallet.user_id,
+          character_id: wallet.character_id,
+          direction,
+          amount: signedDelta,
+          reason: formData.get('reason'),
+          occurred_on: formData.get('occurred_on')
+        });
+        updateCache('wallet', saved);
+        await cacheSnapshot({ wallet: saved });
+        createToast('Wallet aggiornato');
+        renderInventory(container);
+      } catch (error) {
+        createToast('Errore aggiornamento denaro', 'error');
+      }
+    }));
+
+  const lootForm = container.querySelector('[data-loot-form]');
+  lootForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const formData = new FormData(lootForm);
+    try {
+      await createItem({
+        user_id: activeCharacter.user_id,
+        character_id: activeCharacter.id,
+        name: formData.get('name'),
+        qty: Number(formData.get('qty')),
+        weight: Number(formData.get('weight')),
+        value_cp: Number(formData.get('value_cp')),
+        category: 'loot',
+        equipped_state: 'none'
+      });
+      createToast('Loot aggiunto');
+      lootForm.reset();
+    } catch (error) {
+      createToast('Errore loot', 'error');
+    }
+  });
 
   container.querySelector('[data-add-item]').addEventListener('click', () => {
     openItemDrawer(activeCharacter, null, items, renderInventory.bind(null, container));
@@ -184,6 +349,61 @@ function buildItemList(items) {
   `;
 }
 
+function buildEquipmentCompact(items) {
+  if (!items.length) {
+    return '<p class="muted">Nessun oggetto equipaggiato.</p>';
+  }
+  return `
+    ${equipmentStates.map((state) => {
+      const sectionItems = items.filter((item) => item.equipped_state === state.value);
+      return `
+        <div class="compact-section">
+          <h4>${state.label}</h4>
+          ${sectionItems.length ? `
+            <ul class="compact-list">
+              ${sectionItems.map((item) => `
+                <li>
+                  <div class="compact-info">
+                    <span>${item.name}</span>
+                    <span class="muted">${item.category || 'misc'}</span>
+                  </div>
+                  <div class="compact-actions">
+                    <button data-toggle="${item.id}" data-state="none">Rimuovi</button>
+                    <button data-attune="${item.id}">
+                      ${item.attunement_active ? 'Disattiva attune' : 'Attiva attune'}
+                    </button>
+                  </div>
+                </li>
+              `).join('')}
+            </ul>
+          ` : '<p class="muted">Nessun oggetto.</p>'}
+        </div>
+      `;
+    }).join('')}
+  `;
+}
+
+function moneyFields() {
+  return `
+    <div class="money-grid compact-grid-fields">
+      ${['cp', 'sp', 'ep', 'gp', 'pp'].map((coin) => `
+        <label class="field">
+          <span>${coin.toUpperCase()}</span>
+          <input name="${coin}" type="number" value="0" />
+        </label>
+      `).join('')}
+    </div>
+    <label class="field">
+      <span>Motivo</span>
+      <input name="reason" placeholder="Motivo" />
+    </label>
+    <label class="field">
+      <span>Data</span>
+      <input name="occurred_on" type="date" value="${new Date().toISOString().split('T')[0]}" />
+    </label>
+  `;
+}
+
 function openItemDrawer(character, item, items, onSave) {
   const form = document.createElement('form');
   form.className = 'drawer-form';
@@ -195,7 +415,14 @@ function openItemDrawer(character, item, items, onSave) {
     value: item?.image_url ?? ''
   }));
   form.appendChild(buildInput({ label: 'Quantità', name: 'qty', type: 'number', value: item?.qty ?? 1 }));
-  form.appendChild(buildInput({ label: 'Peso', name: 'weight', type: 'number', value: item?.weight ?? 0 }));
+  const weightField = buildInput({ label: 'Peso', name: 'weight', type: 'number', value: item?.weight ?? 0 });
+  const weightInput = weightField.querySelector('input');
+  if (weightInput) {
+    const unit = getWeightUnit(character);
+    weightInput.min = '0';
+    weightInput.step = unit === 'kg' ? '0.1' : '1';
+  }
+  form.appendChild(weightField);
   form.appendChild(buildInput({ label: 'Valore (cp)', name: 'value_cp', type: 'number', value: item?.value_cp ?? 0 }));
   form.appendChild(buildInput({ label: 'Categoria', name: 'category', value: item?.category ?? '' }));
 
