@@ -68,10 +68,16 @@ button {
 .home-layout {
   display: grid;
   gap: 16px;
+  margin: 0 auto 16px;
+  padding: 0 16px;
+  max-width: 1200px;
 }
 
 .home-card {
   background: linear-gradient(180deg, #fffaf1 0%, #fdf7ea 100%);
+  margin: 0;
+  width: 100%;
+  max-width: none;
 }
 
 .eyebrow {
@@ -538,14 +544,10 @@ button {
 
 .hp-shortcuts {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
   margin-top: 12px;
-}
-
-.hp-shortcuts input {
-  width: 90px;
 }
 
 .detail-section {

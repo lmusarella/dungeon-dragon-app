@@ -17,7 +17,8 @@ import {
   closeDrawer,
   createToast,
   openConfirmModal,
-  openDrawer
+  openDrawer,
+  openFormModal
 } from '../../ui/components.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 
@@ -199,18 +200,26 @@ export async function renderHome(container) {
       }
     }));
 
-  const hpAmountInput = container.querySelector('[data-hp-amount]');
   container.querySelectorAll('[data-hp-action]')
     .forEach((button) => button.addEventListener('click', async () => {
       if (!activeCharacter || !canEditCharacter) return;
-      const amount = Number(hpAmountInput?.value);
+      const action = button.dataset.hpAction;
+      const title = action === 'heal' ? 'Cura PF' : 'Infliggi danno';
+      const submitLabel = action === 'heal' ? 'Cura' : 'Danno';
+      const formData = await openFormModal({
+        title,
+        submitLabel,
+        content: buildHpShortcutFields()
+      });
+      if (!formData) return;
+      const amount = Number(formData.get('amount'));
       if (!amount || amount <= 0) {
         createToast('Inserisci un valore valido', 'error');
         return;
       }
       const currentHp = Number(activeCharacter.data?.hp?.current) || 0;
       const maxHp = activeCharacter.data?.hp?.max;
-      const nextHp = button.dataset.hpAction === 'heal'
+      const nextHp = action === 'heal'
         ? currentHp + amount
         : Math.max(currentHp - amount, 0);
       const adjusted = maxHp !== null && maxHp !== undefined
@@ -222,7 +231,7 @@ export async function renderHome(container) {
           ...activeCharacter.data?.hp,
           current: adjusted
         }
-      }, button.dataset.hpAction === 'heal' ? 'PF curati' : 'Danno ricevuto', container);
+      }, action === 'heal' ? 'PF curati' : 'Danno ricevuto', container);
     }));
 
   container.querySelectorAll('[data-skill-toggle]')
@@ -497,9 +506,10 @@ function buildCharacterSummary(character, canEditCharacter) {
       </div>
       <div class="hp-shortcuts">
         <strong>PF rapidi</strong>
-        <input type="number" min="1" placeholder="Valore" data-hp-amount ${canEditCharacter ? '' : 'disabled'} />
-        <button class="ghost-button" data-hp-action="heal" ${canEditCharacter ? '' : 'disabled'}>Cura</button>
-        <button class="ghost-button" data-hp-action="damage" ${canEditCharacter ? '' : 'disabled'}>Danno</button>
+        <div class="button-row">
+          <button class="ghost-button" data-hp-action="heal" ${canEditCharacter ? '' : 'disabled'}>Cura</button>
+          <button class="ghost-button" data-hp-action="damage" ${canEditCharacter ? '' : 'disabled'}>Danno</button>
+        </div>
       </div>
       <div class="detail-section">
         <h4>Dadi vita</h4>
@@ -579,6 +589,15 @@ function buildCharacterSummary(character, canEditCharacter) {
         </div>
       </div>
     </div>
+  `;
+}
+
+function buildHpShortcutFields() {
+  return `
+    <label class="field">
+      <span>Valore</span>
+      <input name="amount" type="number" min="1" value="1" required />
+    </label>
   `;
 }
 
