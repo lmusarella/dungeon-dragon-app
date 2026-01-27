@@ -234,62 +234,6 @@ export async function renderHome(container) {
       }, action === 'heal' ? 'PF curati' : 'Danno ricevuto', container);
     }));
 
-  container.querySelectorAll('[data-skill-toggle]')
-    .forEach((checkbox) => checkbox.addEventListener('change', async (event) => {
-      if (!activeCharacter || !canEditCharacter) return;
-      const skill = event.target.dataset.skillToggle;
-      const currentSkills = activeCharacter.data?.skills || {};
-      const currentMastery = activeCharacter.data?.skill_mastery || {};
-      await saveCharacterData(activeCharacter, {
-        ...activeCharacter.data,
-        skills: {
-          ...currentSkills,
-          [skill]: event.target.checked
-        },
-        skill_mastery: event.target.checked
-          ? currentMastery
-          : {
-            ...currentMastery,
-            [skill]: false
-          }
-      }, null, container);
-    }));
-
-  container.querySelectorAll('[data-skill-mastery]')
-    .forEach((checkbox) => checkbox.addEventListener('change', async (event) => {
-      if (!activeCharacter || !canEditCharacter) return;
-      const skill = event.target.dataset.skillMastery;
-      const masteryEnabled = event.target.checked;
-      const currentSkills = activeCharacter.data?.skills || {};
-      const currentMastery = activeCharacter.data?.skill_mastery || {};
-      await saveCharacterData(activeCharacter, {
-        ...activeCharacter.data,
-        skills: masteryEnabled
-          ? {
-            ...currentSkills,
-            [skill]: true
-          }
-          : currentSkills,
-        skill_mastery: {
-          ...currentMastery,
-          [skill]: masteryEnabled
-        }
-      }, null, container);
-    }));
-
-  container.querySelectorAll('[data-saving-toggle]')
-    .forEach((checkbox) => checkbox.addEventListener('change', async (event) => {
-      if (!activeCharacter || !canEditCharacter) return;
-      const ability = event.target.dataset.savingToggle;
-      const currentSaving = activeCharacter.data?.saving_throws || {};
-      await saveCharacterData(activeCharacter, {
-        ...activeCharacter.data,
-        saving_throws: {
-          ...currentSaving,
-          [ability]: event.target.checked
-        }
-      }, null, container);
-    }));
 }
 
 async function saveCharacterData(character, data, message, container) {
@@ -332,116 +276,202 @@ function buildEmptyState(canCreateCharacter, offline) {
   `;
 }
 
-function openCharacterDrawer(user, onSave, character = null) {
+async function openCharacterDrawer(user, onSave, character = null) {
   if (!user) return;
   const characterData = character?.data || {};
   const hp = characterData.hp || {};
   const hitDice = characterData.hit_dice || {};
   const abilities = characterData.abilities || {};
-  const form = document.createElement('form');
-  form.className = 'drawer-form';
-  form.appendChild(buildInput({ label: 'Nome', name: 'name', placeholder: 'Es. Aria', value: character?.name ?? '' }));
-  form.appendChild(buildInput({ label: 'Sistema', name: 'system', placeholder: 'Es. D&D 5e', value: character?.system ?? '' }));
-  form.appendChild(buildInput({
+  const skillStates = characterData.skills || {};
+  const skillMasteryStates = characterData.skill_mastery || {};
+  const savingStates = characterData.saving_throws || {};
+  const form = document.createElement('div');
+  form.className = 'character-edit-form';
+
+  const mainSection = document.createElement('div');
+  mainSection.className = 'character-edit-section';
+  mainSection.innerHTML = '<h4>Dati principali</h4>';
+  const nameField = buildInput({ label: 'Nome', name: 'name', placeholder: 'Es. Aria', value: character?.name ?? '' });
+  nameField.querySelector('input').required = true;
+  mainSection.appendChild(nameField);
+  mainSection.appendChild(buildInput({ label: 'Sistema', name: 'system', placeholder: 'Es. D&D 5e', value: character?.system ?? '' }));
+  mainSection.appendChild(buildInput({
     label: 'Foto (URL)',
     name: 'avatar_url',
     placeholder: 'https://.../ritratto.png',
     value: characterData.avatar_url ?? ''
   }));
-  form.appendChild(buildTextarea({
+  mainSection.appendChild(buildTextarea({
     label: 'Descrizione',
     name: 'description',
     placeholder: 'Aspetto, tratti distintivi, background...',
     value: characterData.description ?? ''
   }));
-  form.appendChild(buildInput({ label: 'Bonus competenza', name: 'proficiency_bonus', type: 'number', value: characterData.proficiency_bonus ?? '' }));
-  form.appendChild(buildInput({ label: 'Iniziativa', name: 'initiative', type: 'number', value: characterData.initiative ?? '' }));
-  form.appendChild(buildInput({ label: 'HP attuali', name: 'hp_current', type: 'number', value: hp.current ?? '' }));
-  form.appendChild(buildInput({ label: 'HP massimi', name: 'hp_max', type: 'number', value: hp.max ?? '' }));
-  form.appendChild(buildInput({ label: 'Dado vita (es. d8)', name: 'hit_dice_die', value: hitDice.die ?? '' }));
-  form.appendChild(buildInput({ label: 'Dadi vita totali', name: 'hit_dice_max', type: 'number', value: hitDice.max ?? '' }));
-  form.appendChild(buildInput({ label: 'Dadi vita usati', name: 'hit_dice_used', type: 'number', value: hitDice.used ?? '' }));
-  form.appendChild(buildInput({ label: 'Classe Armatura', name: 'ac', type: 'number', value: characterData.ac ?? '' }));
-  form.appendChild(buildInput({ label: 'Velocità', name: 'speed', type: 'number', value: characterData.speed ?? '' }));
-  form.appendChild(buildInput({ label: 'Forza', name: 'ability_str', type: 'number', value: abilities.str ?? '' }));
-  form.appendChild(buildInput({ label: 'Destrezza', name: 'ability_dex', type: 'number', value: abilities.dex ?? '' }));
-  form.appendChild(buildInput({ label: 'Costituzione', name: 'ability_con', type: 'number', value: abilities.con ?? '' }));
-  form.appendChild(buildInput({ label: 'Intelligenza', name: 'ability_int', type: 'number', value: abilities.int ?? '' }));
-  form.appendChild(buildInput({ label: 'Saggezza', name: 'ability_wis', type: 'number', value: abilities.wis ?? '' }));
-  form.appendChild(buildInput({ label: 'Carisma', name: 'ability_cha', type: 'number', value: abilities.cha ?? '' }));
 
-  const submit = document.createElement('button');
-  submit.className = 'primary';
-  submit.type = 'submit';
-  submit.textContent = character ? 'Salva' : 'Crea';
-  form.appendChild(submit);
+  const statsSection = document.createElement('div');
+  statsSection.className = 'character-edit-section';
+  statsSection.innerHTML = '<h4>Statistiche base</h4>';
+  const statsGrid = document.createElement('div');
+  statsGrid.className = 'character-edit-grid';
+  statsGrid.appendChild(buildInput({ label: 'Bonus competenza', name: 'proficiency_bonus', type: 'number', value: characterData.proficiency_bonus ?? '' }));
+  statsGrid.appendChild(buildInput({ label: 'Iniziativa', name: 'initiative', type: 'number', value: characterData.initiative ?? '' }));
+  statsGrid.appendChild(buildInput({ label: 'Classe Armatura', name: 'ac', type: 'number', value: characterData.ac ?? '' }));
+  statsGrid.appendChild(buildInput({ label: 'Velocità', name: 'speed', type: 'number', value: characterData.speed ?? '' }));
+  statsGrid.appendChild(buildInput({ label: 'HP attuali', name: 'hp_current', type: 'number', value: hp.current ?? '' }));
+  statsGrid.appendChild(buildInput({ label: 'HP massimi', name: 'hp_max', type: 'number', value: hp.max ?? '' }));
+  statsGrid.appendChild(buildInput({ label: 'Dado vita (es. d8)', name: 'hit_dice_die', value: hitDice.die ?? '' }));
+  statsGrid.appendChild(buildInput({ label: 'Dadi vita totali', name: 'hit_dice_max', type: 'number', value: hitDice.max ?? '' }));
+  statsGrid.appendChild(buildInput({ label: 'Dadi vita usati', name: 'hit_dice_used', type: 'number', value: hitDice.used ?? '' }));
+  statsSection.appendChild(statsGrid);
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const formData = new FormData(form);
-    const name = formData.get('name')?.trim();
-    if (!name) {
-      createToast('Inserisci un nome per il personaggio', 'error');
-      return;
-    }
-    const toNumberOrNull = (value) => (value === '' ? null : Number(value));
-    const nextData = {
-      ...characterData,
-      avatar_url: formData.get('avatar_url')?.trim() || null,
-      description: formData.get('description')?.trim() || null,
-      hp: {
-        current: toNumberOrNull(formData.get('hp_current')),
-        max: toNumberOrNull(formData.get('hp_max'))
-      },
-      hit_dice: {
-        die: formData.get('hit_dice_die')?.trim() || null,
-        max: toNumberOrNull(formData.get('hit_dice_max')),
-        used: toNumberOrNull(formData.get('hit_dice_used'))
-      },
-      ac: toNumberOrNull(formData.get('ac')),
-      speed: toNumberOrNull(formData.get('speed')),
-      proficiency_bonus: toNumberOrNull(formData.get('proficiency_bonus')),
-      initiative: toNumberOrNull(formData.get('initiative')),
-      abilities: {
-        str: toNumberOrNull(formData.get('ability_str')),
-        dex: toNumberOrNull(formData.get('ability_dex')),
-        con: toNumberOrNull(formData.get('ability_con')),
-        int: toNumberOrNull(formData.get('ability_int')),
-        wis: toNumberOrNull(formData.get('ability_wis')),
-        cha: toNumberOrNull(formData.get('ability_cha'))
-      },
-      skills: characterData.skills || {},
-      saving_throws: characterData.saving_throws || {}
-    };
-    const payload = {
-      name,
-      system: formData.get('system')?.trim() || null,
-      data: nextData
-    };
+  const abilitySection = document.createElement('div');
+  abilitySection.className = 'character-edit-section';
+  abilitySection.innerHTML = '<h4>Caratteristiche</h4>';
+  const abilityGrid = document.createElement('div');
+  abilityGrid.className = 'character-edit-grid';
+  abilityGrid.appendChild(buildInput({ label: 'Forza', name: 'ability_str', type: 'number', value: abilities.str ?? '' }));
+  abilityGrid.appendChild(buildInput({ label: 'Destrezza', name: 'ability_dex', type: 'number', value: abilities.dex ?? '' }));
+  abilityGrid.appendChild(buildInput({ label: 'Costituzione', name: 'ability_con', type: 'number', value: abilities.con ?? '' }));
+  abilityGrid.appendChild(buildInput({ label: 'Intelligenza', name: 'ability_int', type: 'number', value: abilities.int ?? '' }));
+  abilityGrid.appendChild(buildInput({ label: 'Saggezza', name: 'ability_wis', type: 'number', value: abilities.wis ?? '' }));
+  abilityGrid.appendChild(buildInput({ label: 'Carisma', name: 'ability_cha', type: 'number', value: abilities.cha ?? '' }));
+  abilitySection.appendChild(abilityGrid);
 
-    try {
-      if (character) {
-        const updated = await updateCharacter(character.id, payload);
-        const nextCharacters = getState().characters.map((char) => (char.id === updated.id ? updated : char));
-        setState({ characters: nextCharacters });
-        await cacheSnapshot({ characters: nextCharacters });
-        createToast('Personaggio aggiornato');
-      } else {
-        const created = await createCharacter({ ...payload, user_id: user.id });
-        const nextCharacters = [...getState().characters, created];
-        setState({ characters: nextCharacters });
-        setActiveCharacter(created.id);
-        await cacheSnapshot({ characters: nextCharacters });
-        createToast('Personaggio creato');
-      }
-      closeDrawer();
-      onSave();
-    } catch (error) {
-      createToast(character ? 'Errore aggiornamento personaggio' : 'Errore creazione personaggio', 'error');
-    }
+  const skillSection = document.createElement('div');
+  skillSection.className = 'character-edit-section';
+  skillSection.innerHTML = `
+    <h4>Competenze e maestria</h4>
+    <div class="character-skill-grid">
+      ${skillList.map((skill) => {
+    const proficient = Boolean(skillStates[skill.key]);
+    const mastery = Boolean(skillMasteryStates[skill.key]);
+    return `
+        <div class="character-skill-row">
+          <div>
+            <strong>${skill.label}</strong>
+            <span class="muted">${abilityShortLabel[skill.ability]}</span>
+          </div>
+          <div class="character-toggle-group">
+            <label class="toggle-pill">
+              <input type="checkbox" name="skill_${skill.key}" ${proficient ? 'checked' : ''} />
+              <span>Competenza</span>
+            </label>
+            <label class="toggle-pill">
+              <input type="checkbox" name="mastery_${skill.key}" ${mastery ? 'checked' : ''} />
+              <span>Maestria</span>
+            </label>
+          </div>
+        </div>
+      `;
+  }).join('')}
+    </div>
+  `;
+
+  const savingSection = document.createElement('div');
+  savingSection.className = 'character-edit-section';
+  savingSection.innerHTML = `
+    <h4>Tiri salvezza</h4>
+    <div class="character-saving-grid">
+      ${savingThrowList.map((save) => {
+    const proficient = Boolean(savingStates[save.key]);
+    return `
+        <label class="toggle-pill">
+          <input type="checkbox" name="save_${save.key}" ${proficient ? 'checked' : ''} />
+          <span>${save.label}</span>
+        </label>
+      `;
+  }).join('')}
+    </div>
+  `;
+
+  form.appendChild(mainSection);
+  form.appendChild(statsSection);
+  form.appendChild(abilitySection);
+  form.appendChild(skillSection);
+  form.appendChild(savingSection);
+
+  const modal = document.querySelector('[data-form-modal]');
+  const modalCard = modal?.querySelector('.modal-card');
+  modalCard?.classList.add('modal-card--wide');
+  const formData = await openFormModal({
+    title: character ? 'Modifica personaggio' : 'Nuovo personaggio',
+    submitLabel: character ? 'Salva' : 'Crea',
+    content: form
   });
+  modalCard?.classList.remove('modal-card--wide');
+  if (!formData) return;
+  const name = formData.get('name')?.trim();
+  if (!name) {
+    createToast('Inserisci un nome per il personaggio', 'error');
+    return;
+  }
+  const toNumberOrNull = (value) => (value === '' ? null : Number(value));
+  const nextSkills = { ...characterData.skills };
+  const nextMastery = { ...characterData.skill_mastery };
+  skillList.forEach((skill) => {
+    const masteryChecked = formData.has(`mastery_${skill.key}`);
+    const proficiencyChecked = formData.has(`skill_${skill.key}`) || masteryChecked;
+    nextSkills[skill.key] = proficiencyChecked;
+    nextMastery[skill.key] = masteryChecked && proficiencyChecked;
+  });
+  const nextSaving = { ...characterData.saving_throws };
+  savingThrowList.forEach((save) => {
+    nextSaving[save.key] = formData.has(`save_${save.key}`);
+  });
+  const nextData = {
+    ...characterData,
+    avatar_url: formData.get('avatar_url')?.trim() || null,
+    description: formData.get('description')?.trim() || null,
+    hp: {
+      current: toNumberOrNull(formData.get('hp_current')),
+      max: toNumberOrNull(formData.get('hp_max'))
+    },
+    hit_dice: {
+      die: formData.get('hit_dice_die')?.trim() || null,
+      max: toNumberOrNull(formData.get('hit_dice_max')),
+      used: toNumberOrNull(formData.get('hit_dice_used'))
+    },
+    ac: toNumberOrNull(formData.get('ac')),
+    speed: toNumberOrNull(formData.get('speed')),
+    proficiency_bonus: toNumberOrNull(formData.get('proficiency_bonus')),
+    initiative: toNumberOrNull(formData.get('initiative')),
+    abilities: {
+      str: toNumberOrNull(formData.get('ability_str')),
+      dex: toNumberOrNull(formData.get('ability_dex')),
+      con: toNumberOrNull(formData.get('ability_con')),
+      int: toNumberOrNull(formData.get('ability_int')),
+      wis: toNumberOrNull(formData.get('ability_wis')),
+      cha: toNumberOrNull(formData.get('ability_cha'))
+    },
+    skills: nextSkills,
+    skill_mastery: nextMastery,
+    saving_throws: nextSaving
+  };
+  const payload = {
+    name,
+    system: formData.get('system')?.trim() || null,
+    data: nextData
+  };
 
-  openDrawer(buildDrawerLayout(character ? 'Modifica personaggio' : 'Nuovo personaggio', form));
+  try {
+    if (character) {
+      const updated = await updateCharacter(character.id, payload);
+      const nextCharacters = getState().characters.map((char) => (char.id === updated.id ? updated : char));
+      setState({ characters: nextCharacters });
+      await cacheSnapshot({ characters: nextCharacters });
+      createToast('Personaggio aggiornato');
+    } else {
+      const created = await createCharacter({ ...payload, user_id: user.id });
+      const nextCharacters = [...getState().characters, created];
+      setState({ characters: nextCharacters });
+      setActiveCharacter(created.id);
+      await cacheSnapshot({ characters: nextCharacters });
+      createToast('Personaggio creato');
+    }
+    onSave();
+  } catch (error) {
+    createToast(character ? 'Errore aggiornamento personaggio' : 'Errore creazione personaggio', 'error');
+  }
 }
 
 function buildCharacterSummary(character, canEditCharacter) {
@@ -546,25 +576,24 @@ function buildCharacterSummary(character, canEditCharacter) {
       </div>
       <div class="detail-section">
         <h4>Abilità</h4>
-        <div class="detail-grid">
+        <div class="detail-grid detail-grid--compact">
           ${skillList.map((skill) => {
     const proficient = Boolean(skillStates[skill.key]);
     const mastery = Boolean(skillMasteryStates[skill.key]);
     const total = calculateSkillModifier(abilities[skill.ability], proficiencyBonus, proficient ? (mastery ? 2 : 1) : 0);
     return `
-            <div class="detail-card">
-              <div class="toggle-stack">
-                <label>
-                  <input type="checkbox" data-skill-toggle="${skill.key}" ${proficient ? 'checked' : ''} ${canEditCharacter ? '' : 'disabled'} />
-                  <span>${skill.label}</span>
-                </label>
-                <label class="toggle-secondary">
-                  <input type="checkbox" data-skill-mastery="${skill.key}" ${mastery ? 'checked' : ''} ${canEditCharacter && proficient ? '' : 'disabled'} />
-                  <span>Maestria</span>
-                </label>
+            <div class="modifier-card">
+              <div>
+                <div class="modifier-title">
+                  <strong>${skill.label}</strong>
+                  <span class="modifier-ability">${abilityShortLabel[skill.ability]}</span>
+                </div>
+                <div class="modifier-tags">
+                  ${proficient ? '<span class="modifier-tag modifier-tag--pro">Competenza</span>' : '<span class="modifier-tag modifier-tag--muted">Base</span>'}
+                  ${mastery ? '<span class="modifier-tag modifier-tag--mastery">Maestria</span>' : ''}
+                </div>
               </div>
-              <span class="muted">${abilityShortLabel[skill.ability]}</span>
-              <strong>${formatSigned(total)}</strong>
+              <div class="modifier-value">${formatSigned(total)}</div>
             </div>
           `;
   }).join('')}
@@ -572,17 +601,21 @@ function buildCharacterSummary(character, canEditCharacter) {
       </div>
       <div class="detail-section">
         <h4>Tiri salvezza</h4>
-        <div class="detail-grid">
+        <div class="detail-grid detail-grid--compact">
           ${savingThrowList.map((save) => {
     const proficient = Boolean(savingStates[save.key]);
     const total = calculateSkillModifier(abilities[save.key], proficiencyBonus, proficient ? 1 : 0);
     return `
-            <div class="detail-card">
-              <label>
-                <input type="checkbox" data-saving-toggle="${save.key}" ${proficient ? 'checked' : ''} ${canEditCharacter ? '' : 'disabled'} />
-                <span>${save.label}</span>
-              </label>
-              <strong>${formatSigned(total)}</strong>
+            <div class="modifier-card">
+              <div>
+                <div class="modifier-title">
+                  <strong>${save.label}</strong>
+                </div>
+                <div class="modifier-tags">
+                  ${proficient ? '<span class="modifier-tag modifier-tag--pro">Competenza</span>' : '<span class="modifier-tag modifier-tag--muted">Base</span>'}
+                </div>
+              </div>
+              <div class="modifier-value">${formatSigned(total)}</div>
             </div>
           `;
   }).join('')}

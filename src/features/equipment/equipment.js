@@ -43,6 +43,11 @@ export async function renderEquipment(container) {
 
   const equippedItems = items.filter((item) => item.equip_slot || item.equipable);
   const attunedCount = items.filter((item) => item.attunement_active).length;
+  const slotSummary = bodyParts.map((part) => ({
+    ...part,
+    items: equippedItems.filter((item) => item.equip_slot === part.value)
+  }));
+  const occupiedSlots = slotSummary.filter((slot) => slot.items.length).length;
 
   container.innerHTML = `
     <section class="card">
@@ -50,7 +55,10 @@ export async function renderEquipment(container) {
         <h2>Equipaggiamento</h2>
         <span class="pill">Sintonie attive: ${attunedCount}</span>
       </header>
-      ${bodyParts.map((part) => buildEquipmentSection(part, equippedItems)).join('')}
+      <div class="equipment-layout">
+        ${buildEquipmentDoll(slotSummary, occupiedSlots)}
+        ${buildEquipmentSlotList(slotSummary)}
+      </div>
       ${buildUnassignedSection(equippedItems)}
       ${!equippedItems.length ? '<p class="muted">Nessun oggetto equipaggiato.</p>' : ''}
     </section>
@@ -83,38 +91,59 @@ export async function renderEquipment(container) {
     }));
 }
 
-function buildEquipmentSection(part, items) {
-  const sectionItems = items.filter((item) => item.equip_slot === part.value);
-  if (!sectionItems.length) {
-    return `
-      <div class="equipment-section">
-        <h3>${part.label}</h3>
-        <p class="muted">Nessun oggetto.</p>
-      </div>
-    `;
-  }
+function buildEquipmentDoll(slotSummary, occupiedSlots) {
   return `
-    <div class="equipment-section">
-      <h3>${part.label}</h3>
-      <ul class="inventory-list">
-        ${sectionItems.map((item) => `
-          <li>
-            <div class="item-info">
-              ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
-              <div>
-                <strong>${item.name}</strong>
-                <p class="muted">${item.category || 'misc'}</p>
+    <div class="equipment-doll">
+      <div class="equipment-doll-header">
+        <h3>Manichino</h3>
+        <span class="muted">${occupiedSlots}/${slotSummary.length} slot occupati</span>
+      </div>
+      <div class="equipment-doll-grid">
+        ${slotSummary.map((slot) => {
+    const firstItem = slot.items[0];
+    return `
+          <div class="doll-slot doll-slot--${slot.value} ${slot.items.length ? 'is-filled' : ''}">
+            <span class="doll-slot-label">${slot.label}</span>
+            <span class="doll-slot-item">${firstItem ? firstItem.name : 'Libero'}</span>
+            ${slot.items.length > 1 ? `<span class="doll-slot-count">+${slot.items.length - 1}</span>` : ''}
+          </div>
+        `;
+  }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function buildEquipmentSlotList(slotSummary) {
+  return `
+    <div class="equipment-slot-list">
+      ${slotSummary.map((slot) => `
+        <div class="equipment-slot-card">
+          <div class="equipment-slot-card-header">
+            <h3>${slot.label}</h3>
+            <span class="pill">${slot.items.length ? 'Occupato' : 'Libero'}</span>
+          </div>
+          ${slot.items.length
+    ? slot.items.map((item) => `
+              <div class="equipment-slot-item">
+                <div class="item-info">
+                  ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
+                  <div>
+                    <strong>${item.name}</strong>
+                    <p class="muted">${item.category || 'misc'}</p>
+                  </div>
+                </div>
+                <div class="actions">
+                  <button data-unequip="${item.id}">Rimuovi</button>
+                  <button data-attune="${item.id}">
+                    ${item.attunement_active ? 'Disattiva attune' : 'Attiva attune'}
+                  </button>
+                </div>
               </div>
-            </div>
-            <div class="actions">
-              <button data-unequip="${item.id}">Rimuovi</button>
-              <button data-attune="${item.id}">
-                ${item.attunement_active ? 'Disattiva attune' : 'Attiva attune'}
-              </button>
-            </div>
-          </li>
-        `).join('')}
-      </ul>
+            `).join('')
+    : '<div class="equipment-slot-item empty">Slot libero</div>'}
+        </div>
+      `).join('')}
     </div>
   `;
 }
