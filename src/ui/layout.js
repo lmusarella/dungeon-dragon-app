@@ -1,17 +1,39 @@
-import { closeDrawer } from './components.js';
+import { closeDrawer, openDrawer } from './components.js';
 import { getState } from '../app/state.js';
 
 export function renderLayout(container) {
   container.innerHTML = `
     <div class="app-shell">
       <header class="app-header">
-        <div>
-          <h1>Dungeon Dragon</h1>
-          <p class="app-subtitle">Gestione personaggi D&D</p>
+        <div class="app-header-left">
+          <div class="app-logo" aria-hidden="true">DD</div>
+          <div>
+            <h1>Dungeon Dragon</h1>
+            <p class="app-subtitle">Gestione personaggi D&D</p>
+          </div>
         </div>
-        <div class="header-actions">
-          <a href="#/settings" class="ghost-button">Impostazioni</a>
-          <button class="ghost-button" type="button" data-logout>Logout</button>
+        <div class="app-header-right">
+          <div class="header-meta" data-header-meta>
+            <div class="header-meta-item" data-user-row>
+              <div class="header-avatar" data-user-avatar></div>
+              <div class="header-meta-text">
+                <span class="header-meta-label">Utente</span>
+                <strong data-user-name></strong>
+              </div>
+            </div>
+            <div class="header-meta-item" data-character-row>
+              <div class="header-avatar" data-character-avatar></div>
+              <div class="header-meta-text">
+                <span class="header-meta-label">Personaggio</span>
+                <strong data-character-name></strong>
+              </div>
+            </div>
+          </div>
+          <button class="menu-button" type="button" data-menu-button aria-label="Apri menu">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
         </div>
       </header>
       <div class="offline-banner" data-offline-banner hidden>
@@ -60,6 +82,20 @@ export function renderLayout(container) {
 
   container.querySelectorAll('[data-drawer-close]')
     .forEach((btn) => btn.addEventListener('click', closeDrawer));
+
+  const menuButton = container.querySelector('[data-menu-button]');
+  if (menuButton) {
+    menuButton.addEventListener('click', () => {
+      openDrawer(buildMenuContent());
+    });
+  }
+
+  container.addEventListener('click', (event) => {
+    const target = event.target.closest('[data-drawer-close]');
+    if (target) {
+      closeDrawer();
+    }
+  });
 }
 
 export function updateActiveTab(route) {
@@ -74,4 +110,78 @@ export function updateOfflineBanner() {
   if (!banner) return;
   const { offline } = getState();
   banner.hidden = !offline;
+}
+
+export function updateHeaderInfo() {
+  const headerMeta = document.querySelector('[data-header-meta]');
+  const menuButton = document.querySelector('[data-menu-button]');
+  if (!headerMeta) return;
+  const { user, characters, activeCharacterId } = getState();
+  const activeCharacter = characters.find((char) => char.id === activeCharacterId);
+  const userRow = headerMeta.querySelector('[data-user-row]');
+  const characterRow = headerMeta.querySelector('[data-character-row]');
+  const userNameEl = headerMeta.querySelector('[data-user-name]');
+  const characterNameEl = headerMeta.querySelector('[data-character-name]');
+  const userAvatarEl = headerMeta.querySelector('[data-user-avatar]');
+  const characterAvatarEl = headerMeta.querySelector('[data-character-avatar]');
+
+  const userName = user?.user_metadata?.display_name || user?.email || 'Utente';
+  if (userRow) {
+    userRow.hidden = !user;
+  }
+  if (userNameEl) {
+    userNameEl.textContent = user ? userName : '';
+  }
+  if (userAvatarEl) {
+    renderAvatar(userAvatarEl, userName, user?.user_metadata?.avatar_url);
+  }
+
+  if (characterRow) {
+    characterRow.hidden = !activeCharacter;
+  }
+  if (characterNameEl) {
+    characterNameEl.textContent = activeCharacter?.name ?? '';
+  }
+  if (characterAvatarEl) {
+    renderAvatar(characterAvatarEl, activeCharacter?.name, activeCharacter?.data?.avatar_url);
+  }
+
+  headerMeta.hidden = !user;
+  if (menuButton) {
+    menuButton.hidden = !user;
+  }
+}
+
+function buildMenuContent() {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'menu-list';
+  wrapper.innerHTML = `
+    <h2>Menu</h2>
+    <a class="menu-item" href="#/characters" data-drawer-close>Seleziona personaggi</a>
+    <a class="menu-item" href="#/settings" data-drawer-close>Impostazioni</a>
+    <button class="menu-item menu-item--danger" type="button" data-logout data-drawer-close>Logout</button>
+  `;
+  return wrapper;
+}
+
+function renderAvatar(container, name, imageUrl) {
+  container.innerHTML = '';
+  if (imageUrl) {
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    img.alt = name ? `Avatar di ${name}` : 'Avatar';
+    container.appendChild(img);
+    return;
+  }
+  const initials = getInitials(name);
+  const fallback = document.createElement('span');
+  fallback.textContent = initials;
+  container.appendChild(fallback);
+}
+
+function getInitials(name = '') {
+  const parts = name.split(' ').filter(Boolean);
+  if (!parts.length) return '??';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
