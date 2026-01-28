@@ -171,34 +171,6 @@ export async function renderHome(container) {
     });
   }
 
-  container.querySelectorAll('[data-use-resource]')
-    .forEach((button) => button.addEventListener('click', async () => {
-      const resource = resources.find((entry) => entry.id === button.dataset.useResource);
-      if (!resource) return;
-      const maxUses = Number(resource.max_uses) || 0;
-      if (maxUses && resource.used >= maxUses) return;
-      try {
-        await updateResource(resource.id, { used: Math.min(resource.used + 1, maxUses) });
-        createToast('Risorsa usata');
-        renderHome(container);
-      } catch (error) {
-        createToast('Errore utilizzo risorsa', 'error');
-      }
-    }));
-
-  container.querySelectorAll('[data-recover-resource]')
-    .forEach((button) => button.addEventListener('click', async () => {
-      const resource = resources.find((entry) => entry.id === button.dataset.recoverResource);
-      if (!resource) return;
-      try {
-        await updateResource(resource.id, { used: Math.max(resource.used - 1, 0) });
-        createToast('Utilizzo recuperato');
-        renderHome(container);
-      } catch (error) {
-        createToast('Errore recupero risorsa', 'error');
-      }
-    }));
-
   container.querySelectorAll('[data-edit-resource]')
     .forEach((button) => button.addEventListener('click', () => {
       const resource = resources.find((entry) => entry.id === button.dataset.editResource);
@@ -206,12 +178,40 @@ export async function renderHome(container) {
       openResourceDrawer(activeCharacter, () => renderHome(container), resource);
     }));
 
-  container.querySelectorAll('[data-detail-resource]')
-    .forEach((button) => button.addEventListener('click', () => {
-      const resource = resources.find((entry) => entry.id === button.dataset.detailResource);
-      if (!resource) return;
-      openResourceDetail(resource);
-    }));
+  const longPressDelay = 500;
+  container.querySelectorAll('[data-resource-card]')
+    .forEach((card) => {
+      let pressTimer = null;
+      const startPress = (event) => {
+        if (event.target.closest('button')) return;
+        pressTimer = setTimeout(async () => {
+          const resource = resources.find((entry) => entry.id === card.dataset.resourceCard);
+          if (!resource) return;
+          const maxUses = Number(resource.max_uses) || 0;
+          if (!maxUses || resource.used >= maxUses) return;
+          const shouldUse = await openConfirmModal({ message: 'Usare la risorsa?' });
+          if (!shouldUse) return;
+          try {
+            await updateResource(resource.id, { used: Math.min(resource.used + 1, maxUses) });
+            createToast('Risorsa usata');
+            renderHome(container);
+          } catch (error) {
+            createToast('Errore utilizzo risorsa', 'error');
+          }
+        }, longPressDelay);
+      };
+      const cancelPress = () => {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+      };
+      card.addEventListener('pointerdown', startPress);
+      card.addEventListener('pointerup', cancelPress);
+      card.addEventListener('pointerleave', cancelPress);
+      card.addEventListener('pointercancel', cancelPress);
+      card.addEventListener('pointermove', cancelPress);
+    });
 
   container.querySelectorAll('[data-delete-resource]')
     .forEach((button) => button.addEventListener('click', async () => {
@@ -1042,11 +1042,11 @@ function buildHpShortcutFields(character, allowHitDice = true) {
   return wrapper;
 }
 
-function buildResourceList(resources, canManageResources) {
+function buildResourceList(resources, canManageResources, { showCharges = true } = {}) {
   return `
     <ul class="resource-list resource-list--compact">
       ${resources.map((res) => `
-        <li class="resource-card">
+        <li class="resource-card" data-resource-card="${res.id}">
           <div class="resource-card-header">
             <div class="resource-info">
               ${res.image_url
@@ -1055,25 +1055,20 @@ function buildResourceList(resources, canManageResources) {
               <div class="resource-meta">
                 <div class="resource-title-row">
                   <strong>${res.name}</strong>
-                  <span class="chip chip--small">${formatResourceRecovery(res)}</span>
                 </div>
                 <div class="resource-submeta">
-                  ${Number(res.max_uses)
+                  ${showCharges && Number(res.max_uses)
     ? `
                       <div class="resource-charge-row">
-                        <span class="resource-charge-label">Cariche</span>
-                        <span class="resource-charge-count">${Math.max((Number(res.max_uses) || 0) - (Number(res.used) || 0), 0)}/${Number(res.max_uses)}</span>
                         ${buildResourceCharges(res)}
                       </div>
                     `
-    : '<span class="resource-passive">Passiva</span>'}
+    : ''}
                 </div>
               </div>
             </div>
             <div class="resource-card-actions">
-              ${Number(res.max_uses) ? `<div class="resource-cta">${buildResourceCtaButtons(res)}</div>` : ''}
               <div class="resource-actions resource-actions--top">
-                <button class="resource-action-button resource-icon-button" data-detail-resource="${res.id}" aria-label="Dettagli risorsa">ℹ️</button>
                 ${canManageResources ? `<button class="resource-action-button resource-icon-button" data-edit-resource="${res.id}" aria-label="Modifica risorsa">✏️</button>` : ''}
               </div>
             </div>
@@ -1088,13 +1083,26 @@ function buildResourceSections(resources, canManageResources) {
   if (!resources.length) {
     return '<p>Nessuna risorsa.</p>';
   }
-  return buildResourceList(resources, canManageResources);
+  const passiveResources = resources.filter((resource) => resource.reset_on === 'none');
+  const activeResources = resources.filter((resource) => resource.reset_on !== 'none');
+  const activeSection = activeResources.length
+    ? buildResourceList(activeResources, canManageResources)
+    : '<p class="muted">Nessuna risorsa attiva.</p>';
+  const passiveSection = passiveResources.length
+    ? `
+      <div class="resource-section">
+        <h4>Abilità Passive</h4>
+        ${buildResourceList(passiveResources, canManageResources, { showCharges: false })}
+      </div>
+    `
+    : '';
+  return `${activeSection}${passiveSection}`;
 }
 
 function buildResourceCharges(resource) {
   const maxUses = Number(resource.max_uses) || 0;
   const used = Number(resource.used) || 0;
-  if (!maxUses || maxUses <= 1) return '';
+  if (!maxUses) return '';
   const style = resource.reset_on === 'long_rest' ? 'long' : 'short';
   const charges = Array.from({ length: maxUses }, (_, index) => {
     const isUsed = index < used;
@@ -1106,20 +1114,6 @@ function buildResourceCharges(resource) {
     return `<span class="${classes}" aria-hidden="true"></span>`;
   }).join('');
   return `<div class="resource-charges" aria-label="Cariche risorsa">${charges}</div>`;
-}
-
-function buildResourceCtaButtons(resource) {
-  const maxUses = Number(resource.max_uses) || 0;
-  const used = Number(resource.used) || 0;
-  if (maxUses === 0) return '';
-  const canUse = used < maxUses;
-  if (canUse) {
-    return `<button class="resource-cta-button" data-use-resource="${resource.id}" aria-label="Usa risorsa">⚡</button>`;
-  }
-  if (used > 0) {
-    return `<button class="resource-cta-button" data-recover-resource="${resource.id}" aria-label="Recupera risorsa">♻️</button>`;
-  }
-  return '';
 }
 
 function openResourceDrawer(character, onSave, resource = null) {
