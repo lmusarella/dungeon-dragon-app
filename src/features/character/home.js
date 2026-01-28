@@ -61,7 +61,7 @@ export async function renderHome(container) {
 
   container.innerHTML = `
     <div class="home-layout">
-      <section class="card home-card">
+      <section class="card home-card home-section">
         <header class="card-header">
           <div>
             <p class="eyebrow">Scheda</p>
@@ -72,9 +72,18 @@ export async function renderHome(container) {
             ${activeCharacter && canEditCharacter ? '<button data-edit-character>Modifica</button>' : ''}
           </div>
         </header>
-        ${activeCharacter ? buildCharacterSummary(activeCharacter, canEditCharacter) : buildEmptyState(canCreateCharacter, offline)}
+        ${activeCharacter ? buildCharacterOverview(activeCharacter, canEditCharacter) : buildEmptyState(canCreateCharacter, offline)}
       </section>
-      <section class="card home-card">
+      <section class="card home-card home-section">
+        <header class="card-header">
+          <div>
+            <p class="eyebrow">Sezione</p>
+            <h3>Abilità e tiri salvezza</h3>
+          </div>
+        </header>
+        ${activeCharacter ? buildSkillAndSaveSection(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
+      </section>
+      <section class="card home-card home-section">
         <header class="card-header">
           <div>
             <p class="eyebrow">Focus</p>
@@ -474,7 +483,7 @@ async function openCharacterDrawer(user, onSave, character = null) {
   }
 }
 
-function buildCharacterSummary(character, canEditCharacter) {
+function buildCharacterOverview(character, canEditCharacter) {
   const data = character.data || {};
   const hp = data.hp || {};
   const hitDice = data.hit_dice || {};
@@ -483,8 +492,11 @@ function buildCharacterSummary(character, canEditCharacter) {
   const initiativeBonus = data.initiative ?? getAbilityModifier(abilities.dex);
   const skillStates = data.skills || {};
   const skillMasteryStates = data.skill_mastery || {};
-  const savingStates = data.saving_throws || {};
   const passivePerception = calculatePassivePerception(abilities, proficiencyBonus, skillStates, skillMasteryStates);
+  const currentHp = normalizeNumber(hp.current);
+  const maxHp = normalizeNumber(hp.max);
+  const hpPercent = maxHp ? Math.min(Math.max((Number(currentHp) / maxHp) * 100, 0), 100) : 0;
+  const hpLabel = maxHp ? `${currentHp ?? '-'}/${maxHp}` : `${currentHp ?? '-'}`;
   const abilityCards = [
     { label: 'Forza', value: abilities.str },
     { label: 'Destrezza', value: abilities.dex },
@@ -494,27 +506,30 @@ function buildCharacterSummary(character, canEditCharacter) {
     { label: 'Carisma', value: abilities.cha }
   ];
   return `
-    <div class="character-summary">
-      <div class="character-hero">
-        ${data.avatar_url ? `<img class="character-avatar" src="${data.avatar_url}" alt="Ritratto di ${character.name}" />` : ''}
-        <div>
-          <h3>${character.name}</h3>
-          <p class="muted">${character.system ?? 'Sistema'} </p>
+    <div class="character-overview">
+      <div class="character-overview-top">
+        <div class="character-hero">
+          ${data.avatar_url ? `<img class="character-avatar" src="${data.avatar_url}" alt="Ritratto di ${character.name}" />` : ''}
+          <div>
+            <h3>${character.name}</h3>
+            <p class="muted">${character.system ?? 'Sistema'} </p>
+          </div>
+        </div>
+        <div class="hp-panel">
+          <div class="hp-panel-header">
+            <span>HP</span>
+            <strong>${hpLabel}</strong>
+          </div>
+          <div class="hp-bar">
+            <div class="hp-bar__fill" style="width: ${hpPercent}%;"></div>
+          </div>
+          <div class="hp-panel-meta">
+            <span>CA ${data.ac ?? '-'}</span>
+            <span>Velocità ${data.speed ?? '-'}</span>
+          </div>
         </div>
       </div>
       <div class="stat-grid">
-        <div class="stat-card">
-          <span>HP</span>
-          <strong>${hp.current ?? '-'} / ${hp.max ?? '-'}</strong>
-        </div>
-        <div class="stat-card">
-          <span>CA</span>
-          <strong>${data.ac ?? '-'}</strong>
-        </div>
-        <div class="stat-card">
-          <span>Velocità</span>
-          <strong>${data.speed ?? '-'}</strong>
-        </div>
         <div class="stat-card">
           <span>Bonus competenza</span>
           <strong>${formatSigned(proficiencyBonus)}</strong>
@@ -526,6 +541,10 @@ function buildCharacterSummary(character, canEditCharacter) {
         <div class="stat-card">
           <span>Percezione passiva</span>
           <strong>${passivePerception ?? '-'}</strong>
+        </div>
+        <div class="stat-card">
+          <span>Dadi vita</span>
+          <strong>${formatHitDice(hitDice)}</strong>
         </div>
       </div>
       <div class="detail-section">
@@ -541,28 +560,6 @@ function buildCharacterSummary(character, canEditCharacter) {
           <button class="ghost-button" data-hp-action="damage" ${canEditCharacter ? '' : 'disabled'}>Danno</button>
         </div>
       </div>
-      <div class="detail-section">
-        <h4>Dadi vita</h4>
-        <div class="detail-grid">
-          <div class="detail-card">
-            <span>${hitDice.die ?? 'Dado'}</span>
-            <strong>${formatHitDice(hitDice)}</strong>
-          </div>
-        </div>
-      </div>
-      <div class="detail-section">
-        <h4>Bonus competenza</h4>
-        <div class="detail-grid">
-          <div class="detail-card">
-            <span>Valore base</span>
-            <strong>${formatSigned(proficiencyBonus)}</strong>
-          </div>
-          <div class="detail-card">
-            <span>Maestria</span>
-            <strong>${proficiencyBonus !== null ? formatSigned(proficiencyBonus * 2) : '-'}</strong>
-          </div>
-        </div>
-      </div>
       <div>
         <h4>Statistiche</h4>
         <div class="stat-grid">
@@ -574,52 +571,62 @@ function buildCharacterSummary(character, canEditCharacter) {
           `).join('')}
         </div>
       </div>
-      <div class="detail-section">
-        <h4>Abilità</h4>
-        <div class="detail-grid detail-grid--compact">
-          ${skillList.map((skill) => {
+    </div>
+  `;
+}
+
+function buildSkillAndSaveSection(character) {
+  const data = character.data || {};
+  const abilities = data.abilities || {};
+  const proficiencyBonus = normalizeNumber(data.proficiency_bonus);
+  const skillStates = data.skills || {};
+  const skillMasteryStates = data.skill_mastery || {};
+  const savingStates = data.saving_throws || {};
+
+  return `
+    <div class="detail-section">
+      <h4>Abilità</h4>
+      <div class="detail-grid detail-grid--compact">
+        ${skillList.map((skill) => {
     const proficient = Boolean(skillStates[skill.key]);
     const mastery = Boolean(skillMasteryStates[skill.key]);
     const total = calculateSkillModifier(abilities[skill.ability], proficiencyBonus, proficient ? (mastery ? 2 : 1) : 0);
     return `
-            <div class="modifier-card">
-              <div>
-                <div class="modifier-title">
-                  <strong>${skill.label}</strong>
-                  <span class="modifier-ability">${abilityShortLabel[skill.ability]}</span>
-                </div>
-                <div class="modifier-tags">
-                  ${proficient ? '<span class="modifier-tag modifier-tag--pro">Competenza</span>' : '<span class="modifier-tag modifier-tag--muted">Base</span>'}
-                  ${mastery ? '<span class="modifier-tag modifier-tag--mastery">Maestria</span>' : ''}
-                </div>
+          <div class="modifier-card">
+            <div>
+              <div class="modifier-title">
+                <strong>${skill.label}</strong>
+                <span class="modifier-ability">${abilityShortLabel[skill.ability]}</span>
               </div>
-              <div class="modifier-value">${formatSigned(total)}</div>
+              <div class="modifier-tags">
+                ${proficient ? '<span class="modifier-tag modifier-tag--pro">Competenza</span>' : '<span class="modifier-tag modifier-tag--muted">Base</span>'}
+                ${mastery ? '<span class="modifier-tag modifier-tag--mastery">Maestria</span>' : ''}
+              </div>
             </div>
-          `;
+            <div class="modifier-value">${formatSigned(total)}</div>
+          </div>
+        `;
   }).join('')}
-        </div>
       </div>
-      <div class="detail-section">
-        <h4>Tiri salvezza</h4>
-        <div class="detail-grid detail-grid--compact">
-          ${savingThrowList.map((save) => {
+      <h4>Tiri salvezza</h4>
+      <div class="detail-grid detail-grid--compact">
+        ${savingThrowList.map((save) => {
     const proficient = Boolean(savingStates[save.key]);
     const total = calculateSkillModifier(abilities[save.key], proficiencyBonus, proficient ? 1 : 0);
     return `
-            <div class="modifier-card">
-              <div>
-                <div class="modifier-title">
-                  <strong>${save.label}</strong>
-                </div>
-                <div class="modifier-tags">
-                  ${proficient ? '<span class="modifier-tag modifier-tag--pro">Competenza</span>' : '<span class="modifier-tag modifier-tag--muted">Base</span>'}
-                </div>
+          <div class="modifier-card">
+            <div>
+              <div class="modifier-title">
+                <strong>${save.label}</strong>
               </div>
-              <div class="modifier-value">${formatSigned(total)}</div>
+              <div class="modifier-tags">
+                ${proficient ? '<span class="modifier-tag modifier-tag--pro">Competenza</span>' : '<span class="modifier-tag modifier-tag--muted">Base</span>'}
+              </div>
             </div>
-          `;
+            <div class="modifier-value">${formatSigned(total)}</div>
+          </div>
+        `;
   }).join('')}
-        </div>
       </div>
     </div>
   `;
