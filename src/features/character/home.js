@@ -20,7 +20,11 @@ import {
 } from '../../ui/components.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 
+let fabHandlersBound = false;
+let lastHomeContainer = null;
+
 export async function renderHome(container) {
+  lastHomeContainer = container;
   container.innerHTML = `<div class="card"><p>Caricamento...</p></div>`;
   const state = getState();
   const { user, offline } = state;
@@ -74,9 +78,6 @@ export async function renderHome(container) {
               <p class="eyebrow">Tiri salvezza</p>
               <h3></h3>
             </div>
-            <button class="icon-button icon-button--dice" data-open-dice="saving-throws" aria-label="Apri tiri salvezza">
-              <span aria-hidden="true">🎲</span>
-            </button>
           </header>
           ${activeCharacter ? buildSavingThrowSection(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
         </section>
@@ -85,9 +86,6 @@ export async function renderHome(container) {
             <div>
               <p class="eyebrow">Abilità</p>            
             </div>
-            <button class="icon-button icon-button--dice" data-open-dice="skills" aria-label="Apri abilità">
-              <span aria-hidden="true">🎲</span>
-            </button>
           </header>
           <div class="home-scroll-body">
             ${activeCharacter ? buildSkillList(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
@@ -130,16 +128,12 @@ export async function renderHome(container) {
     : '<p>Nessun personaggio selezionato.</p>'}
             ${activeCharacter && !canManageResources ? '<p class="muted">Connettiti per aggiungere nuove risorse.</p>' : ''}
           </div>
-          ${activeCharacter ? `
-            <div class="button-row">
-              <button class="ghost-button" data-rest="short_rest">Riposo breve</button>
-              <button class="ghost-button" data-rest="long_rest">Riposo lungo</button>
-            </div>
-          ` : ''}
         </section>
       </div>
     </div>
   `;
+
+  bindFabHandlers();
 
   const select = container.querySelector('[data-character-select]');
   if (select) {
@@ -169,13 +163,6 @@ export async function renderHome(container) {
       openCharacterDrawer(user, () => renderHome(container), activeCharacter);
     });
   }
-
-  container.querySelectorAll('[data-open-dice]')
-    .forEach((button) => button.addEventListener('click', () => {
-      const type = button.dataset.openDice;
-      const title = type === 'saving-throws' ? 'Tiri salvezza' : 'Abilità';
-      openDiceRollerModal(title);
-    }));
 
   const addResourceButton = container.querySelector('[data-add-resource]');
   if (addResourceButton) {
@@ -241,103 +228,6 @@ export async function renderHome(container) {
       }
     }));
 
-  container.querySelectorAll('[data-rest]')
-    .forEach((button) => button.addEventListener('click', async () => {
-      const resetOn = button.dataset.rest;
-      if (!activeCharacter) return;
-      const shouldRest = await openConfirmModal({ message: 'Confermi il riposo?' });
-      if (!shouldRest) return;
-      try {
-        await updateResourcesReset(activeCharacter.id, resetOn);
-        createToast('Risorse aggiornate');
-        const refreshed = await fetchResources(activeCharacter.id);
-        updateCache('resources', refreshed);
-        await cacheSnapshot({ resources: refreshed });
-        if (resetOn === 'long_rest') {
-          const nextData = applyLongRestHitDice(activeCharacter.data);
-          if (nextData) {
-            await saveCharacterData(activeCharacter, nextData, 'Dadi vita recuperati', container);
-            return;
-          }
-        }
-        renderHome(container);
-      } catch (error) {
-        createToast('Errore aggiornamento risorse', 'error');
-      }
-    }));
-
-  container.querySelectorAll('[data-hp-action]')
-    .forEach((button) => button.addEventListener('click', async () => {
-      if (!activeCharacter || !canEditCharacter) return;
-      const action = button.dataset.hpAction;
-      const title = action === 'heal' ? 'Cura PF' : 'Infliggi danno';
-      const submitLabel = action === 'heal' ? 'Cura' : 'Danno';
-      const formData = await openFormModal({
-        title,
-        submitLabel,
-        content: buildHpShortcutFields(activeCharacter, action === 'heal')
-      });
-      if (!formData) return;
-      const useHitDice = formData.has('use_hit_dice');
-      const hitDice = activeCharacter.data?.hit_dice || {};
-      const abilities = activeCharacter.data?.abilities || {};
-      const hitDiceUsed = Number(hitDice.used) || 0;
-      const hitDiceMax = Number(hitDice.max) || 0;
-      const hitDiceSides = getHitDiceSides(hitDice.die);
-      const diceCount = Math.max(Number(formData.get('hit_dice_count')) || 1, 1);
-      let amount = Number(formData.get('amount'));
-
-      if (action === 'heal' && useHitDice) {
-        if (!hitDiceSides) {
-          createToast('Configura un dado vita valido', 'error');
-          return;
-        }
-        if (hitDiceUsed >= hitDiceMax) {
-          createToast('Nessun dado vita disponibile', 'error');
-          return;
-        }
-        const remaining = Math.max(hitDiceMax - hitDiceUsed, 0);
-        if (diceCount > remaining) {
-          createToast(`Hai solo ${remaining} dadi vita disponibili`, 'error');
-          return;
-        }
-        const conMod = getAbilityModifier(abilities.con) ?? 0;
-        const rolls = Array.from({ length: diceCount }, () => rollDie(hitDiceSides));
-        const totalRoll = rolls.reduce((sum, roll) => sum + roll, 0);
-        amount = Math.max(totalRoll + conMod * diceCount, 1);
-      }
-
-      if (!amount || amount <= 0) {
-        createToast('Inserisci un valore valido', 'error');
-        return;
-      }
-      const currentHp = Number(activeCharacter.data?.hp?.current) || 0;
-      const maxHp = activeCharacter.data?.hp?.max;
-      const nextHp = action === 'heal'
-        ? currentHp + amount
-        : Math.max(currentHp - amount, 0);
-      const adjusted = maxHp !== null && maxHp !== undefined
-        ? Math.min(nextHp, Number(maxHp))
-        : nextHp;
-      const nextHitDice = action === 'heal' && useHitDice
-        ? {
-          ...hitDice,
-          used: Math.min(hitDiceUsed + diceCount, hitDiceMax)
-        }
-        : hitDice;
-      const message = action === 'heal'
-        ? `PF curati +${amount}${useHitDice ? ` (${diceCount}d${hitDiceSides})` : ''}`
-        : `Danno ${amount}`;
-      await saveCharacterData(activeCharacter, {
-        ...activeCharacter.data,
-        hp: {
-          ...activeCharacter.data?.hp,
-          current: adjusted
-        },
-        hit_dice: nextHitDice
-      }, message, container);
-    }));
-
   const avatar = container.querySelector('.character-avatar');
   if (avatar) {
     avatar.addEventListener('pointerdown', (event) => {
@@ -358,6 +248,159 @@ export async function renderHome(container) {
     });
   }
 
+}
+
+function bindFabHandlers() {
+  if (fabHandlersBound) return;
+  document.addEventListener('click', async (event) => {
+    const fabContainer = event.target.closest('[data-actions-fab]');
+    if (!fabContainer) return;
+    const hpButton = event.target.closest('[data-hp-action]');
+    const restButton = event.target.closest('[data-rest]');
+    const diceButton = event.target.closest('[data-open-dice]');
+    if (!hpButton && !restButton && !diceButton) return;
+    event.preventDefault();
+    const container = lastHomeContainer ?? document.querySelector('[data-route-outlet]');
+    if (hpButton) {
+      await handleHpAction(hpButton.dataset.hpAction, container);
+      closeFabMenu();
+      return;
+    }
+    if (restButton) {
+      await handleRestAction(restButton.dataset.rest, container);
+      closeFabMenu();
+      return;
+    }
+    if (diceButton) {
+      handleDiceAction(diceButton.dataset.openDice);
+      closeFabMenu();
+    }
+  });
+  fabHandlersBound = true;
+}
+
+function closeFabMenu() {
+  const actionsFab = document.querySelector('[data-actions-fab]');
+  const actionsToggle = document.querySelector('[data-actions-toggle]');
+  if (!actionsFab || !actionsFab.classList.contains('is-open')) return;
+  actionsFab.classList.remove('is-open');
+  actionsToggle?.setAttribute('aria-expanded', 'false');
+}
+
+function getHomeContext() {
+  const state = getState();
+  const { user, offline, characters, activeCharacterId } = state;
+  const activeCharacter = characters.find((char) => char.id === activeCharacterId);
+  return {
+    activeCharacter,
+    canEditCharacter: Boolean(user) && !offline
+  };
+}
+
+function handleDiceAction(type) {
+  const titles = {
+    'saving-throws': 'Tiri salvezza',
+    skills: 'Abilità',
+    roller: 'Lancia dadi'
+  };
+  openDiceRollerModal(titles[type] ?? 'Lancia dadi');
+}
+
+async function handleRestAction(resetOn, container) {
+  const { activeCharacter } = getHomeContext();
+  if (!activeCharacter) return;
+  const shouldRest = await openConfirmModal({ message: 'Confermi il riposo?' });
+  if (!shouldRest) return;
+  try {
+    await updateResourcesReset(activeCharacter.id, resetOn);
+    createToast('Risorse aggiornate');
+    const refreshed = await fetchResources(activeCharacter.id);
+    updateCache('resources', refreshed);
+    await cacheSnapshot({ resources: refreshed });
+    if (resetOn === 'long_rest') {
+      const nextData = applyLongRestHitDice(activeCharacter.data);
+      if (nextData) {
+        await saveCharacterData(activeCharacter, nextData, 'Dadi vita recuperati', container);
+        return;
+      }
+    }
+    if (container) {
+      renderHome(container);
+    }
+  } catch (error) {
+    createToast('Errore aggiornamento risorse', 'error');
+  }
+}
+
+async function handleHpAction(action, container) {
+  const { activeCharacter, canEditCharacter } = getHomeContext();
+  if (!activeCharacter || !canEditCharacter) return;
+  const title = action === 'heal' ? 'Cura PF' : 'Infliggi danno';
+  const submitLabel = action === 'heal' ? 'Cura' : 'Danno';
+  const formData = await openFormModal({
+    title,
+    submitLabel,
+    content: buildHpShortcutFields(activeCharacter, action === 'heal')
+  });
+  if (!formData) return;
+  const useHitDice = formData.has('use_hit_dice');
+  const hitDice = activeCharacter.data?.hit_dice || {};
+  const abilities = activeCharacter.data?.abilities || {};
+  const hitDiceUsed = Number(hitDice.used) || 0;
+  const hitDiceMax = Number(hitDice.max) || 0;
+  const hitDiceSides = getHitDiceSides(hitDice.die);
+  const diceCount = Math.max(Number(formData.get('hit_dice_count')) || 1, 1);
+  let amount = Number(formData.get('amount'));
+
+  if (action === 'heal' && useHitDice) {
+    if (!hitDiceSides) {
+      createToast('Configura un dado vita valido', 'error');
+      return;
+    }
+    if (hitDiceUsed >= hitDiceMax) {
+      createToast('Nessun dado vita disponibile', 'error');
+      return;
+    }
+    const remaining = Math.max(hitDiceMax - hitDiceUsed, 0);
+    if (diceCount > remaining) {
+      createToast(`Hai solo ${remaining} dadi vita disponibili`, 'error');
+      return;
+    }
+    const conMod = getAbilityModifier(abilities.con) ?? 0;
+    const rolls = Array.from({ length: diceCount }, () => rollDie(hitDiceSides));
+    const totalRoll = rolls.reduce((sum, roll) => sum + roll, 0);
+    amount = Math.max(totalRoll + conMod * diceCount, 1);
+  }
+
+  if (!amount || amount <= 0) {
+    createToast('Inserisci un valore valido', 'error');
+    return;
+  }
+  const currentHp = Number(activeCharacter.data?.hp?.current) || 0;
+  const maxHp = activeCharacter.data?.hp?.max;
+  const nextHp = action === 'heal'
+    ? currentHp + amount
+    : Math.max(currentHp - amount, 0);
+  const adjusted = maxHp !== null && maxHp !== undefined
+    ? Math.min(nextHp, Number(maxHp))
+    : nextHp;
+  const nextHitDice = action === 'heal' && useHitDice
+    ? {
+      ...hitDice,
+      used: Math.min(hitDiceUsed + diceCount, hitDiceMax)
+    }
+    : hitDice;
+  const message = action === 'heal'
+    ? `PF curati +${amount}${useHitDice ? ` (${diceCount}d${hitDiceSides})` : ''}`
+    : `Danno ${amount}`;
+  await saveCharacterData(activeCharacter, {
+    ...activeCharacter.data,
+    hp: {
+      ...activeCharacter.data?.hp,
+      current: adjusted
+    },
+    hit_dice: nextHitDice
+  }, message, container);
 }
 
 function openResourceDetail(resource) {
@@ -795,12 +838,6 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
           <div class="stat-chip">
             <span>Percezione passiva</span>
             <strong>${passivePerception ?? '-'}</strong>
-          </div>
-        </div>
-        <div class="hp-shortcuts">
-          <div class="button-row">
-            <button class="ghost-button" data-hp-action="heal" ${canEditCharacter ? '' : 'disabled'}>Cura</button>
-            <button class="ghost-button" data-hp-action="damage" ${canEditCharacter ? '' : 'disabled'}>Danno</button>
           </div>
         </div>
       </div>

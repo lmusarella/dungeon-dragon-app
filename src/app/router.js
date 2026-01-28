@@ -35,9 +35,10 @@ function renderRoute() {
   const bottomNav = document.querySelector('[data-bottom-nav]');
   const actionsFab = document.querySelector('[data-actions-fab]');
   const hideFooter = route === 'login' || route === 'characters';
+  const showFab = route === 'home';
   if (bottomNav) bottomNav.hidden = hideFooter;
   if (actionsFab) {
-    actionsFab.hidden = hideFooter;
+    actionsFab.hidden = !showFab;
     actionsFab.classList.remove('is-open');
   }
   view?.(outlet);
