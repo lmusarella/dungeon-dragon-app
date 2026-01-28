@@ -74,11 +74,29 @@ button {
   max-width: 1200px;
 }
 
+.home-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .home-card {
   background: linear-gradient(180deg, #fffaf1 0%, #fdf7ea 100%);
   margin: 0;
   width: 100%;
   max-width: none;
+}
+
+.home-scroll-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.home-scroll-body {
+  overflow-y: auto;
+  max-height: 60vh;
+  padding-right: 6px;
 }
 
 .eyebrow {
@@ -1209,5 +1227,13 @@ button {
   .character-overview-top {
     grid-template-columns: 1.4fr 1fr;
     align-items: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 1fr);
+    align-items: start;
   }
 }

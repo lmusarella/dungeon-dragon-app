@@ -67,47 +67,66 @@ export async function renderHome(container) {
 
   container.innerHTML = `
     <div class="home-layout">
-      <section class="card home-card home-section">
-        <header class="card-header">
-          <div>
-            <p class="eyebrow">Scheda</p>
-            <h2>Personaggio</h2>
+      <div class="home-column home-column--left">
+        <section class="card home-card home-section home-scroll-panel">
+          <header class="card-header">
+            <div>
+              <p class="eyebrow">Sezione</p>
+              <h3>Abilità</h3>
+            </div>
+          </header>
+          <div class="home-scroll-body">
+            ${activeCharacter ? buildSkillList(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
           </div>
-          <div class="actions">
-            ${characters.length > 1 ? '<select data-character-select></select>' : ''}
-            ${activeCharacter && canEditCharacter ? '<button data-edit-character>Modifica</button>' : ''}
-          </div>
-        </header>
-        ${activeCharacter ? buildCharacterOverview(activeCharacter, canEditCharacter, items) : buildEmptyState(canCreateCharacter, offline)}
-      </section>
-      <section class="card home-card home-section">
-        <header class="card-header">
-          <div>
-            <p class="eyebrow">Sezione</p>
-            <h3>Abilità e tiri salvezza</h3>
-          </div>
-        </header>
-        ${activeCharacter ? buildSkillAndSaveSection(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
-      </section>
-      <section class="card home-card home-section">
-        <header class="card-header">
-          <div>
-            <p class="eyebrow">Focus</p>
-            <h3>Risorse e abilità</h3>
-          </div>
-          ${activeCharacter && canManageResources ? '<button class="primary" data-add-resource>Nuova risorsa</button>' : ''}
-        </header>
-        ${activeCharacter
+        </section>
+      </div>
+      <div class="home-column home-column--center">
+        <section class="card home-card home-section">
+          <header class="card-header">
+            <div>
+              <p class="eyebrow">Scheda</p>
+              <h2>Personaggio</h2>
+            </div>
+            <div class="actions">
+              ${characters.length > 1 ? '<select data-character-select></select>' : ''}
+              ${activeCharacter && canEditCharacter ? '<button data-edit-character>Modifica</button>' : ''}
+            </div>
+          </header>
+          ${activeCharacter ? buildCharacterOverview(activeCharacter, canEditCharacter, items) : buildEmptyState(canCreateCharacter, offline)}
+        </section>
+        <section class="card home-card home-section">
+          <header class="card-header">
+            <div>
+              <p class="eyebrow">Sezione</p>
+              <h3>Salvezza e competenze</h3>
+            </div>
+          </header>
+          ${activeCharacter ? buildSavingThrowSection(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
+        </section>
+      </div>
+      <div class="home-column home-column--right">
+        <section class="card home-card home-section home-scroll-panel">
+          <header class="card-header">
+            <div>
+              <p class="eyebrow">Focus</p>
+              <h3>Abilità disponibili</h3>
+            </div>
+            ${activeCharacter && canManageResources ? '<button class="primary" data-add-resource>Nuova risorsa</button>' : ''}
+          </header>
+          <div class="home-scroll-body">
+            ${activeCharacter
     ? (resources.length ? buildResourceList(resources, canManageResources) : '<p>Nessuna risorsa.</p>')
     : '<p>Nessun personaggio selezionato.</p>'}
-        ${activeCharacter && !canManageResources ? '<p class="muted">Connettiti per aggiungere nuove risorse.</p>' : ''}
-        ${activeCharacter ? `
-          <div class="button-row">
-            <button class="ghost-button" data-rest="short_rest">Riposo breve</button>
-            <button class="ghost-button" data-rest="long_rest">Riposo lungo</button>
+            ${activeCharacter && !canManageResources ? '<p class="muted">Connettiti per aggiungere nuove risorse.</p>' : ''}
           </div>
-        ` : ''}
-      </section>
+          ${activeCharacter ? `
+            <div class="button-row">
+              <button class="ghost-button" data-rest="short_rest">Riposo breve</button>
+              <button class="ghost-button" data-rest="long_rest">Riposo lungo</button>
+            </div>
+          ` : ''}
+        </section>
+      </div>
     </div>
   `;
 
@@ -634,17 +653,15 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
   `;
 }
 
-function buildSkillAndSaveSection(character) {
+function buildSkillList(character) {
   const data = character.data || {};
   const abilities = data.abilities || {};
   const proficiencyBonus = normalizeNumber(data.proficiency_bonus);
   const skillStates = data.skills || {};
   const skillMasteryStates = data.skill_mastery || {};
-  const savingStates = data.saving_throws || {};
 
   return `
     <div class="detail-section">
-      <h4>Abilità</h4>
       <div class="detail-grid detail-grid--compact">
         ${skillList.map((skill) => {
     const proficient = Boolean(skillStates[skill.key]);
@@ -667,6 +684,23 @@ function buildSkillAndSaveSection(character) {
         `;
   }).join('')}
       </div>
+    </div>
+  `;
+}
+
+function buildSavingThrowSection(character) {
+  const data = character.data || {};
+  const abilities = data.abilities || {};
+  const proficiencyBonus = normalizeNumber(data.proficiency_bonus);
+  const skillStates = data.skills || {};
+  const skillMasteryStates = data.skill_mastery || {};
+  const savingStates = data.saving_throws || {};
+  const initiativeBonus = data.initiative ?? getAbilityModifier(abilities.dex);
+  const passivePerception = calculatePassivePerception(abilities, proficiencyBonus, skillStates, skillMasteryStates);
+  const hitDice = data.hit_dice || {};
+
+  return `
+    <div class="detail-section">
       <h4>Tiri salvezza</h4>
       <div class="detail-grid detail-grid--compact">
         ${savingThrowList.map((save) => {
@@ -686,6 +720,41 @@ function buildSkillAndSaveSection(character) {
           </div>
         `;
   }).join('')}
+      </div>
+      <h4>Competenze extra abilità</h4>
+      <div class="detail-grid detail-grid--compact">
+        <div class="modifier-card">
+          <div>
+            <div class="modifier-title">
+              <strong>Bonus competenza</strong>
+            </div>
+          </div>
+          <div class="modifier-value">${formatSigned(proficiencyBonus)}</div>
+        </div>
+        <div class="modifier-card">
+          <div>
+            <div class="modifier-title">
+              <strong>Iniziativa</strong>
+            </div>
+          </div>
+          <div class="modifier-value">${formatSigned(normalizeNumber(initiativeBonus))}</div>
+        </div>
+        <div class="modifier-card">
+          <div>
+            <div class="modifier-title">
+              <strong>Percezione passiva</strong>
+            </div>
+          </div>
+          <div class="modifier-value">${passivePerception ?? '-'}</div>
+        </div>
+        <div class="modifier-card">
+          <div>
+            <div class="modifier-title">
+              <strong>Dadi vita</strong>
+            </div>
+          </div>
+          <div class="modifier-value">${formatHitDice(hitDice)}</div>
+        </div>
       </div>
     </div>
   `;
