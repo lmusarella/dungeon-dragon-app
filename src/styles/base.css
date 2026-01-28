@@ -992,6 +992,7 @@ button {
   position: fixed;
   inset: 0;
   display: none;
+  z-index: 40;
 }
 
 .drawer.open {
