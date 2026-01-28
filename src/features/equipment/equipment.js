@@ -5,22 +5,41 @@ import { createToast } from '../../ui/components.js';
 
 const bodyParts = [
   { value: 'head', label: 'Testa' },
-  { value: 'eyes', label: 'Occhi' },
-  { value: 'ears', label: 'Orecchie' },
+  { value: 'eyes-left', label: 'Occhio sinistro' },
+  { value: 'eyes-right', label: 'Occhio destro' },
+  { value: 'ears-left', label: 'Orecchio sinistro' },
+  { value: 'ears-right', label: 'Orecchio destro' },
   { value: 'neck', label: 'Collo' },
-  { value: 'shoulders', label: 'Spalle' },
+  { value: 'shoulder-left', label: 'Spalla sinistra' },
+  { value: 'shoulder-right', label: 'Spalla destra' },
   { value: 'back', label: 'Schiena' },
   { value: 'chest', label: 'Torso' },
-  { value: 'arms', label: 'Braccia' },
-  { value: 'hands', label: 'Mani' },
-  { value: 'wrists', label: 'Polsi' },
+  { value: 'arm-left', label: 'Braccio sinistro' },
+  { value: 'arm-right', label: 'Braccio destro' },
+  { value: 'hand-left', label: 'Mano sinistra' },
+  { value: 'hand-right', label: 'Mano destra' },
+  { value: 'wrist-left', label: 'Polso sinistro' },
+  { value: 'wrist-right', label: 'Polso destro' },
   { value: 'waist', label: 'Vita' },
-  { value: 'legs', label: 'Gambe' },
-  { value: 'feet', label: 'Piedi' },
-  { value: 'ring', label: 'Dita/Anelli' },
+  { value: 'leg-left', label: 'Gamba sinistra' },
+  { value: 'leg-right', label: 'Gamba destra' },
+  { value: 'foot-left', label: 'Piede sinistro' },
+  { value: 'foot-right', label: 'Piede destro' },
+  { value: 'ring-left', label: 'Dita/Anello sinistro' },
+  { value: 'ring-right', label: 'Dita/Anello destro' },
   { value: 'main-hand', label: 'Mano principale' },
-  { value: 'off-hand', label: 'Mano secondaria' }
+  { value: 'off-hand', label: 'Mano secondaria' },
+  { value: 'eyes', label: 'Occhi (generico)' },
+  { value: 'ears', label: 'Orecchie (generico)' },
+  { value: 'shoulders', label: 'Spalle (generico)' },
+  { value: 'arms', label: 'Braccia (generico)' },
+  { value: 'hands', label: 'Mani (generico)' },
+  { value: 'wrists', label: 'Polsi (generico)' },
+  { value: 'legs', label: 'Gambe (generico)' },
+  { value: 'feet', label: 'Piedi (generico)' },
+  { value: 'ring', label: 'Dita/Anelli (generico)' }
 ];
+
 
 export async function renderEquipment(container) {
   const state = getState();
@@ -41,11 +60,11 @@ export async function renderEquipment(container) {
     }
   }
 
-  const equippedItems = items.filter((item) => item.equip_slot || item.equipable);
+  const equippedItems = items.filter((item) => getEquipSlots(item).length || item.equipable);
   const attunedCount = items.filter((item) => item.attunement_active).length;
   const slotSummary = bodyParts.map((part) => ({
     ...part,
-    items: equippedItems.filter((item) => item.equip_slot === part.value)
+    items: equippedItems.filter((item) => getEquipSlots(item).includes(part.value))
   }));
   const occupiedSlots = slotSummary.filter((slot) => slot.items.length).length;
 
@@ -90,7 +109,7 @@ export async function renderEquipment(container) {
       const item = items.find((entry) => entry.id === btn.dataset.unequip);
       if (!item) return;
       try {
-        await updateItem(item.id, { equip_slot: null });
+        await updateItem(item.id, { equip_slot: null, equip_slots: [] });
         createToast('Equip rimosso');
         renderEquipment(container);
       } catch (error) {
@@ -151,7 +170,7 @@ function buildEquipmentSlotList(slotSummary) {
                   ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
                   <div>
                     <strong>${item.name}</strong>
-                    <p class="muted">${item.category || 'misc'}</p>
+                    <p class="muted">${item.category || 'misc'}${item.sovrapponibile ? ' · sovrapponibile' : ''}</p>
                   </div>
                 </div>
                 <div class="actions">
@@ -170,7 +189,7 @@ function buildEquipmentSlotList(slotSummary) {
 }
 
 function buildUnassignedSection(items) {
-  const unassigned = items.filter((item) => item.equipable && !item.equip_slot);
+  const unassigned = items.filter((item) => item.equipable && !getEquipSlots(item).length);
   if (!unassigned.length) return '';
   return `
     <div class="equipment-section">
@@ -182,7 +201,7 @@ function buildUnassignedSection(items) {
               ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
               <div>
                 <strong>${item.name}</strong>
-                <p class="muted">${item.category || 'misc'}</p>
+                <p class="muted">${item.category || 'misc'}${item.sovrapponibile ? ' · sovrapponibile' : ''}</p>
               </div>
             </div>
             <div class="actions">
@@ -196,4 +215,21 @@ function buildUnassignedSection(items) {
       </ul>
     </div>
   `;
+}
+
+function getEquipSlots(item) {
+  if (!item) return [];
+  if (Array.isArray(item.equip_slots)) {
+    return item.equip_slots.filter(Boolean);
+  }
+  if (typeof item.equip_slots === 'string' && item.equip_slots.trim()) {
+    try {
+      const parsed = JSON.parse(item.equip_slots);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch (error) {
+      return [item.equip_slots];
+    }
+  }
+  if (item.equip_slot) return [item.equip_slot];
+  return [];
 }

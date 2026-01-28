@@ -177,6 +177,30 @@ button {
   margin-bottom: 12px;
 }
 
+.equip-slot-field {
+  border: 1px solid #eadfc9;
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: #fffaf2;
+}
+
+.equip-slot-field legend {
+  font-weight: 600;
+  color: #6f4e37;
+  padding: 0 6px;
+}
+
+.equip-slot-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.equip-slot-list .checkbox {
+  margin: 0;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;

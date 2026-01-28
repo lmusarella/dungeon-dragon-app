@@ -121,17 +121,19 @@ export async function renderActions(container) {
     event.preventDefault();
     const formData = new FormData(lootForm);
     try {
-      await createItem({
-        user_id: activeCharacter.user_id,
-        character_id: activeCharacter.id,
-        name: formData.get('name'),
-        qty: Number(formData.get('qty')),
-        weight: Number(formData.get('weight')),
-        value_cp: Number(formData.get('value_cp')),
-        category: 'loot',
-        equipable: false,
-        equip_slot: null
-      });
+        await createItem({
+          user_id: activeCharacter.user_id,
+          character_id: activeCharacter.id,
+          name: formData.get('name'),
+          qty: Number(formData.get('qty')),
+          weight: Number(formData.get('weight')),
+          value_cp: Number(formData.get('value_cp')),
+          category: 'loot',
+          equipable: false,
+          equip_slot: null,
+          equip_slots: [],
+          sovrapponibile: false
+        });
       createToast('Loot aggiunto');
       lootForm.reset();
     } catch (error) {

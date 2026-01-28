@@ -9,21 +9,39 @@ import { renderWalletSummary } from '../wallet/wallet.js';
 
 const bodyParts = [
   { value: 'head', label: 'Testa' },
-  { value: 'eyes', label: 'Occhi' },
-  { value: 'ears', label: 'Orecchie' },
+  { value: 'eyes-left', label: 'Occhio sinistro' },
+  { value: 'eyes-right', label: 'Occhio destro' },
+  { value: 'ears-left', label: 'Orecchio sinistro' },
+  { value: 'ears-right', label: 'Orecchio destro' },
   { value: 'neck', label: 'Collo' },
-  { value: 'shoulders', label: 'Spalle' },
+  { value: 'shoulder-left', label: 'Spalla sinistra' },
+  { value: 'shoulder-right', label: 'Spalla destra' },
   { value: 'back', label: 'Schiena' },
   { value: 'chest', label: 'Torso' },
-  { value: 'arms', label: 'Braccia' },
-  { value: 'hands', label: 'Mani' },
-  { value: 'wrists', label: 'Polsi' },
+  { value: 'arm-left', label: 'Braccio sinistro' },
+  { value: 'arm-right', label: 'Braccio destro' },
+  { value: 'hand-left', label: 'Mano sinistra' },
+  { value: 'hand-right', label: 'Mano destra' },
+  { value: 'wrist-left', label: 'Polso sinistro' },
+  { value: 'wrist-right', label: 'Polso destro' },
   { value: 'waist', label: 'Vita' },
-  { value: 'legs', label: 'Gambe' },
-  { value: 'feet', label: 'Piedi' },
-  { value: 'ring', label: 'Dita/Anelli' },
+  { value: 'leg-left', label: 'Gamba sinistra' },
+  { value: 'leg-right', label: 'Gamba destra' },
+  { value: 'foot-left', label: 'Piede sinistro' },
+  { value: 'foot-right', label: 'Piede destro' },
+  { value: 'ring-left', label: 'Dita/Anello sinistro' },
+  { value: 'ring-right', label: 'Dita/Anello destro' },
   { value: 'main-hand', label: 'Mano principale' },
-  { value: 'off-hand', label: 'Mano secondaria' }
+  { value: 'off-hand', label: 'Mano secondaria' },
+  { value: 'eyes', label: 'Occhi (generico)' },
+  { value: 'ears', label: 'Orecchie (generico)' },
+  { value: 'shoulders', label: 'Spalle (generico)' },
+  { value: 'arms', label: 'Braccia (generico)' },
+  { value: 'hands', label: 'Mani (generico)' },
+  { value: 'wrists', label: 'Polsi (generico)' },
+  { value: 'legs', label: 'Gambe (generico)' },
+  { value: 'feet', label: 'Piedi (generico)' },
+  { value: 'ring', label: 'Dita/Anelli (generico)' }
 ];
 
 const itemCategories = [
@@ -45,6 +63,7 @@ const categories = [
 ];
 
 const categoryLabels = new Map(itemCategories.map((category) => [category.value, category.label]));
+const bodyPartLabels = new Map(bodyParts.map((part) => [part.value, part.label]));
 const weaponTypes = [
   { value: '', label: 'Seleziona' },
   { value: 'simple', label: 'Semplice' },
@@ -87,11 +106,11 @@ export async function renderInventory(container) {
   const totalWeight = calcTotalWeight(items);
   const weightUnit = getWeightUnit(activeCharacter);
   const weightStep = weightUnit === 'kg' ? '0.1' : '1';
-  const equippedItems = items.filter((item) => item.equip_slot || item.equipable);
+  const equippedItems = items.filter((item) => getEquipSlots(item).length || item.equipable);
   const attunedCount = items.filter((item) => item.attunement_active).length;
   const slotSummary = bodyParts.map((part) => ({
     ...part,
-    items: equippedItems.filter((item) => item.equip_slot === part.value)
+    items: equippedItems.filter((item) => getEquipSlots(item).includes(part.value))
   }));
   const occupiedSlots = slotSummary.filter((slot) => slot.items.length).length;
   container.innerHTML = `
@@ -246,7 +265,7 @@ export async function renderInventory(container) {
       const item = items.find((entry) => entry.id === btn.dataset.unequip);
       if (!item) return;
       try {
-        await updateItem(item.id, { equip_slot: null });
+        await updateItem(item.id, { equip_slot: null, equip_slots: [] });
         createToast('Equip rimosso');
         renderInventory(container);
       } catch (error) {
@@ -358,7 +377,9 @@ export async function renderInventory(container) {
           value_cp: Number(formData.get('value_cp')),
           category: 'loot',
           equipable: false,
-          equip_slot: null
+          equip_slot: null,
+          equip_slots: [],
+          sovrapponibile: false
         });
         createToast('Loot aggiunto');
         renderInventory(container);
@@ -471,7 +492,8 @@ function buildItemList(items) {
               ${getCategoryLabel(item.category)} · ${item.qty}x · ${item.weight ?? 0} lb
             </p>
             <div class="tag-row">
-              ${item.equipable ? `<span class="chip">equipaggiabile${item.equip_slot ? ` · ${getBodyPartLabel(item.equip_slot)}` : ''}</span>` : ''}
+              ${item.equipable ? `<span class="chip">equipaggiabile${getEquipSlots(item).length ? ` · ${getBodyPartLabels(getEquipSlots(item))}` : ''}</span>` : ''}
+              ${item.sovrapponibile ? '<span class="chip">sovrapponibile</span>' : ''}
               ${item.attunement_active ? '<span class="chip">attuned</span>' : ''}
             </div>
             </div>
@@ -526,7 +548,7 @@ function buildEquipmentSlotList(slotSummary) {
                   ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
                   <div>
                     <strong>${item.name}</strong>
-                    <p class="muted">${item.category || 'misc'}</p>
+                    <p class="muted">${item.category || 'misc'}${item.sovrapponibile ? ' · sovrapponibile' : ''}</p>
                   </div>
                 </div>
                 <div class="actions">
@@ -545,7 +567,7 @@ function buildEquipmentSlotList(slotSummary) {
 }
 
 function buildUnassignedSection(items) {
-  const unassigned = items.filter((item) => item.equipable && !item.equip_slot);
+  const unassigned = items.filter((item) => item.equipable && !getEquipSlots(item).length);
   if (!unassigned.length) return '';
   return `
     <div class="equipment-section">
@@ -557,7 +579,7 @@ function buildUnassignedSection(items) {
               ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
               <div>
                 <strong>${item.name}</strong>
-                <p class="muted">${item.category || 'misc'}</p>
+                <p class="muted">${item.category || 'misc'}${item.sovrapponibile ? ' · sovrapponibile' : ''}</p>
               </div>
             </div>
             <div class="actions">
@@ -629,8 +651,28 @@ function getCategoryLabel(category) {
 }
 
 function getBodyPartLabel(part) {
-  const match = bodyParts.find((entry) => entry.value === part);
-  return match ? match.label : part;
+  return bodyPartLabels.get(part) ?? part;
+}
+
+function getBodyPartLabels(parts) {
+  return parts.map((part) => getBodyPartLabel(part)).join(', ');
+}
+
+function getEquipSlots(item) {
+  if (!item) return [];
+  if (Array.isArray(item.equip_slots)) {
+    return item.equip_slots.filter(Boolean);
+  }
+  if (typeof item.equip_slots === 'string' && item.equip_slots.trim()) {
+    try {
+      const parsed = JSON.parse(item.equip_slots);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch (error) {
+      return [item.equip_slots];
+    }
+  }
+  if (item.equip_slot) return [item.equip_slot];
+  return [];
 }
 
 async function openItemModal(character, item, items, onSave) {
@@ -684,18 +726,32 @@ async function openItemModal(character, item, items, onSave) {
   equipableField.className = 'checkbox';
   equipableField.innerHTML = '<input type="checkbox" name="equipable" /> <span>Equipaggiabile</span>';
   const equipableInput = equipableField.querySelector('input');
-  const equipSlotField = document.createElement('label');
-  equipSlotField.className = 'field';
-  equipSlotField.innerHTML = '<span>Punto del corpo</span>';
-  const equipSlotSelect = buildSelect(
-    [{ value: '', label: 'Nessuno' }, ...bodyParts],
-    item?.equip_slot ?? ''
-  );
-  equipSlotSelect.name = 'equip_slot';
-  equipSlotField.appendChild(equipSlotSelect);
+  const overlayableField = document.createElement('label');
+  overlayableField.className = 'checkbox';
+  overlayableField.innerHTML = '<input type="checkbox" name="sovrapponibile" /> <span>Sovrapponibile</span>';
+  const overlayableInput = overlayableField.querySelector('input');
+  const equipSlotsField = document.createElement('fieldset');
+  equipSlotsField.className = 'equip-slot-field';
+  equipSlotsField.innerHTML = '<legend>Punti del corpo</legend>';
+  const equipSlotList = document.createElement('div');
+  equipSlotList.className = 'equip-slot-list';
+  const selectedSlots = getEquipSlots(item);
+  const equipSlotInputs = bodyParts.map((part) => {
+    const label = document.createElement('label');
+    label.className = 'checkbox';
+    label.innerHTML = `<input type="checkbox" name="equip_slots" value="${part.value}" /> <span>${part.label}</span>`;
+    const input = label.querySelector('input');
+    if (input && selectedSlots.includes(part.value)) {
+      input.checked = true;
+    }
+    equipSlotList.appendChild(label);
+    return input;
+  });
+  equipSlotsField.appendChild(equipSlotList);
   equipableWrapper.appendChild(equipableField);
-  equipableWrapper.appendChild(equipSlotField);
+  equipableWrapper.appendChild(overlayableField);
   fields.appendChild(equipableWrapper);
+  fields.appendChild(equipSlotsField);
 
   const attunement = document.createElement('label');
   attunement.className = 'checkbox';
@@ -762,14 +818,26 @@ async function openItemModal(character, item, items, onSave) {
   if (equipableInput) {
     equipableInput.checked = item?.equipable ?? false;
   }
+  if (overlayableInput) {
+    overlayableInput.checked = item?.sovrapponibile ?? false;
+  }
   if (shieldInput) {
     shieldInput.checked = item?.is_shield ?? false;
   }
   const updateEquipmentFields = () => {
     const equipableEnabled = equipableInput?.checked ?? false;
-    equipSlotSelect.disabled = !equipableEnabled;
-    if (!equipableEnabled) {
-      equipSlotSelect.value = '';
+    equipSlotInputs.forEach((input) => {
+      if (!input) return;
+      input.disabled = !equipableEnabled;
+      if (!equipableEnabled) {
+        input.checked = false;
+      }
+    });
+    if (overlayableInput) {
+      overlayableInput.disabled = !equipableEnabled;
+      if (!equipableEnabled) {
+        overlayableInput.checked = false;
+      }
     }
     const isWeapon = categorySelect.value === 'weapon';
     const isArmor = categorySelect.value === 'armor';
@@ -800,11 +868,22 @@ async function openItemModal(character, item, items, onSave) {
     cardClass: ['modal-card--wide', 'modal-card--scrollable']
   });
   if (!formData) return;
-  const equipSlot = formData.get('equip_slot') || null;
+  const equipableEnabled = formData.get('equipable') === 'on';
+  const equipSlots = equipableEnabled ? formData.getAll('equip_slots') : [];
+  const equipSlot = equipSlots[0] || null;
   const category = formData.get('category');
-  if (equipSlot && !hasProficiencyForItem(character, formData)) {
+  if (equipSlots.length && !hasProficiencyForItem(character, formData)) {
     createToast('Non hai la competenza per equipaggiare questo oggetto', 'error');
     return;
+  }
+  const isOverlayable = formData.get('sovrapponibile') === 'on';
+  if (equipSlots.length && !isOverlayable) {
+    const conflicting = items.filter((entry) => entry.id !== item?.id)
+      .filter((entry) => getEquipSlots(entry).some((slot) => equipSlots.includes(slot)));
+    if (conflicting.length) {
+      createToast('Uno o più slot selezionati sono già occupati', 'error');
+      return;
+    }
   }
   const payload = {
     user_id: character.user_id,
@@ -816,8 +895,10 @@ async function openItemModal(character, item, items, onSave) {
     value_cp: Number(formData.get('value_cp')),
     category,
     container_item_id: formData.get('container_item_id') || null,
-    equipable: formData.get('equipable') === 'on',
+    equipable: equipableEnabled,
     equip_slot: equipSlot,
+    equip_slots: equipSlots,
+    sovrapponibile: isOverlayable,
     attunement_active: formData.get('attunement_active') === 'on',
     notes: formData.get('notes'),
     weapon_type: formData.get('weapon_type') || null,
