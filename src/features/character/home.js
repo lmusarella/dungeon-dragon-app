@@ -672,26 +672,29 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
   const hpLabel = maxHp ? `${currentHp ?? '-'}/${maxHp}` : `${currentHp ?? '-'}`;
   const armorClass = calculateArmorClass(data, abilities, items);
   const abilityCards = [
-    { key: 'str', label: 'Forza', value: abilities.str },
-    { key: 'dex', label: 'Destrezza', value: abilities.dex },
-    { key: 'con', label: 'Costituzione', value: abilities.con },
-    { key: 'int', label: 'Intelligenza', value: abilities.int },
-    { key: 'wis', label: 'Saggezza', value: abilities.wis },
-    { key: 'cha', label: 'Carisma', value: abilities.cha }
+    { key: 'str', label: abilityShortLabel.str, value: abilities.str },
+    { key: 'dex', label: abilityShortLabel.dex, value: abilities.dex },
+    { key: 'con', label: abilityShortLabel.con, value: abilities.con },
+    { key: 'int', label: abilityShortLabel.int, value: abilities.int },
+    { key: 'wis', label: abilityShortLabel.wis, value: abilities.wis },
+    { key: 'cha', label: abilityShortLabel.cha, value: abilities.cha }
   ];
   return `
     <div class="character-overview">
       <div class="character-summary">
-        <div>
-          <h3 class="character-name">${character.name}</h3>
-          <div class="character-meta">
-            <span class="pill">Livello ${data.level ?? '-'}</span>
-            <span class="pill">Razza ${data.race ?? '-'}</span>
-            <span class="pill">Classe/Archetipo ${data.class_archetype ?? '-'}</span>
+        <div class="character-hero">
+          ${data.avatar_url ? `<img class="character-avatar" src="${data.avatar_url}" alt="Ritratto di ${character.name}" />` : ''}
+          <div>
+            <h3 class="character-name">${character.name}</h3>
+            <div class="character-meta">
+              <span class="pill">Livello ${data.level ?? '-'}</span>
+              <span class="pill">Razza ${data.race ?? '-'}</span>
+              <span class="pill">Classe/Archetipo ${data.class_archetype ?? '-'}</span>
+            </div>
           </div>
         </div>
         <div class="character-summary-actions">
-          <div class="proficiency-card">
+          <div class="proficiency-chip">
             <span>Bonus competenza</span>
             <strong>${formatSigned(proficiencyBonus)}</strong>
           </div>
@@ -746,7 +749,6 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
           </div>
         </div>
         <div class="hp-shortcuts">
-          <strong>PF rapidi</strong>
           <div class="button-row">
             <button class="ghost-button" data-hp-action="heal" ${canEditCharacter ? '' : 'disabled'}>Cura</button>
             <button class="ghost-button" data-hp-action="damage" ${canEditCharacter ? '' : 'disabled'}>Danno</button>
@@ -777,17 +779,18 @@ function buildSkillList(character) {
     const proficient = Boolean(skillStates[skill.key]);
     const mastery = Boolean(skillMasteryStates[skill.key]);
     const total = calculateSkillModifier(abilities[skill.ability], proficiencyBonus, proficient ? (mastery ? 2 : 1) : 0);
+    const tags = [
+      proficient ? '<span class="modifier-tag modifier-tag--pro">Competenza</span>' : '',
+      mastery ? '<span class="modifier-tag modifier-tag--mastery">Maestria</span>' : ''
+    ].filter(Boolean).join('');
     return `
           <div class="modifier-card">
             <div>
               <div class="modifier-title">
                 <strong>${skill.label}</strong>
-                <span class="modifier-ability">${abilityShortLabel[skill.ability]}</span>
+                <span class="modifier-ability modifier-ability--${skill.ability}">${abilityShortLabel[skill.ability]}</span>
               </div>
-              <div class="modifier-tags">
-                ${proficient ? '<span class="modifier-tag modifier-tag--pro">Competenza</span>' : '<span class="modifier-tag modifier-tag--muted">Base</span>'}
-                ${mastery ? '<span class="modifier-tag modifier-tag--mastery">Maestria</span>' : ''}
-              </div>
+              ${tags ? `<div class="modifier-tags">${tags}</div>` : ''}
             </div>
             <div class="modifier-value">${formatSigned(total)}</div>
           </div>
@@ -816,9 +819,7 @@ function buildSavingThrowSection(character) {
               <div class="modifier-title">
                 <strong>${save.label}</strong>
               </div>
-              <div class="modifier-tags">
-                ${proficient ? '<span class="modifier-tag modifier-tag--pro">Competenza</span>' : '<span class="modifier-tag modifier-tag--muted">Base</span>'}
-              </div>
+              ${proficient ? '<div class="modifier-tags"><span class="modifier-tag modifier-tag--pro">Competenza</span></div>' : ''}
             </div>
             <div class="modifier-value">${formatSigned(total)}</div>
           </div>
@@ -950,7 +951,9 @@ function buildResourceList(resources, canManageResources) {
             ${canManageResources ? `<div class="resource-actions resource-actions--top">${buildResourceManagementButtons(res)}</div>` : ''}
           </div>
           <div class="resource-card-footer">
-            <button class="ghost-button resource-detail-button" data-detail-resource="${res.id}">Dettaglio</button>
+            <button class="icon-button resource-detail-button" data-detail-resource="${res.id}" aria-label="Dettaglio risorsa">
+              <span aria-hidden="true">🔍</span>
+            </button>
             <div class="resource-footer-right">
               ${Number(res.max_uses)
     ? `

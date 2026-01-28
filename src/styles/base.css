@@ -348,6 +348,8 @@ button {
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
+  justify-content: flex-end;
+  min-height: 48px;
 }
 
 .resource-detail-button {
@@ -374,6 +376,7 @@ button {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .resource-cta-button {
@@ -478,16 +481,17 @@ button {
   align-items: center;
 }
 
-.proficiency-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: #fffaf1;
-  border: 1px solid #eadfc9;
-  border-radius: 12px;
-  padding: 10px 12px;
-  min-width: 140px;
+.proficiency-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eadfc9;
+  border: 1px solid #d8c5a5;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
   text-align: center;
+  white-space: nowrap;
 }
 
 .stat-panel {
@@ -652,6 +656,15 @@ button {
 .stat-grid--compact {
   grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   gap: 10px;
+}
+
+.stat-grid--compact .stat-card {
+  padding: 8px;
+  font-size: 0.75rem;
+}
+
+.stat-grid--compact .stat-card strong {
+  font-size: 0.95rem;
 }
 
 .wallet-note {
@@ -1231,6 +1244,10 @@ button {
   box-shadow: inset 0 0 0 1px rgba(111, 78, 55, 0.06);
 }
 
+.home-column--left .modifier-card {
+  font-size: 12px;
+}
+
 .modifier-card > div {
   display: flex;
   align-items: center;
@@ -1256,6 +1273,43 @@ button {
   border-radius: 8px;
   background: #e6dcc8;
   color: #6f4e37;
+  border: 1px solid transparent;
+}
+
+.modifier-ability--str {
+  background: #fff0e6;
+  border-color: #f1c9b1;
+  color: #6f4e37;
+}
+
+.modifier-ability--dex {
+  background: #e9f7f2;
+  border-color: #bfe3d3;
+  color: #235a38;
+}
+
+.modifier-ability--con {
+  background: #fef2e4;
+  border-color: #f3cfac;
+  color: #6f4e37;
+}
+
+.modifier-ability--int {
+  background: #eaf2ff;
+  border-color: #bfd5f4;
+  color: #2a4b74;
+}
+
+.modifier-ability--wis {
+  background: #f2f0ff;
+  border-color: #cbc3f4;
+  color: #4b2a74;
+}
+
+.modifier-ability--cha {
+  background: #fff0f6;
+  border-color: #f1bfd4;
+  color: #7a2a52;
 }
 
 .modifier-tags {
@@ -1299,6 +1353,10 @@ button {
   border-radius: 8px;
   padding: 4px 8px;
   border: 1px solid #eadfc9;
+}
+
+.home-column--left .modifier-value {
+  font-size: 12px;
 }
 
 .equipment-layout {
