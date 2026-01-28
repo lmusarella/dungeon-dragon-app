@@ -504,25 +504,14 @@ button {
   gap: 12px;
 }
 
-.resource-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.resource-footer-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  justify-content: flex-end;
-  min-height: 48px;
-}
-
 .resource-detail-button {
   min-height: 32px;
+}
+
+.resource-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .resource-meta {
@@ -531,9 +520,19 @@ button {
   gap: 4px;
 }
 
+.resource-submeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .resource-actions--top {
   display: flex;
   gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .resource-passive {

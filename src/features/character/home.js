@@ -1035,24 +1035,17 @@ function buildResourceList(resources, canManageResources) {
               ${res.image_url ? `<img class="resource-avatar" src="${res.image_url}" alt="Foto di ${res.name}" />` : ''}
               <div class="resource-meta">
                 <strong>${res.name}</strong>
-                <span class="chip chip--small">${formatResourceRecovery(res)}</span>
+                <div class="resource-submeta">
+                  <span class="chip chip--small">${formatResourceRecovery(res)}</span>
+                  ${Number(res.max_uses) ? buildResourceCharges(res) : ''}
+                </div>
               </div>
             </div>
-            ${canManageResources ? `<div class="resource-actions resource-actions--top">${buildResourceManagementButtons(res)}</div>` : ''}
-          </div>
-          <div class="resource-card-footer">
-            <button class="icon-button resource-detail-button" data-detail-resource="${res.id}" aria-label="Dettaglio risorsa">
-              <span aria-hidden="true">🔍</span>
-            </button>
-            <div class="resource-footer-right">
-              ${Number(res.max_uses)
-    ? `
-                  <div class="resource-usage">
-                    ${buildResourceCharges(res)}
-                    <span class="muted">${res.used}/${res.max_uses}</span>
-                  </div>
-                `
-    : '<span class="resource-passive">Passiva</span>'}
+            <div class="resource-actions resource-actions--top">
+              ${canManageResources ? buildResourceManagementButtons(res) : ''}
+              <button class="icon-button resource-detail-button" data-detail-resource="${res.id}" aria-label="Dettaglio risorsa">
+                <span aria-hidden="true">🔍</span>
+              </button>
               ${Number(res.max_uses) ? `<div class="resource-cta">${buildResourceCtaButtons(res)}</div>` : ''}
             </div>
           </div>
@@ -1111,9 +1104,6 @@ function buildResourceManagementButtons(resource) {
   return `
     <button class="icon-button" data-edit-resource="${resource.id}" aria-label="Modifica risorsa">
       <span aria-hidden="true">✏️</span>
-    </button>
-    <button class="icon-button icon-button--danger" data-delete-resource="${resource.id}" aria-label="Elimina risorsa">
-      <span aria-hidden="true">🗑️</span>
     </button>
   `;
 }
