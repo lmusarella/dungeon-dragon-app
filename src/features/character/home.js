@@ -87,16 +87,6 @@ export async function renderHome(container) {
             ${activeCharacter ? buildSkillList(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
           </div>
         </section>
-        <section class="card home-card home-section home-scroll-panel">
-          <header class="card-header">
-            <div>
-              <p class="eyebrow">Competenze extra</p>         
-            </div>
-          </header>
-          <div class="home-scroll-body home-scroll-body--compact">
-            ${activeCharacter ? buildProficiencyOverview(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
-          </div>
-        </section>
       </div>
       <div class="home-column home-column--center">
         <section class="card home-card home-section">
@@ -330,6 +320,26 @@ export async function renderHome(container) {
       }, message, container);
     }));
 
+  const avatar = container.querySelector('.character-avatar');
+  if (avatar) {
+    avatar.addEventListener('pointerdown', (event) => {
+      if (event.button && event.button !== 0) return;
+      event.preventDefault();
+      const src = avatar.getAttribute('src');
+      if (!src) return;
+      const closePreview = openAvatarPreview(src, avatar.getAttribute('alt') || 'Ritratto personaggio');
+      const closeOnRelease = () => {
+        closePreview();
+        window.removeEventListener('pointerup', closeOnRelease);
+        window.removeEventListener('pointercancel', closeOnRelease);
+        window.removeEventListener('blur', closeOnRelease);
+      };
+      window.addEventListener('pointerup', closeOnRelease);
+      window.addEventListener('pointercancel', closeOnRelease);
+      window.addEventListener('blur', closeOnRelease);
+    });
+  }
+
 }
 
 function openResourceDetail(resource) {
@@ -372,6 +382,24 @@ async function saveCharacterData(character, data, message, container) {
   } catch (error) {
     createToast('Errore aggiornamento personaggio', 'error');
   }
+}
+
+function openAvatarPreview(src, alt) {
+  const existing = document.querySelector('.avatar-preview');
+  if (existing) {
+    existing.remove();
+  }
+  const overlay = document.createElement('div');
+  overlay.className = 'avatar-preview';
+  const image = document.createElement('img');
+  image.className = 'avatar-preview__image';
+  image.src = src;
+  image.alt = alt;
+  overlay.appendChild(image);
+  document.body.appendChild(overlay);
+  return () => {
+    overlay.remove();
+  };
 }
 
 function buildEmptyState(canCreateCharacter, offline) {
@@ -702,7 +730,7 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
         </div>
       </div>
       <div class="stat-panel">     
-        <div class="stat-grid stat-grid--compact">
+        <div class="stat-grid stat-grid--compact stat-grid--abilities">
           ${abilityCards.map((ability) => `
             <div class="stat-card stat-card--${ability.key}">
               <span>${ability.label}</span>
@@ -717,28 +745,28 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
             <span>HP</span>
             <strong>${hpLabel}</strong>
           </div>
-          <div class="hp-panel-hit-dice">
-            <span>Dadi vita</span>
-            <strong>${formatHitDice(hitDice)}</strong>
-          </div>
         </div>
         <div class="hp-bar">
           <div class="hp-bar__fill" style="width: ${hpPercent}%;"></div>
         </div>
+        <div class="hp-panel-hit-dice">
+          <span>Dadi vita</span>
+          <strong>${formatHitDice(hitDice)}</strong>
+        </div>
         <div class="hp-panel-subgrid">
-          <div class="stat-mini-card">
+          <div class="stat-chip">
             <span>CA</span>
             <strong>${armorClass ?? '-'}</strong>
           </div>
-          <div class="stat-mini-card">
+          <div class="stat-chip">
             <span>Iniziativa</span>
             <strong>${formatSigned(normalizeNumber(initiativeBonus))}</strong>
           </div>
-          <div class="stat-mini-card">
+          <div class="stat-chip">
             <span>Velocità</span>
             <strong>${data.speed ?? '-'}</strong>
           </div>
-          <div class="stat-mini-card">
+          <div class="stat-chip">
             <span>Percezione passiva</span>
             <strong>${passivePerception ?? '-'}</strong>
           </div>
@@ -749,6 +777,14 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
             <button class="ghost-button" data-hp-action="damage" ${canEditCharacter ? '' : 'disabled'}>Danno</button>
           </div>
         </div>
+      </div>
+      <div class="home-section">
+        <header class="card-header">
+          <div>
+            <p class="eyebrow">Competenze extra</p>
+          </div>
+        </header>
+        ${buildProficiencyOverview(character)}
       </div>
       <details class="accordion">
         <summary>Descrizione e storia</summary>
@@ -774,18 +810,14 @@ function buildSkillList(character) {
     const proficient = Boolean(skillStates[skill.key]);
     const mastery = Boolean(skillMasteryStates[skill.key]);
     const total = calculateSkillModifier(abilities[skill.ability], proficiencyBonus, proficient ? (mastery ? 2 : 1) : 0);
-    const tags = [
-      proficient ? '<span class="modifier-tag modifier-tag--pro">Competenza</span>' : '',
-      mastery ? '<span class="modifier-tag modifier-tag--mastery">Maestria</span>' : ''
-    ].filter(Boolean).join('');
+    const statusClass = mastery ? 'modifier-card--mastery' : proficient ? 'modifier-card--proficiency' : '';
     return `
-          <div class="modifier-card">
+          <div class="modifier-card ${statusClass}">
             <div>
               <div class="modifier-title">
                 <strong>${skill.label}</strong>
                 <span class="modifier-ability modifier-ability--${skill.ability}">${abilityShortLabel[skill.ability]}</span>
               </div>
-              ${tags ? `<div class="modifier-tags">${tags}</div>` : ''}
             </div>
             <div class="modifier-value">${formatSigned(total)}</div>
           </div>
@@ -808,13 +840,13 @@ function buildSavingThrowSection(character) {
         ${savingThrowList.map((save) => {
     const proficient = Boolean(savingStates[save.key]);
     const total = calculateSkillModifier(abilities[save.key], proficiencyBonus, proficient ? 1 : 0);
+    const statusClass = proficient ? 'modifier-card--proficiency' : '';
     return `
-          <div class="modifier-card">
+          <div class="modifier-card ${statusClass}">
             <div>
               <div class="modifier-title">
                 <strong>${save.label}</strong>
               </div>
-              ${proficient ? '<div class="modifier-tags"><span class="modifier-tag modifier-tag--pro">Competenza</span></div>' : ''}
             </div>
             <div class="modifier-value">${formatSigned(total)}</div>
           </div>
