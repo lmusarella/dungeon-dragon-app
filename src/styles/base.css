@@ -475,6 +475,12 @@ button {
 .resource-list--compact li {
   padding: 6px 0;
   gap: 12px;
+  border-bottom: none;
+  margin-bottom: 12px;
+}
+
+.resource-list--compact li:last-child {
+  margin-bottom: 0;
 }
 
 .resource-list--compact .resource-avatar {
@@ -502,11 +508,18 @@ button {
   justify-content: flex-start;
   gap: 8px;
   padding: 16px 14px;
-  border: 1px solid #eadfc9;
+  border: 2px solid #c9b79f;
   border-radius: 14px;
   background: #fffaf2;
   border-bottom: none;
   font-size: 0.7rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.resource-card.is-selected {
+  border-color: #6f4e37;
+  box-shadow: 0 0 0 3px rgba(111, 78, 55, 0.2);
+  transform: translateY(-1px);
 }
 
 .resource-card-layout {
@@ -539,6 +552,10 @@ button {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.resource-title-row .resource-chip {
+  font-size: 0.6rem;
 }
 
 .resource-title-row strong {
@@ -679,6 +696,17 @@ button {
   color: #6a5540;
   font-size: 0.68rem;
   font-weight: 600;
+}
+
+.resource-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.resource-delete-button {
+  border-color: rgba(178, 58, 72, 0.45);
+  color: #b23a48;
 }
 
 .resource-charges {

@@ -196,11 +196,21 @@ export async function renderHome(container) {
           pressTimer = null;
         }
       };
+      const handleSelect = (event) => {
+        if (event.target.closest('button')) return;
+        container.querySelectorAll('.resource-card.is-selected')
+          .forEach((selectedCard) => selectedCard.classList.remove('is-selected'));
+        card.classList.add('is-selected');
+        window.setTimeout(() => {
+          card.classList.remove('is-selected');
+        }, 800);
+      };
       card.addEventListener('pointerdown', startPress);
       card.addEventListener('pointerup', cancelPress);
       card.addEventListener('pointerleave', cancelPress);
       card.addEventListener('pointercancel', cancelPress);
       card.addEventListener('pointermove', cancelPress);
+      card.addEventListener('click', handleSelect);
     });
 
   container.querySelectorAll('[data-use-resource]')
@@ -215,21 +225,6 @@ export async function renderHome(container) {
         renderHome(container);
       } catch (error) {
         createToast('Errore utilizzo risorsa', 'error');
-      }
-    }));
-
-  container.querySelectorAll('[data-delete-resource]')
-    .forEach((button) => button.addEventListener('click', async () => {
-      const resource = resources.find((entry) => entry.id === button.dataset.deleteResource);
-      if (!resource) return;
-      const shouldDelete = await openConfirmModal({ message: 'Eliminare risorsa?' });
-      if (!shouldDelete) return;
-      try {
-        await deleteResource(resource.id);
-        createToast('Risorsa eliminata');
-        renderHome(container);
-      } catch (error) {
-        createToast('Errore eliminazione risorsa', 'error');
       }
     }));
 
@@ -1089,7 +1084,6 @@ function buildResourceList(resources, canManageResources, { showCharges = true, 
                 <div class="resource-actions resource-actions--top">
                   ${canManageResources ? `
                     <button class="resource-action-button resource-icon-button" data-edit-resource="${res.id}" aria-label="Modifica risorsa">✏️</button>
-                    <button class="resource-action-button resource-icon-button" data-delete-resource="${res.id}" aria-label="Elimina risorsa">🗑️</button>
                   ` : ''}
                 </div>
               </div>
@@ -1225,6 +1219,31 @@ function openResourceDrawer(character, onSave, resource = null) {
   };
   passiveInput?.addEventListener('change', syncPassiveState);
   syncPassiveState();
+
+  if (resource) {
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'resource-action-button resource-delete-button';
+    deleteButton.textContent = 'Elimina';
+    deleteButton.addEventListener('click', async () => {
+      const shouldDelete = await openConfirmModal({ message: 'Eliminare risorsa?' });
+      if (!shouldDelete) return;
+      try {
+        await deleteResource(resource.id);
+        createToast('Risorsa eliminata');
+        onSave();
+        const modal = document.querySelector('[data-form-modal]');
+        const cancelButton = modal?.querySelector('[data-form-cancel]');
+        cancelButton?.click();
+      } catch (error) {
+        createToast('Errore eliminazione risorsa', 'error');
+      }
+    });
+    const deleteWrapper = document.createElement('div');
+    deleteWrapper.className = 'resource-form-actions';
+    deleteWrapper.appendChild(deleteButton);
+    form.appendChild(deleteWrapper);
+  }
 
   openFormModal({
     title: resource ? 'Modifica abilità' : 'Nuova abilità',
