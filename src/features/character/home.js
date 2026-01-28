@@ -88,14 +88,16 @@ export async function renderHome(container) {
             ${activeCharacter ? buildSkillList(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
           </div>
         </section>
-        <section class="card home-card home-section">
+        <section class="card home-card home-section home-scroll-panel">
           <header class="card-header">
             <div>
               <p class="eyebrow">Sezione</p>
-              <h3>Competenze</h3>
+              <h3>Competenze extra</h3>
             </div>
           </header>
-          ${activeCharacter ? buildProficiencyOverview(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
+          <div class="home-scroll-body home-scroll-body--compact">
+            ${activeCharacter ? buildProficiencyOverview(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
+          </div>
         </section>
       </div>
       <div class="home-column home-column--center">
@@ -107,7 +109,6 @@ export async function renderHome(container) {
             </div>
             <div class="actions">
               ${characters.length > 1 ? '<select data-character-select></select>' : ''}
-              ${activeCharacter && canEditCharacter ? '<button data-edit-character>Modifica</button>' : ''}
             </div>
           </header>
           ${activeCharacter ? buildCharacterOverview(activeCharacter, canEditCharacter, items) : buildEmptyState(canCreateCharacter, offline)}
@@ -117,14 +118,18 @@ export async function renderHome(container) {
         <section class="card home-card home-section home-scroll-panel">
           <header class="card-header">
             <div>
-              <p class="eyebrow">Focus</p>
-              <h3>Abilità disponibili</h3>
+              <p class="eyebrow">Sezione</p>
+              <h3>Risorse</h3>
             </div>
-            ${activeCharacter && canManageResources ? '<button class="primary" data-add-resource>Nuova risorsa</button>' : ''}
+            ${activeCharacter && canManageResources ? `
+              <button class="icon-button icon-button--add" data-add-resource aria-label="Nuova risorsa">
+                <span aria-hidden="true">+</span>
+              </button>
+            ` : ''}
           </header>
           <div class="home-scroll-body">
             ${activeCharacter
-    ? (resources.length ? buildResourceList(resources, canManageResources) : '<p>Nessuna risorsa.</p>')
+    ? buildResourceSections(resources, canManageResources)
     : '<p>Nessun personaggio selezionato.</p>'}
             ${activeCharacter && !canManageResources ? '<p class="muted">Connettiti per aggiungere nuove risorse.</p>' : ''}
           </div>
@@ -208,6 +213,13 @@ export async function renderHome(container) {
       const resource = resources.find((entry) => entry.id === button.dataset.editResource);
       if (!resource) return;
       openResourceDrawer(activeCharacter, () => renderHome(container), resource);
+    }));
+
+  container.querySelectorAll('[data-detail-resource]')
+    .forEach((button) => button.addEventListener('click', () => {
+      const resource = resources.find((entry) => entry.id === button.dataset.detailResource);
+      if (!resource) return;
+      openResourceDetail(resource);
     }));
 
   container.querySelectorAll('[data-delete-resource]')
@@ -322,6 +334,25 @@ export async function renderHome(container) {
       }, message, container);
     }));
 
+}
+
+function openResourceDetail(resource) {
+  const detail = document.createElement('div');
+  detail.className = 'resource-detail';
+  const maxUses = Number(resource.max_uses) || 0;
+  const usageLabel = maxUses ? `${resource.used}/${resource.max_uses}` : 'Passiva';
+  detail.innerHTML = `
+    <div class="detail-card detail-card--text">
+      <h4>${resource.name}</h4>
+      <p class="muted">${formatResourceRecovery(resource)}</p>
+      <p>Cariche: ${usageLabel}</p>
+    </div>
+  `;
+  openFormModal({
+    title: 'Dettaglio risorsa',
+    submitLabel: 'Chiudi',
+    content: detail
+  });
 }
 
 async function saveCharacterData(character, data, message, container) {
@@ -641,102 +672,93 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
   const hpLabel = maxHp ? `${currentHp ?? '-'}/${maxHp}` : `${currentHp ?? '-'}`;
   const armorClass = calculateArmorClass(data, abilities, items);
   const abilityCards = [
-    { label: 'Forza', value: abilities.str },
-    { label: 'Destrezza', value: abilities.dex },
-    { label: 'Costituzione', value: abilities.con },
-    { label: 'Intelligenza', value: abilities.int },
-    { label: 'Saggezza', value: abilities.wis },
-    { label: 'Carisma', value: abilities.cha }
+    { key: 'str', label: 'Forza', value: abilities.str },
+    { key: 'dex', label: 'Destrezza', value: abilities.dex },
+    { key: 'con', label: 'Costituzione', value: abilities.con },
+    { key: 'int', label: 'Intelligenza', value: abilities.int },
+    { key: 'wis', label: 'Saggezza', value: abilities.wis },
+    { key: 'cha', label: 'Carisma', value: abilities.cha }
   ];
   return `
     <div class="character-overview">
-      <div class="character-overview-top">
-        <div class="character-hero">
-          ${data.avatar_url ? `<img class="character-avatar" src="${data.avatar_url}" alt="Ritratto di ${character.name}" />` : ''}
-          <div>
-            <h3>${character.name}</h3>
-            <p class="muted">${character.system ?? 'Sistema'} </p>
+      <div class="character-summary">
+        <div>
+          <h3 class="character-name">${character.name}</h3>
+          <div class="character-meta">
+            <span class="pill">Livello ${data.level ?? '-'}</span>
+            <span class="pill">Razza ${data.race ?? '-'}</span>
+            <span class="pill">Classe/Archetipo ${data.class_archetype ?? '-'}</span>
+          </div>
+        </div>
+        <div class="character-summary-actions">
+          <div class="proficiency-card">
+            <span>Bonus competenza</span>
+            <strong>${formatSigned(proficiencyBonus)}</strong>
+          </div>
+          ${canEditCharacter ? `
+            <button class="icon-button" data-edit-character aria-label="Modifica personaggio">
+              <span aria-hidden="true">✏️</span>
+            </button>
+          ` : ''}
+        </div>
+      </div>
+      <div class="stat-panel">
+        <h4>Statistiche</h4>
+        <div class="stat-grid stat-grid--compact">
+          ${abilityCards.map((ability) => `
+            <div class="stat-card stat-card--${ability.key}">
+              <span>${ability.label}</span>
+              <strong>${formatAbility(ability.value)}</strong>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="hp-panel">
+        <div class="hp-panel-header">
+          <div class="hp-panel-title">
+            <span>HP</span>
+            <strong>${hpLabel}</strong>
+          </div>
+          <div class="hp-panel-hit-dice">
+            <span>Dadi vita</span>
+            <strong>${formatHitDice(hitDice)}</strong>
+          </div>
+        </div>
+        <div class="hp-bar">
+          <div class="hp-bar__fill" style="width: ${hpPercent}%;"></div>
+        </div>
+        <div class="hp-panel-subgrid">
+          <div class="stat-mini-card">
+            <span>CA</span>
+            <strong>${armorClass ?? '-'}</strong>
+          </div>
+          <div class="stat-mini-card">
+            <span>Iniziativa</span>
+            <strong>${formatSigned(normalizeNumber(initiativeBonus))}</strong>
+          </div>
+          <div class="stat-mini-card">
+            <span>Velocità</span>
+            <strong>${data.speed ?? '-'}</strong>
+          </div>
+          <div class="stat-mini-card">
+            <span>Percezione passiva</span>
+            <strong>${passivePerception ?? '-'}</strong>
+          </div>
+        </div>
+        <div class="hp-shortcuts">
+          <strong>PF rapidi</strong>
+          <div class="button-row">
+            <button class="ghost-button" data-hp-action="heal" ${canEditCharacter ? '' : 'disabled'}>Cura</button>
+            <button class="ghost-button" data-hp-action="damage" ${canEditCharacter ? '' : 'disabled'}>Danno</button>
           </div>
         </div>
       </div>
-      <div class="character-overview-columns">
-        <aside class="character-stats-column">
-          <h4>Statistiche</h4>
-          <div class="stat-grid stat-grid--compact">
-            ${abilityCards.map((ability) => `
-              <div class="stat-card">
-                <span>${ability.label}</span>
-                <strong>${formatAbility(ability.value)}</strong>
-              </div>
-            `).join('')}
-          </div>
-        </aside>
-        <div class="character-overview-content">
-          <div class="character-overview-content-grid">
-            <div class="hp-panel">
-              <div class="hp-panel-header">
-                <div class="hp-panel-title">
-                  <span>HP</span>
-                  <strong>${hpLabel}</strong>
-                </div>
-                <div class="hp-panel-hit-dice">
-                  <span>Dadi vita</span>
-                  <strong>${formatHitDice(hitDice)}</strong>
-                </div>
-              </div>
-              <div class="hp-bar">
-                <div class="hp-bar__fill" style="width: ${hpPercent}%;"></div>
-              </div>
-              <div class="hp-panel-meta">
-                <span>Velocità ${data.speed ?? '-'}</span>
-              </div>
-              <div class="hp-shortcuts">
-                <strong>PF rapidi</strong>
-                <div class="button-row">
-                  <button class="ghost-button" data-hp-action="heal" ${canEditCharacter ? '' : 'disabled'}>Cura</button>
-                  <button class="ghost-button" data-hp-action="damage" ${canEditCharacter ? '' : 'disabled'}>Danno</button>
-                </div>
-              </div>
-            </div>
-            <div class="overview-stat-grid">
-              <div class="stat-icon-card">
-                <span class="stat-icon" aria-hidden="true">🛡️</span>
-                <div>
-                  <span>Classe Armatura</span>
-                  <strong>${armorClass ?? '-'}</strong>
-                </div>
-              </div>
-              <div class="stat-icon-card">
-                <span class="stat-icon" aria-hidden="true">⚡</span>
-                <div>
-                  <span>Iniziativa</span>
-                  <strong>${formatSigned(normalizeNumber(initiativeBonus))}</strong>
-                </div>
-              </div>
-              <div class="stat-icon-card">
-                <span class="stat-icon" aria-hidden="true">👁️</span>
-                <div>
-                  <span>Percezione passiva</span>
-                  <strong>${passivePerception ?? '-'}</strong>
-                </div>
-              </div>
-              <div class="stat-icon-card stat-icon-card--circle">
-                <span class="stat-icon" aria-hidden="true">⭐</span>
-                <div>
-                  <span>Bonus competenza</span>
-                  <strong>${formatSigned(proficiencyBonus)}</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="detail-section">
-            <h4>Descrizione</h4>
-            <div class="detail-card detail-card--text">
-              <p>${data.description ? data.description : 'Aggiungi una descrizione del personaggio.'}</p>
-            </div>
-          </div>
+      <details class="accordion">
+        <summary>Descrizione e storia</summary>
+        <div class="detail-card detail-card--text">
+          <p>${data.description ? data.description : 'Aggiungi una descrizione del personaggio.'}</p>
         </div>
-      </div>
+      </details>
     </div>
   `;
 }
@@ -928,19 +950,50 @@ function buildResourceList(resources, canManageResources) {
             ${canManageResources ? `<div class="resource-actions resource-actions--top">${buildResourceManagementButtons(res)}</div>` : ''}
           </div>
           <div class="resource-card-footer">
-            ${Number(res.max_uses)
+            <button class="ghost-button resource-detail-button" data-detail-resource="${res.id}">Dettaglio</button>
+            <div class="resource-footer-right">
+              ${Number(res.max_uses)
     ? `
-                <div class="resource-usage">
-                  ${buildResourceCharges(res)}
-                  <span class="muted">${res.used}/${res.max_uses}</span>
-                </div>
-              `
+                  <div class="resource-usage">
+                    ${buildResourceCharges(res)}
+                    <span class="muted">${res.used}/${res.max_uses}</span>
+                  </div>
+                `
     : '<span class="resource-passive">Passiva</span>'}
-            ${Number(res.max_uses) ? `<div class="resource-cta">${buildResourceCtaButtons(res)}</div>` : ''}
+              ${Number(res.max_uses) ? `<div class="resource-cta">${buildResourceCtaButtons(res)}</div>` : ''}
+            </div>
           </div>
         </li>
       `).join('')}
     </ul>
+  `;
+}
+
+function buildResourceSections(resources, canManageResources) {
+  const available = resources.filter((res) => {
+    const maxUses = Number(res.max_uses) || 0;
+    if (maxUses === 0) return true;
+    return Number(res.used) < maxUses;
+  });
+  const consumed = resources.filter((res) => {
+    const maxUses = Number(res.max_uses) || 0;
+    if (maxUses === 0) return false;
+    return Number(res.used) >= maxUses;
+  });
+
+  if (!resources.length) {
+    return '<p>Nessuna risorsa.</p>';
+  }
+
+  return `
+    <div class="resource-section">
+      <h4>Risorse disponibili</h4>
+      ${available.length ? buildResourceList(available, canManageResources) : '<p class="muted">Nessuna risorsa disponibile.</p>'}
+    </div>
+    <div class="resource-section">
+      <h4>Risorse consumate</h4>
+      ${consumed.length ? buildResourceList(consumed, canManageResources) : '<p class="muted">Nessuna risorsa consumata.</p>'}
+    </div>
   `;
 }
 
