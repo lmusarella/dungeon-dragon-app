@@ -43,13 +43,17 @@ export async function updateResourcesReset(characterId, resetOn) {
       const maxUses = Number(resource.max_uses) || 0;
       const used = Number(resource.used) || 0;
       if (maxUses === 0 || used === 0) return null;
+      if (resource.reset_on === 'none') return null;
       const recoveryShort = Number(resource.recovery_short);
       const recoveryLong = Number(resource.recovery_long);
       const defaultShort = resource.reset_on === 'short_rest' ? maxUses : 0;
       const defaultLong = resource.reset_on === 'long_rest' ? maxUses : 0;
       const shortRecovery = Number.isNaN(recoveryShort) ? defaultShort : recoveryShort;
       const longRecovery = Number.isNaN(recoveryLong) ? defaultLong : recoveryLong;
-      const recovery = resetOn === 'short_rest' ? shortRecovery : longRecovery;
+      if (resetOn === 'short_rest' && resource.reset_on !== 'short_rest') return null;
+      const useShortRecovery = resetOn === 'short_rest'
+        || (resetOn === 'long_rest' && resource.reset_on === 'short_rest');
+      const recovery = useShortRecovery ? shortRecovery : longRecovery;
       if (!recovery) return null;
       const nextUsed = Math.max(used - recovery, 0);
       if (nextUsed === used) return null;

@@ -313,14 +313,15 @@ async function handleRestAction(resetOn, container) {
   if (!shouldRest) return;
   try {
     await updateResourcesReset(activeCharacter.id, resetOn);
-    createToast('Risorse aggiornate');
+    const toastLabel = resetOn === 'long_rest' ? 'Riposo lungo completato' : 'Riposo breve completato';
+    createToast(toastLabel);
     const refreshed = await fetchResources(activeCharacter.id);
     updateCache('resources', refreshed);
     await cacheSnapshot({ resources: refreshed });
     if (resetOn === 'long_rest') {
-      const nextData = applyLongRestHitDice(activeCharacter.data);
+      const nextData = applyLongRestRecovery(activeCharacter.data);
       if (nextData) {
-        await saveCharacterData(activeCharacter, nextData, 'Dadi vita recuperati', container);
+        await saveCharacterData(activeCharacter, nextData, null, container);
         return;
       }
     }
@@ -795,13 +796,11 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
           <div>
             <h3 class="character-name">${character.name}</h3>
             <div class="character-meta">
-              <div class="character-meta-column">
-                <span class="pill">Livello ${data.level ?? '-'}</span>
-                <span class="pill">Allineamento ${data.alignment ?? '-'}</span>
-              </div>
-              <span class="pill">Razza ${data.race ?? '-'}</span>
-              <span class="pill">Classe ${data.class_name ?? data.class_archetype ?? '-'}</span>
-              <span class="pill">Archetipo ${data.archetype ?? '-'}</span>
+              <span class="meta-tag">Livello ${data.level ?? '-'}</span>
+              <span class="meta-tag">Razza ${data.race ?? '-'}</span>
+              <span class="meta-tag">Classe ${data.class_name ?? data.class_archetype ?? '-'}</span>
+              <span class="meta-tag">Archetipo ${data.archetype ?? '-'}</span>
+              <span class="meta-tag">Allineamento ${data.alignment ?? '-'}</span>
             </div>
           </div>
         </div>
@@ -823,19 +822,22 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
         </div>
       </div>
       <div class="hp-panel">
-        <div class="hp-panel-header">
-          <div class="hp-panel-title">
-            <span>HP</span>
-            <strong>${hpLabel}</strong>
-          </div>
-        </div>
         <div class="hp-bar-row">
           <div class="armor-class-card">
             <span>CA</span>
             <strong>${armorClass ?? '-'}</strong>
             <span class="armor-class-card__sigil" aria-hidden="true">🛡️</span>
           </div>
+          <div class="armor-class-card armor-class-card--initiative">
+            <span>Iniz</span>
+            <strong>${formatSigned(normalizeNumber(initiativeBonus))}</strong>
+            <span class="armor-class-card__sigil" aria-hidden="true">⚡</span>
+          </div>
           <div class="hp-bar-stack">
+            <div class="hp-bar-label">
+              <span>HP</span>
+              <strong>${hpLabel}</strong>
+            </div>
             <div class="hp-bar">
               <div class="hp-bar__fill" style="width: ${hpPercent}%;"></div>
             </div>
@@ -846,10 +848,6 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
           </div>
         </div>
         <div class="hp-panel-subgrid">
-          <div class="stat-chip">
-            <span>Iniziativa</span>
-            <strong>${formatSigned(normalizeNumber(initiativeBonus))}</strong>
-          </div>
           <div class="stat-chip">
             <span>Velocità</span>
             <strong>${data.speed ?? '-'}</strong>
@@ -1075,8 +1073,8 @@ function buildResourceList(resources, canManageResources) {
             <div class="resource-card-actions">
               ${Number(res.max_uses) ? `<div class="resource-cta">${buildResourceCtaButtons(res)}</div>` : ''}
               <div class="resource-actions resource-actions--top">
-                <button class="resource-action-button" data-detail-resource="${res.id}">Dettagli</button>
-                ${canManageResources ? `<button class="resource-action-button" data-edit-resource="${res.id}">Modifica</button>` : ''}
+                <button class="resource-action-button resource-icon-button" data-detail-resource="${res.id}" aria-label="Dettagli risorsa">ℹ️</button>
+                ${canManageResources ? `<button class="resource-action-button resource-icon-button" data-edit-resource="${res.id}" aria-label="Modifica risorsa">✏️</button>` : ''}
               </div>
             </div>
           </div>
@@ -1087,37 +1085,16 @@ function buildResourceList(resources, canManageResources) {
 }
 
 function buildResourceSections(resources, canManageResources) {
-  const available = resources.filter((res) => {
-    const maxUses = Number(res.max_uses) || 0;
-    if (maxUses === 0) return true;
-    return Number(res.used) < maxUses;
-  });
-  const consumed = resources.filter((res) => {
-    const maxUses = Number(res.max_uses) || 0;
-    if (maxUses === 0) return false;
-    return Number(res.used) >= maxUses;
-  });
-
   if (!resources.length) {
     return '<p>Nessuna risorsa.</p>';
   }
-
-  return `
-    <div class="resource-section">
-      <h4>Risorse disponibili</h4>
-      ${available.length ? buildResourceList(available, canManageResources) : '<p class="muted">Nessuna risorsa disponibile.</p>'}
-    </div>
-    <div class="resource-section">
-      <h4>Risorse consumate</h4>
-      ${consumed.length ? buildResourceList(consumed, canManageResources) : '<p class="muted">Nessuna risorsa consumata.</p>'}
-    </div>
-  `;
+  return buildResourceList(resources, canManageResources);
 }
 
 function buildResourceCharges(resource) {
   const maxUses = Number(resource.max_uses) || 0;
   const used = Number(resource.used) || 0;
-  if (!maxUses) return '';
+  if (!maxUses || maxUses <= 1) return '';
   const style = resource.reset_on === 'long_rest' ? 'long' : 'short';
   const charges = Array.from({ length: maxUses }, (_, index) => {
     const isUsed = index < used;
@@ -1137,10 +1114,10 @@ function buildResourceCtaButtons(resource) {
   if (maxUses === 0) return '';
   const canUse = used < maxUses;
   if (canUse) {
-    return `<button class="resource-cta-button" data-use-resource="${resource.id}">Usa</button>`;
+    return `<button class="resource-cta-button" data-use-resource="${resource.id}" aria-label="Usa risorsa">⚡</button>`;
   }
   if (used > 0) {
-    return `<button class="resource-cta-button" data-recover-resource="${resource.id}">Ricarica</button>`;
+    return `<button class="resource-cta-button" data-recover-resource="${resource.id}" aria-label="Recupera risorsa">♻️</button>`;
   }
   return '';
 }
@@ -1228,11 +1205,12 @@ function openResourceDrawer(character, onSave, resource = null) {
       createToast('Inserisci un nome per la risorsa', 'error');
       return;
     }
+    const currentUser = getState().user;
     const toNumberOrNull = (value) => (value === '' || value === null ? null : Number(value));
     const maxUses = Number(formData.get('max_uses')) || 0;
     const used = Math.min(Number(formData.get('used')) || 0, maxUses || 0);
     const payload = {
-      user_id: character.user_id,
+      user_id: currentUser?.id ?? character.user_id,
       character_id: character.id,
       name,
       image_url: formData.get('image_url')?.trim() || null,
@@ -1366,12 +1344,33 @@ function applyLongRestHitDice(data) {
   const nextUsed = Math.max(used - Math.min(recovery, used), 0);
   if (nextUsed === used) return null;
   return {
-    ...data,
-    hit_dice: {
-      ...hitDice,
-      used: nextUsed
-    }
+    ...hitDice,
+    used: nextUsed
   };
+}
+
+function applyLongRestRecovery(data) {
+  if (!data) return null;
+  let changed = false;
+  const hp = data.hp || {};
+  const maxHp = normalizeNumber(hp.max);
+  const next = { ...data };
+  if (maxHp !== null && maxHp !== undefined) {
+    const currentHp = Number(hp.current) || 0;
+    if (currentHp !== maxHp) {
+      next.hp = {
+        ...hp,
+        current: maxHp
+      };
+      changed = true;
+    }
+  }
+  const nextHitDice = applyLongRestHitDice(data);
+  if (nextHitDice) {
+    next.hit_dice = nextHitDice;
+    changed = true;
+  }
+  return changed ? next : null;
 }
 
 function formatSigned(value) {
