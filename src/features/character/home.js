@@ -701,8 +701,7 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
           ` : ''}
         </div>
       </div>
-      <div class="stat-panel">
-        <h4>Statistiche</h4>
+      <div class="stat-panel">     
         <div class="stat-grid stat-grid--compact">
           ${abilityCards.map((ability) => `
             <div class="stat-card stat-card--${ability.key}">
