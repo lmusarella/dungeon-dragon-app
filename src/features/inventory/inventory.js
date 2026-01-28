@@ -45,6 +45,17 @@ const categories = [
 ];
 
 const categoryLabels = new Map(itemCategories.map((category) => [category.value, category.label]));
+const weaponTypes = [
+  { value: '', label: 'Seleziona' },
+  { value: 'simple', label: 'Semplice' },
+  { value: 'martial', label: 'Da guerra' }
+];
+const armorTypes = [
+  { value: '', label: 'Seleziona' },
+  { value: 'light', label: 'Leggera' },
+  { value: 'medium', label: 'Media' },
+  { value: 'heavy', label: 'Pesante' }
+];
 
 export async function renderInventory(container) {
   const state = getState();
@@ -549,6 +560,53 @@ function openItemDrawer(character, item, items, onSave) {
 
   form.appendChild(buildTextarea({ label: 'Note', name: 'notes', value: item?.notes ?? '' }));
 
+  const proficiencySection = document.createElement('div');
+  proficiencySection.className = 'drawer-form';
+  const weaponTypeField = document.createElement('label');
+  weaponTypeField.className = 'field';
+  weaponTypeField.innerHTML = '<span>Tipo arma</span>';
+  const weaponTypeSelect = buildSelect(weaponTypes, item?.weapon_type ?? '');
+  weaponTypeSelect.name = 'weapon_type';
+  weaponTypeField.appendChild(weaponTypeSelect);
+
+  const armorTypeField = document.createElement('label');
+  armorTypeField.className = 'field';
+  armorTypeField.innerHTML = '<span>Tipo armatura</span>';
+  const armorTypeSelect = buildSelect(armorTypes, item?.armor_type ?? '');
+  armorTypeSelect.name = 'armor_type';
+  armorTypeField.appendChild(armorTypeSelect);
+
+  const shieldField = document.createElement('label');
+  shieldField.className = 'checkbox';
+  shieldField.innerHTML = '<input type="checkbox" name="is_shield" /> <span>Scudo</span>';
+
+  const armorClassField = buildInput({
+    label: 'Classe armatura base',
+    name: 'armor_class',
+    type: 'number',
+    value: item?.armor_class ?? ''
+  });
+  const armorBonusField = buildInput({
+    label: 'Bonus armatura',
+    name: 'armor_bonus',
+    type: 'number',
+    value: item?.armor_bonus ?? 0
+  });
+  const shieldBonusField = buildInput({
+    label: 'Bonus scudo',
+    name: 'shield_bonus',
+    type: 'number',
+    value: item?.shield_bonus ?? 2
+  });
+
+  proficiencySection.appendChild(weaponTypeField);
+  proficiencySection.appendChild(armorTypeField);
+  proficiencySection.appendChild(shieldField);
+  proficiencySection.appendChild(armorClassField);
+  proficiencySection.appendChild(armorBonusField);
+  proficiencySection.appendChild(shieldBonusField);
+  form.appendChild(proficiencySection);
+
   const submit = document.createElement('button');
   submit.className = 'primary';
   submit.type = 'submit';
@@ -557,17 +615,36 @@ function openItemDrawer(character, item, items, onSave) {
 
   form.attunement_active.checked = item?.attunement_active ?? false;
   form.equipable.checked = item?.equipable ?? false;
+  form.is_shield.checked = item?.is_shield ?? false;
   equipSlotSelect.disabled = !form.equipable.checked;
-  form.equipable.addEventListener('change', () => {
+  const updateEquipmentFields = () => {
     equipSlotSelect.disabled = !form.equipable.checked;
     if (!form.equipable.checked) {
       equipSlotSelect.value = '';
     }
-  });
+    const isWeapon = categorySelect.value === 'weapon';
+    const isArmor = categorySelect.value === 'armor';
+    weaponTypeSelect.disabled = !isWeapon;
+    armorTypeSelect.disabled = !isArmor;
+    shieldField.querySelector('input').disabled = !isArmor;
+    armorClassField.querySelector('input').disabled = !isArmor;
+    armorBonusField.querySelector('input').disabled = !isArmor;
+    shieldBonusField.querySelector('input').disabled = !isArmor || !form.is_shield.checked;
+  };
+  form.equipable.addEventListener('change', updateEquipmentFields);
+  categorySelect.addEventListener('change', updateEquipmentFields);
+  form.is_shield.addEventListener('change', updateEquipmentFields);
+  updateEquipmentFields();
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(form);
+    const equipSlot = formData.get('equip_slot') || null;
+    const category = formData.get('category');
+    if (equipSlot && !hasProficiencyForItem(character, formData)) {
+      createToast('Non hai la competenza per equipaggiare questo oggetto', 'error');
+      return;
+    }
     const payload = {
       user_id: character.user_id,
       character_id: character.id,
@@ -576,12 +653,18 @@ function openItemDrawer(character, item, items, onSave) {
       qty: Number(formData.get('qty')),
       weight: Number(formData.get('weight')),
       value_cp: Number(formData.get('value_cp')),
-      category: formData.get('category'),
+      category,
       container_item_id: formData.get('container_item_id') || null,
       equipable: formData.get('equipable') === 'on',
-      equip_slot: formData.get('equip_slot') || null,
+      equip_slot: equipSlot,
       attunement_active: formData.get('attunement_active') === 'on',
-      notes: formData.get('notes')
+      notes: formData.get('notes'),
+      weapon_type: formData.get('weapon_type') || null,
+      armor_type: formData.get('armor_type') || null,
+      is_shield: formData.get('is_shield') === 'on',
+      armor_class: Number(formData.get('armor_class')) || null,
+      armor_bonus: Number(formData.get('armor_bonus')) || 0,
+      shield_bonus: Number(formData.get('shield_bonus')) || 0
     };
 
     try {
@@ -604,4 +687,28 @@ function openItemDrawer(character, item, items, onSave) {
 
 function getWeightUnit(character) {
   return character.data?.settings?.weight_unit ?? 'lb';
+}
+
+function hasProficiencyForItem(character, formData) {
+  const proficiencies = character.data?.proficiencies || {};
+  const category = formData.get('category');
+  if (category === 'weapon') {
+    const weaponType = formData.get('weapon_type');
+    if (!weaponType) return false;
+    return weaponType === 'simple'
+      ? Boolean(proficiencies.weapon_simple)
+      : Boolean(proficiencies.weapon_martial);
+  }
+  if (category === 'armor') {
+    const isShield = formData.get('is_shield') === 'on';
+    if (isShield) {
+      return Boolean(proficiencies.shield);
+    }
+    const armorType = formData.get('armor_type');
+    if (!armorType) return false;
+    if (armorType === 'light') return Boolean(proficiencies.armor_light);
+    if (armorType === 'medium') return Boolean(proficiencies.armor_medium);
+    return Boolean(proficiencies.armor_heavy);
+  }
+  return true;
 }

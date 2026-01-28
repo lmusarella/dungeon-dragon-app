@@ -32,15 +32,35 @@ export async function updateCharacter(id, payload) {
 }
 
 export async function updateResourcesReset(characterId, resetOn) {
-  const resetTargets = resetOn === 'long_rest'
-    ? ['short_rest', 'long_rest']
-    : ['short_rest'];
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('resources')
-    .update({ used: 0 })
-    .eq('character_id', characterId)
-    .in('reset_on', resetTargets);
+    .select('*')
+    .eq('character_id', characterId);
   if (error) throw error;
+  const resources = data ?? [];
+  const updates = resources
+    .map((resource) => {
+      const maxUses = Number(resource.max_uses) || 0;
+      const used = Number(resource.used) || 0;
+      if (maxUses === 0 || used === 0) return null;
+      const recoveryShort = Number(resource.recovery_short);
+      const recoveryLong = Number(resource.recovery_long);
+      const defaultShort = resource.reset_on === 'short_rest' ? maxUses : 0;
+      const defaultLong = resource.reset_on === 'long_rest' ? maxUses : 0;
+      const shortRecovery = Number.isNaN(recoveryShort) ? defaultShort : recoveryShort;
+      const longRecovery = Number.isNaN(recoveryLong) ? defaultLong : recoveryLong;
+      const recovery = resetOn === 'short_rest' ? shortRecovery : longRecovery;
+      if (!recovery) return null;
+      const nextUsed = Math.max(used - recovery, 0);
+      if (nextUsed === used) return null;
+      return { id: resource.id, used: nextUsed };
+    })
+    .filter(Boolean);
+  if (!updates.length) return;
+  const { error: updateError } = await supabase
+    .from('resources')
+    .upsert(updates, { onConflict: 'id' });
+  if (updateError) throw updateError;
 }
 
 export async function fetchResources(characterId) {

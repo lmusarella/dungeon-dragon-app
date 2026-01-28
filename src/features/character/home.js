@@ -8,16 +8,14 @@ import {
   updateResource,
   updateResourcesReset
 } from './characterApi.js';
+import { fetchItems } from '../inventory/inventoryApi.js';
 import { getState, setActiveCharacter, setState, updateCache } from '../../app/state.js';
 import {
-  buildDrawerLayout,
   buildInput,
   buildSelect,
   buildTextarea,
-  closeDrawer,
   createToast,
   openConfirmModal,
-  openDrawer,
   openFormModal
 } from '../../ui/components.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
@@ -49,6 +47,7 @@ export async function renderHome(container) {
   const canEditCharacter = Boolean(user) && !offline;
 
   let resources = state.cache.resources;
+  let items = state.cache.items;
   if (!offline && activeCharacter) {
     try {
       resources = await fetchResources(activeCharacter.id);
@@ -56,6 +55,13 @@ export async function renderHome(container) {
       await cacheSnapshot({ resources });
     } catch (error) {
       createToast('Errore caricamento risorse', 'error');
+    }
+    try {
+      items = await fetchItems(activeCharacter.id);
+      updateCache('items', items);
+      await cacheSnapshot({ items });
+    } catch (error) {
+      createToast('Errore caricamento equip', 'error');
     }
   }
 
@@ -72,7 +78,7 @@ export async function renderHome(container) {
             ${activeCharacter && canEditCharacter ? '<button data-edit-character>Modifica</button>' : ''}
           </div>
         </header>
-        ${activeCharacter ? buildCharacterOverview(activeCharacter, canEditCharacter) : buildEmptyState(canCreateCharacter, offline)}
+        ${activeCharacter ? buildCharacterOverview(activeCharacter, canEditCharacter, items) : buildEmptyState(canCreateCharacter, offline)}
       </section>
       <section class="card home-card home-section">
         <header class="card-header">
@@ -294,6 +300,7 @@ async function openCharacterDrawer(user, onSave, character = null) {
   const skillStates = characterData.skills || {};
   const skillMasteryStates = characterData.skill_mastery || {};
   const savingStates = characterData.saving_throws || {};
+  const proficiencies = characterData.proficiencies || {};
   const form = document.createElement('div');
   form.className = 'character-edit-form';
 
@@ -393,11 +400,29 @@ async function openCharacterDrawer(user, onSave, character = null) {
     </div>
   `;
 
+  const proficiencySection = document.createElement('div');
+  proficiencySection.className = 'character-edit-section';
+  proficiencySection.innerHTML = `
+    <h4>Competenze equipaggiamento</h4>
+    <div class="character-saving-grid">
+      ${equipmentProficiencyList.map((prof) => {
+    const proficient = Boolean(proficiencies[prof.key]);
+    return `
+        <label class="toggle-pill">
+          <input type="checkbox" name="prof_${prof.key}" ${proficient ? 'checked' : ''} />
+          <span>${prof.label}</span>
+        </label>
+      `;
+  }).join('')}
+    </div>
+  `;
+
   form.appendChild(mainSection);
   form.appendChild(statsSection);
   form.appendChild(abilitySection);
   form.appendChild(skillSection);
   form.appendChild(savingSection);
+  form.appendChild(proficiencySection);
 
   const modal = document.querySelector('[data-form-modal]');
   const modalCard = modal?.querySelector('.modal-card');
@@ -427,6 +452,10 @@ async function openCharacterDrawer(user, onSave, character = null) {
   savingThrowList.forEach((save) => {
     nextSaving[save.key] = formData.has(`save_${save.key}`);
   });
+  const nextProficiencies = { ...characterData.proficiencies };
+  equipmentProficiencyList.forEach((prof) => {
+    nextProficiencies[prof.key] = formData.has(`prof_${prof.key}`);
+  });
   const nextData = {
     ...characterData,
     avatar_url: formData.get('avatar_url')?.trim() || null,
@@ -454,7 +483,8 @@ async function openCharacterDrawer(user, onSave, character = null) {
     },
     skills: nextSkills,
     skill_mastery: nextMastery,
-    saving_throws: nextSaving
+    saving_throws: nextSaving,
+    proficiencies: nextProficiencies
   };
   const payload = {
     name,
@@ -483,7 +513,7 @@ async function openCharacterDrawer(user, onSave, character = null) {
   }
 }
 
-function buildCharacterOverview(character, canEditCharacter) {
+function buildCharacterOverview(character, canEditCharacter, items = []) {
   const data = character.data || {};
   const hp = data.hp || {};
   const hitDice = data.hit_dice || {};
@@ -497,6 +527,7 @@ function buildCharacterOverview(character, canEditCharacter) {
   const maxHp = normalizeNumber(hp.max);
   const hpPercent = maxHp ? Math.min(Math.max((Number(currentHp) / maxHp) * 100, 0), 100) : 0;
   const hpLabel = maxHp ? `${currentHp ?? '-'}/${maxHp}` : `${currentHp ?? '-'}`;
+  const armorClass = calculateArmorClass(data, abilities, items);
   const abilityCards = [
     { label: 'Forza', value: abilities.str },
     { label: 'Destrezza', value: abilities.dex },
@@ -524,7 +555,7 @@ function buildCharacterOverview(character, canEditCharacter) {
             <div class="hp-bar__fill" style="width: ${hpPercent}%;"></div>
           </div>
           <div class="hp-panel-meta">
-            <span>CA ${data.ac ?? '-'}</span>
+            <span>CA ${armorClass ?? '-'}</span>
             <span>Velocità ${data.speed ?? '-'}</span>
           </div>
         </div>
@@ -650,11 +681,11 @@ function buildResourceList(resources, canManageResources) {
             ${res.image_url ? `<img class="resource-avatar" src="${res.image_url}" alt="Foto di ${res.name}" />` : ''}
             <div>
               <strong>${res.name}</strong>
-              <p class="muted">${res.reset_on}</p>
+              <p class="muted">${formatResourceRecovery(res)}</p>
             </div>
           </div>
           <div class="actions">
-            <span>${res.used}/${res.max_uses}</span>
+            ${Number(res.max_uses) ? `<span>${res.used}/${res.max_uses}</span>` : '<span>Passiva</span>'}
             ${canManageResources ? buildResourceActions(res) : ''}
           </div>
         </li>
@@ -666,6 +697,12 @@ function buildResourceList(resources, canManageResources) {
 function buildResourceActions(resource) {
   const maxUses = Number(resource.max_uses) || 0;
   const used = Number(resource.used) || 0;
+  if (maxUses === 0) {
+    return `
+      <button data-edit-resource="${resource.id}">Modifica</button>
+      <button data-delete-resource="${resource.id}">Elimina</button>
+    `;
+  }
   const canUse = maxUses === 0 ? false : used < maxUses;
   const canRecover = used > 0;
   return `
@@ -678,52 +715,100 @@ function buildResourceActions(resource) {
 
 function openResourceDrawer(character, onSave, resource = null) {
   if (!character) return;
-  const form = document.createElement('form');
+  const form = document.createElement('div');
   form.className = 'drawer-form';
-  form.appendChild(buildInput({ label: 'Nome risorsa', name: 'name', placeholder: 'Es. Ispirazione', value: resource?.name ?? '' }));
+  form.appendChild(buildInput({ label: 'Nome abilità', name: 'name', placeholder: 'Es. Ispirazione', value: resource?.name ?? '' }));
   form.appendChild(buildInput({
     label: 'Foto (URL)',
     name: 'image_url',
     placeholder: 'https://.../risorsa.png',
     value: resource?.image_url ?? ''
   }));
-  form.appendChild(buildInput({ label: 'Utilizzi massimi', name: 'max_uses', type: 'number', value: resource?.max_uses ?? 1 }));
-  form.appendChild(buildInput({ label: 'Utilizzi già spesi', name: 'used', type: 'number', value: resource?.used ?? 0 }));
+  const passiveField = document.createElement('label');
+  passiveField.className = 'checkbox';
+  passiveField.innerHTML = '<input type="checkbox" name="is_passive" /> <span>Passiva (senza cariche)</span>';
+  form.appendChild(passiveField);
+  form.appendChild(buildInput({ label: 'Cariche massime', name: 'max_uses', type: 'number', value: resource?.max_uses ?? 1 }));
+  form.appendChild(buildInput({ label: 'Cariche consumate', name: 'used', type: 'number', value: resource?.used ?? 0 }));
+
+  const recoveryGrid = document.createElement('div');
+  recoveryGrid.className = 'compact-field-grid';
+  recoveryGrid.appendChild(buildInput({
+    label: 'Recupero riposo breve',
+    name: 'recovery_short',
+    type: 'number',
+    value: resource?.recovery_short ?? ''
+  }));
+  recoveryGrid.appendChild(buildInput({
+    label: 'Recupero riposo lungo',
+    name: 'recovery_long',
+    type: 'number',
+    value: resource?.recovery_long ?? ''
+  }));
+  form.appendChild(recoveryGrid);
 
   const resetField = document.createElement('label');
   resetField.className = 'field';
-  resetField.innerHTML = '<span>Reset</span>';
+  resetField.innerHTML = '<span>Tipo ricarica</span>';
   const resetSelect = buildSelect([
     { value: 'short_rest', label: 'Riposo breve' },
     { value: 'long_rest', label: 'Riposo lungo' },
-    { value: 'none', label: 'Nessun reset' }
+    { value: 'none', label: 'Nessuna ricarica' }
   ], resource?.reset_on ?? 'long_rest');
   resetSelect.name = 'reset_on';
   resetField.appendChild(resetSelect);
   form.appendChild(resetField);
 
-  const submit = document.createElement('button');
-  submit.className = 'primary';
-  submit.type = 'submit';
-  submit.textContent = resource ? 'Salva' : 'Crea';
-  form.appendChild(submit);
+  const maxUsesInput = form.querySelector('input[name="max_uses"]');
+  const usedInput = form.querySelector('input[name="used"]');
+  const recoveryShortInput = form.querySelector('input[name="recovery_short"]');
+  const recoveryLongInput = form.querySelector('input[name="recovery_long"]');
+  const passiveInput = form.querySelector('input[name="is_passive"]');
+  if (passiveInput) {
+    passiveInput.checked = Number(resource?.max_uses) === 0;
+  }
+  const syncPassiveState = () => {
+    const isPassive = passiveInput?.checked;
+    if (isPassive) {
+      if (maxUsesInput) maxUsesInput.value = '0';
+      if (usedInput) usedInput.value = '0';
+      if (recoveryShortInput) recoveryShortInput.value = '0';
+      if (recoveryLongInput) recoveryLongInput.value = '0';
+      resetSelect.value = 'none';
+    }
+    if (maxUsesInput) maxUsesInput.disabled = isPassive;
+    if (usedInput) usedInput.disabled = isPassive;
+    if (recoveryShortInput) recoveryShortInput.disabled = isPassive;
+    if (recoveryLongInput) recoveryLongInput.disabled = isPassive;
+    resetSelect.disabled = isPassive;
+  };
+  passiveInput?.addEventListener('change', syncPassiveState);
+  syncPassiveState();
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const formData = new FormData(form);
+  openFormModal({
+    title: resource ? 'Modifica abilità' : 'Nuova abilità',
+    submitLabel: resource ? 'Salva' : 'Crea',
+    content: form
+  }).then(async (formData) => {
+    if (!formData) return;
     const name = formData.get('name')?.trim();
     if (!name) {
       createToast('Inserisci un nome per la risorsa', 'error');
       return;
     }
+    const toNumberOrNull = (value) => (value === '' || value === null ? null : Number(value));
+    const maxUses = Number(formData.get('max_uses')) || 0;
+    const used = Math.min(Number(formData.get('used')) || 0, maxUses || 0);
     const payload = {
       user_id: character.user_id,
       character_id: character.id,
       name,
       image_url: formData.get('image_url')?.trim() || null,
-      max_uses: Number(formData.get('max_uses')) || 0,
-      used: Number(formData.get('used')) || 0,
-      reset_on: formData.get('reset_on')
+      max_uses: maxUses,
+      used,
+      reset_on: formData.get('reset_on'),
+      recovery_short: toNumberOrNull(formData.get('recovery_short')),
+      recovery_long: toNumberOrNull(formData.get('recovery_long'))
     };
 
     try {
@@ -734,14 +819,11 @@ function openResourceDrawer(character, onSave, resource = null) {
         await createResource(payload);
         createToast('Risorsa creata');
       }
-      closeDrawer();
       onSave();
     } catch (error) {
       createToast('Errore salvataggio risorsa', 'error');
     }
   });
-
-  openDrawer(buildDrawerLayout(resource ? 'Modifica risorsa' : 'Nuova risorsa', form));
 }
 
 const abilityShortLabel = {
@@ -781,6 +863,15 @@ const savingThrowList = [
   { key: 'int', label: 'Intelligenza' },
   { key: 'wis', label: 'Saggezza' },
   { key: 'cha', label: 'Carisma' }
+];
+
+const equipmentProficiencyList = [
+  { key: 'weapon_simple', label: 'Armi semplici' },
+  { key: 'weapon_martial', label: 'Armi da guerra' },
+  { key: 'armor_light', label: 'Armature leggere' },
+  { key: 'armor_medium', label: 'Armature medie' },
+  { key: 'armor_heavy', label: 'Armature pesanti' },
+  { key: 'shield', label: 'Scudi' }
 ];
 
 function normalizeNumber(value) {
@@ -837,4 +928,46 @@ function formatHitDice(hitDice) {
   const die = hitDice.die ? ` ${hitDice.die}` : '';
   if (used === '-' && max === '-' && !die) return '-';
   return `${used} / ${max}${die}`;
+}
+
+function calculateArmorClass(data, abilities, items) {
+  const equippedItems = (items || []).filter((item) => item.equipable);
+  const dexMod = getAbilityModifier(abilities.dex) ?? 0;
+  const armorCandidates = equippedItems.filter((item) => item.category === 'armor' && !item.is_shield);
+  const shieldBonus = equippedItems
+    .filter((item) => item.is_shield)
+    .reduce((total, item) => total + (Number(item.shield_bonus) || 0), 0);
+  const armorValues = armorCandidates.map((item) => {
+    const base = Number(item.armor_class);
+    if (!base) return null;
+    const bonus = Number(item.armor_bonus) || 0;
+    if (item.armor_type === 'heavy') return base + bonus;
+    if (item.armor_type === 'medium') return base + bonus + Math.min(dexMod, 2);
+    return base + bonus + dexMod;
+  }).filter((value) => value !== null);
+  const armorValue = armorValues.length ? Math.max(...armorValues) : null;
+  const fallbackBase = normalizeNumber(data.ac);
+  const base = armorValue ?? fallbackBase ?? (10 + dexMod);
+  return base + shieldBonus;
+}
+
+function formatResourceRecovery(resource) {
+  const maxUses = Number(resource.max_uses) || 0;
+  if (maxUses === 0) return 'Passiva';
+  const shortRecovery = Number(resource.recovery_short);
+  const longRecovery = Number(resource.recovery_long);
+  const hasShort = !Number.isNaN(shortRecovery) && shortRecovery > 0;
+  const hasLong = !Number.isNaN(longRecovery) && longRecovery > 0;
+  if (resource.reset_on === 'none' && !hasShort && !hasLong) {
+    return 'Nessuna ricarica';
+  }
+  if (!hasShort && !hasLong) {
+    return resource.reset_on === 'short_rest'
+      ? 'Recupera tutte le cariche (riposo breve)'
+      : 'Recupera tutte le cariche (riposo lungo)';
+  }
+  const parts = [];
+  if (hasShort) parts.push(`Riposo breve +${shortRecovery}`);
+  if (hasLong) parts.push(`Riposo lungo +${longRecovery}`);
+  return parts.join(' · ');
 }
