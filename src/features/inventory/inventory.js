@@ -3,7 +3,7 @@ import { getState, updateCache } from '../../app/state.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 import { applyMoneyDelta, calcTotalWeight } from '../../lib/calc.js';
 import { formatCoin, formatWeight } from '../../lib/format.js';
-import { buildDrawerLayout, buildInput, buildTextarea, createToast, openDrawer, closeDrawer, buildSelect, openConfirmModal, openFormModal } from '../../ui/components.js';
+import { buildInput, buildTextarea, createToast, buildSelect, openConfirmModal, openFormModal } from '../../ui/components.js';
 import { fetchWallet, upsertWallet, createTransaction, fetchTransactions } from '../wallet/walletApi.js';
 import { renderWalletSummary } from '../wallet/wallet.js';
 
@@ -173,7 +173,7 @@ export async function renderInventory(container) {
     listEl.querySelectorAll('[data-edit]')
       .forEach((btn) => btn.addEventListener('click', () => {
         const item = items.find((entry) => entry.id === btn.dataset.edit);
-        if (item) openItemDrawer(activeCharacter, item, items, renderInventory.bind(null, container));
+        if (item) openItemModal(activeCharacter, item, items, renderInventory.bind(null, container));
       }));
     listEl.querySelectorAll('[data-delete]')
       .forEach((btn) => btn.addEventListener('click', async () => {
@@ -302,7 +302,8 @@ export async function renderInventory(container) {
           title: 'Transazioni',
           submitLabel: 'Chiudi',
           cancelLabel: 'Chiudi',
-          content: buildTransactionList(transactions)
+          content: buildTransactionList(transactions),
+          cardClass: 'modal-card--scrollable'
         });
       } catch (error) {
         createToast('Errore caricamento transazioni', 'error');
@@ -340,7 +341,7 @@ export async function renderInventory(container) {
   }
 
   container.querySelector('[data-add-item]').addEventListener('click', () => {
-    openItemDrawer(activeCharacter, null, items, renderInventory.bind(null, container));
+    openItemModal(activeCharacter, null, items, renderInventory.bind(null, container));
   });
 }
 
@@ -571,17 +572,17 @@ function getBodyPartLabel(part) {
   return match ? match.label : part;
 }
 
-function openItemDrawer(character, item, items, onSave) {
-  const form = document.createElement('form');
-  form.className = 'drawer-form';
-  form.appendChild(buildInput({ label: 'Nome', name: 'name', value: item?.name ?? '' }));
-  form.appendChild(buildInput({
+async function openItemModal(character, item, items, onSave) {
+  const fields = document.createElement('div');
+  fields.className = 'drawer-form';
+  fields.appendChild(buildInput({ label: 'Nome', name: 'name', value: item?.name ?? '' }));
+  fields.appendChild(buildInput({
     label: 'Foto (URL)',
     name: 'image_url',
     placeholder: 'https://.../oggetto.png',
     value: item?.image_url ?? ''
   }));
-  form.appendChild(buildInput({ label: 'Quantità', name: 'qty', type: 'number', value: item?.qty ?? 1 }));
+  fields.appendChild(buildInput({ label: 'Quantità', name: 'qty', type: 'number', value: item?.qty ?? 1 }));
   const weightField = buildInput({ label: 'Peso', name: 'weight', type: 'number', value: item?.weight ?? 0 });
   const weightInput = weightField.querySelector('input');
   if (weightInput) {
@@ -589,8 +590,8 @@ function openItemDrawer(character, item, items, onSave) {
     weightInput.min = '0';
     weightInput.step = unit === 'kg' ? '0.1' : '1';
   }
-  form.appendChild(weightField);
-  form.appendChild(buildInput({ label: 'Valore (cp)', name: 'value_cp', type: 'number', value: item?.value_cp ?? 0 }));
+  fields.appendChild(weightField);
+  fields.appendChild(buildInput({ label: 'Valore (cp)', name: 'value_cp', type: 'number', value: item?.value_cp ?? 0 }));
   const categorySelect = buildSelect(
     [{ value: '', label: 'Seleziona' }, ...itemCategories],
     item?.category ?? ''
@@ -600,7 +601,7 @@ function openItemDrawer(character, item, items, onSave) {
   categoryField.className = 'field';
   categoryField.innerHTML = '<span>Categoria</span>';
   categoryField.appendChild(categorySelect);
-  form.appendChild(categoryField);
+  fields.appendChild(categoryField);
 
   const containerOptions = [{ value: '', label: 'Nessuno' }].concat(
     items.filter((entry) => entry.category === 'container').map((entry) => ({
@@ -614,13 +615,14 @@ function openItemDrawer(character, item, items, onSave) {
   containerField.className = 'field';
   containerField.innerHTML = '<span>Contenitore</span>';
   containerField.appendChild(containerSelect);
-  form.appendChild(containerField);
+  fields.appendChild(containerField);
 
   const equipableWrapper = document.createElement('div');
   equipableWrapper.className = 'compact-field-grid';
   const equipableField = document.createElement('label');
   equipableField.className = 'checkbox';
   equipableField.innerHTML = '<input type="checkbox" name="equipable" /> <span>Equipaggiabile</span>';
+  const equipableInput = equipableField.querySelector('input');
   const equipSlotField = document.createElement('label');
   equipSlotField.className = 'field';
   equipSlotField.innerHTML = '<span>Punto del corpo</span>';
@@ -632,14 +634,15 @@ function openItemDrawer(character, item, items, onSave) {
   equipSlotField.appendChild(equipSlotSelect);
   equipableWrapper.appendChild(equipableField);
   equipableWrapper.appendChild(equipSlotField);
-  form.appendChild(equipableWrapper);
+  fields.appendChild(equipableWrapper);
 
   const attunement = document.createElement('label');
   attunement.className = 'checkbox';
   attunement.innerHTML = '<input type="checkbox" name="attunement_active" /> <span>Sintonia attiva</span>';
-  form.appendChild(attunement);
+  const attunementInput = attunement.querySelector('input');
+  fields.appendChild(attunement);
 
-  form.appendChild(buildTextarea({ label: 'Note', name: 'notes', value: item?.notes ?? '' }));
+  fields.appendChild(buildTextarea({ label: 'Note', name: 'notes', value: item?.notes ?? '' }));
 
   const proficiencySection = document.createElement('div');
   proficiencySection.className = 'drawer-form';
@@ -660,6 +663,7 @@ function openItemDrawer(character, item, items, onSave) {
   const shieldField = document.createElement('label');
   shieldField.className = 'checkbox';
   shieldField.innerHTML = '<input type="checkbox" name="is_shield" /> <span>Scudo</span>';
+  const shieldInput = shieldField.querySelector('input');
 
   const armorClassField = buildInput({
     label: 'Classe armatura base',
@@ -667,18 +671,21 @@ function openItemDrawer(character, item, items, onSave) {
     type: 'number',
     value: item?.armor_class ?? ''
   });
+  const armorClassInput = armorClassField.querySelector('input');
   const armorBonusField = buildInput({
     label: 'Bonus armatura',
     name: 'armor_bonus',
     type: 'number',
     value: item?.armor_bonus ?? 0
   });
+  const armorBonusInput = armorBonusField.querySelector('input');
   const shieldBonusField = buildInput({
     label: 'Bonus scudo',
     name: 'shield_bonus',
     type: 'number',
     value: item?.shield_bonus ?? 2
   });
+  const shieldBonusInput = shieldBonusField.querySelector('input');
 
   proficiencySection.appendChild(weaponTypeField);
   proficiencySection.appendChild(armorTypeField);
@@ -686,84 +693,92 @@ function openItemDrawer(character, item, items, onSave) {
   proficiencySection.appendChild(armorClassField);
   proficiencySection.appendChild(armorBonusField);
   proficiencySection.appendChild(shieldBonusField);
-  form.appendChild(proficiencySection);
+  fields.appendChild(proficiencySection);
 
-  const submit = document.createElement('button');
-  submit.className = 'primary';
-  submit.type = 'submit';
-  submit.textContent = item ? 'Salva' : 'Crea';
-  form.appendChild(submit);
-
-  form.attunement_active.checked = item?.attunement_active ?? false;
-  form.equipable.checked = item?.equipable ?? false;
-  form.is_shield.checked = item?.is_shield ?? false;
-  equipSlotSelect.disabled = !form.equipable.checked;
+  if (attunementInput) {
+    attunementInput.checked = item?.attunement_active ?? false;
+  }
+  if (equipableInput) {
+    equipableInput.checked = item?.equipable ?? false;
+  }
+  if (shieldInput) {
+    shieldInput.checked = item?.is_shield ?? false;
+  }
   const updateEquipmentFields = () => {
-    equipSlotSelect.disabled = !form.equipable.checked;
-    if (!form.equipable.checked) {
+    const equipableEnabled = equipableInput?.checked ?? false;
+    equipSlotSelect.disabled = !equipableEnabled;
+    if (!equipableEnabled) {
       equipSlotSelect.value = '';
     }
     const isWeapon = categorySelect.value === 'weapon';
     const isArmor = categorySelect.value === 'armor';
     weaponTypeSelect.disabled = !isWeapon;
     armorTypeSelect.disabled = !isArmor;
-    shieldField.querySelector('input').disabled = !isArmor;
-    armorClassField.querySelector('input').disabled = !isArmor;
-    armorBonusField.querySelector('input').disabled = !isArmor;
-    shieldBonusField.querySelector('input').disabled = !isArmor || !form.is_shield.checked;
+    if (shieldInput) {
+      shieldInput.disabled = !isArmor;
+    }
+    if (armorClassInput) {
+      armorClassInput.disabled = !isArmor;
+    }
+    if (armorBonusInput) {
+      armorBonusInput.disabled = !isArmor;
+    }
+    if (shieldBonusInput) {
+      shieldBonusInput.disabled = !isArmor || !(shieldInput?.checked ?? false);
+    }
   };
-  form.equipable.addEventListener('change', updateEquipmentFields);
+  equipableInput?.addEventListener('change', updateEquipmentFields);
   categorySelect.addEventListener('change', updateEquipmentFields);
-  form.is_shield.addEventListener('change', updateEquipmentFields);
+  shieldInput?.addEventListener('change', updateEquipmentFields);
   updateEquipmentFields();
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const formData = new FormData(form);
-    const equipSlot = formData.get('equip_slot') || null;
-    const category = formData.get('category');
-    if (equipSlot && !hasProficiencyForItem(character, formData)) {
-      createToast('Non hai la competenza per equipaggiare questo oggetto', 'error');
-      return;
-    }
-    const payload = {
-      user_id: character.user_id,
-      character_id: character.id,
-      name: formData.get('name'),
-      image_url: formData.get('image_url')?.trim() || null,
-      qty: Number(formData.get('qty')),
-      weight: Number(formData.get('weight')),
-      value_cp: Number(formData.get('value_cp')),
-      category,
-      container_item_id: formData.get('container_item_id') || null,
-      equipable: formData.get('equipable') === 'on',
-      equip_slot: equipSlot,
-      attunement_active: formData.get('attunement_active') === 'on',
-      notes: formData.get('notes'),
-      weapon_type: formData.get('weapon_type') || null,
-      armor_type: formData.get('armor_type') || null,
-      is_shield: formData.get('is_shield') === 'on',
-      armor_class: Number(formData.get('armor_class')) || null,
-      armor_bonus: Number(formData.get('armor_bonus')) || 0,
-      shield_bonus: Number(formData.get('shield_bonus')) || 0
-    };
-
-    try {
-      if (item) {
-        await updateItem(item.id, payload);
-        createToast('Oggetto aggiornato');
-      } else {
-        await createItem(payload);
-        createToast('Oggetto creato');
-      }
-      closeDrawer();
-      onSave();
-    } catch (error) {
-      createToast('Errore salvataggio oggetto', 'error');
-    }
+  const formData = await openFormModal({
+    title: item ? 'Modifica oggetto' : 'Nuovo oggetto',
+    submitLabel: item ? 'Salva' : 'Crea',
+    content: fields,
+    cardClass: ['modal-card--wide', 'modal-card--scrollable']
   });
+  if (!formData) return;
+  const equipSlot = formData.get('equip_slot') || null;
+  const category = formData.get('category');
+  if (equipSlot && !hasProficiencyForItem(character, formData)) {
+    createToast('Non hai la competenza per equipaggiare questo oggetto', 'error');
+    return;
+  }
+  const payload = {
+    user_id: character.user_id,
+    character_id: character.id,
+    name: formData.get('name'),
+    image_url: formData.get('image_url')?.trim() || null,
+    qty: Number(formData.get('qty')),
+    weight: Number(formData.get('weight')),
+    value_cp: Number(formData.get('value_cp')),
+    category,
+    container_item_id: formData.get('container_item_id') || null,
+    equipable: formData.get('equipable') === 'on',
+    equip_slot: equipSlot,
+    attunement_active: formData.get('attunement_active') === 'on',
+    notes: formData.get('notes'),
+    weapon_type: formData.get('weapon_type') || null,
+    armor_type: formData.get('armor_type') || null,
+    is_shield: formData.get('is_shield') === 'on',
+    armor_class: Number(formData.get('armor_class')) || null,
+    armor_bonus: Number(formData.get('armor_bonus')) || 0,
+    shield_bonus: Number(formData.get('shield_bonus')) || 0
+  };
 
-  openDrawer(buildDrawerLayout(item ? 'Modifica oggetto' : 'Nuovo oggetto', form));
+  try {
+    if (item) {
+      await updateItem(item.id, payload);
+      createToast('Oggetto aggiornato');
+    } else {
+      await createItem(payload);
+      createToast('Oggetto creato');
+    }
+    onSave();
+  } catch (error) {
+    createToast('Errore salvataggio oggetto', 'error');
+  }
 }
 
 function getWeightUnit(character) {
