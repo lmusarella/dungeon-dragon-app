@@ -44,8 +44,12 @@ export async function updateResourcesReset(characterId, resetOn) {
       const used = Number(resource.used) || 0;
       if (maxUses === 0 || used === 0) return null;
       if (resource.reset_on === 'none' || resource.reset_on === null) return null;
-      const recoveryShort = Number(resource.recovery_short);
-      const recoveryLong = Number(resource.recovery_long);
+      const recoveryShort = resource.recovery_short === null || resource.recovery_short === ''
+        ? NaN
+        : Number(resource.recovery_short);
+      const recoveryLong = resource.recovery_long === null || resource.recovery_long === ''
+        ? NaN
+        : Number(resource.recovery_long);
       const defaultShort = resource.reset_on === 'short_rest' ? maxUses : 0;
       const defaultLong = resource.reset_on === 'long_rest' ? maxUses : 0;
       const shortRecovery = Number.isNaN(recoveryShort) ? defaultShort : recoveryShort;
