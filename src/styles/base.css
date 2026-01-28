@@ -478,8 +478,8 @@ button {
 }
 
 .resource-list--compact .resource-avatar {
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
 }
 
 .resource-avatar--placeholder {
@@ -509,11 +509,23 @@ button {
   font-size: 0.7rem;
 }
 
+.resource-card-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.resource-card-cta {
+  display: flex;
+  align-items: center;
+}
+
 .resource-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
+  flex: 1;
 }
 
 .resource-info {
@@ -604,6 +616,14 @@ button {
   justify-content: center;
 }
 
+.resource-cta-button--label {
+  width: auto;
+  min-width: 48px;
+  padding: 0 10px;
+  height: 32px;
+  font-size: 0.75rem;
+}
+
 .resource-cta-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -638,6 +658,17 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.resource-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #efe4cf;
+  color: #6a5540;
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 
 .resource-charges {
