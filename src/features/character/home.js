@@ -74,6 +74,9 @@ export async function renderHome(container) {
               <p class="eyebrow">Tiri salvezza</p>
               <h3></h3>
             </div>
+            <button class="icon-button icon-button--dice" data-open-dice="saving-throws" aria-label="Apri tiri salvezza">
+              <span aria-hidden="true">🎲</span>
+            </button>
           </header>
           ${activeCharacter ? buildSavingThrowSection(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
         </section>
@@ -82,6 +85,9 @@ export async function renderHome(container) {
             <div>
               <p class="eyebrow">Abilità</p>            
             </div>
+            <button class="icon-button icon-button--dice" data-open-dice="skills" aria-label="Apri abilità">
+              <span aria-hidden="true">🎲</span>
+            </button>
           </header>
           <div class="home-scroll-body">
             ${activeCharacter ? buildSkillList(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
@@ -96,6 +102,11 @@ export async function renderHome(container) {
             </div>
             <div class="actions">
               ${characters.length > 1 ? '<select data-character-select></select>' : ''}
+              ${activeCharacter && canEditCharacter ? `
+                <button class="icon-button" data-edit-character aria-label="Modifica personaggio">
+                  <span aria-hidden="true">✏️</span>
+                </button>
+              ` : ''}
             </div>
           </header>
           ${activeCharacter ? buildCharacterOverview(activeCharacter, canEditCharacter, items) : buildEmptyState(canCreateCharacter, offline)}
@@ -158,6 +169,13 @@ export async function renderHome(container) {
       openCharacterDrawer(user, () => renderHome(container), activeCharacter);
     });
   }
+
+  container.querySelectorAll('[data-open-dice]')
+    .forEach((button) => button.addEventListener('click', () => {
+      const type = button.dataset.openDice;
+      const title = type === 'saving-throws' ? 'Tiri salvezza' : 'Abilità';
+      openDiceRollerModal(title);
+    }));
 
   const addResourceButton = container.querySelector('[data-add-resource]');
   if (addResourceButton) {
@@ -358,6 +376,16 @@ function openResourceDetail(resource) {
     title: 'Dettaglio risorsa',
     submitLabel: 'Chiudi',
     content: detail
+  });
+}
+
+function openDiceRollerModal(title) {
+  const content = document.createElement('div');
+  content.className = 'dice-roller-modal';
+  openFormModal({
+    title,
+    submitLabel: 'Chiudi',
+    content
   });
 }
 
@@ -711,7 +739,10 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
           <div>
             <h3 class="character-name">${character.name}</h3>
             <div class="character-meta">
-              <span class="pill">Livello ${data.level ?? '-'}</span>
+              <div class="character-meta-column">
+                <span class="pill">Livello ${data.level ?? '-'}</span>
+                <span class="pill">Allineamento ${data.alignment ?? '-'}</span>
+              </div>
               <span class="pill">Razza ${data.race ?? '-'}</span>
               <span class="pill">Classe/Archetipo ${data.class_archetype ?? '-'}</span>
             </div>
@@ -722,11 +753,6 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
             <span>Bonus competenza</span>
             <strong>${formatSigned(proficiencyBonus)}</strong>
           </div>
-          ${canEditCharacter ? `
-            <button class="icon-button" data-edit-character aria-label="Modifica personaggio">
-              <span aria-hidden="true">✏️</span>
-            </button>
-          ` : ''}
         </div>
       </div>
       <div class="stat-panel">     
