@@ -916,15 +916,18 @@ function buildResourceList(resources, canManageResources) {
   return `
     <ul class="resource-list resource-list--compact">
       ${resources.map((res) => `
-        <li>
-          <div class="resource-info">
-            ${res.image_url ? `<img class="resource-avatar" src="${res.image_url}" alt="Foto di ${res.name}" />` : ''}
-            <div>
-              <strong>${res.name}</strong>
-              <p class="muted">${formatResourceRecovery(res)}</p>
+        <li class="resource-card">
+          <div class="resource-card-header">
+            <div class="resource-info">
+              ${res.image_url ? `<img class="resource-avatar" src="${res.image_url}" alt="Foto di ${res.name}" />` : ''}
+              <div class="resource-meta">
+                <strong>${res.name}</strong>
+                <span class="chip chip--small">${formatResourceRecovery(res)}</span>
+              </div>
             </div>
+            ${canManageResources ? `<div class="resource-actions resource-actions--top">${buildResourceManagementButtons(res)}</div>` : ''}
           </div>
-          <div class="actions resource-actions">
+          <div class="resource-card-footer">
             ${Number(res.max_uses)
     ? `
                 <div class="resource-usage">
@@ -932,8 +935,8 @@ function buildResourceList(resources, canManageResources) {
                   <span class="muted">${res.used}/${res.max_uses}</span>
                 </div>
               `
-    : '<span>Passiva</span>'}
-            ${canManageResources ? buildResourceActions(res) : ''}
+    : '<span class="resource-passive">Passiva</span>'}
+            ${Number(res.max_uses) ? `<div class="resource-cta">${buildResourceCtaButtons(res)}</div>` : ''}
           </div>
         </li>
       `).join('')}
@@ -958,30 +961,26 @@ function buildResourceCharges(resource) {
   return `<div class="resource-charges" aria-label="Cariche risorsa">${charges}</div>`;
 }
 
-function buildResourceActions(resource) {
-  const maxUses = Number(resource.max_uses) || 0;
-  const used = Number(resource.used) || 0;
-  if (maxUses === 0) {
-    return `
-      <button class="icon-button" data-edit-resource="${resource.id}" aria-label="Modifica risorsa">
-        <span aria-hidden="true">✏️</span>
-      </button>
-      <button class="icon-button icon-button--danger" data-delete-resource="${resource.id}" aria-label="Elimina risorsa">
-        <span aria-hidden="true">🗑️</span>
-      </button>
-    `;
-  }
-  const canUse = maxUses === 0 ? false : used < maxUses;
-  const canRecover = used > 0;
+function buildResourceManagementButtons(resource) {
   return `
-    <button data-use-resource="${resource.id}" ${canUse ? '' : 'disabled'}>Usa</button>
-    <button data-recover-resource="${resource.id}" ${canRecover ? '' : 'disabled'}>Recupera</button>
     <button class="icon-button" data-edit-resource="${resource.id}" aria-label="Modifica risorsa">
       <span aria-hidden="true">✏️</span>
     </button>
     <button class="icon-button icon-button--danger" data-delete-resource="${resource.id}" aria-label="Elimina risorsa">
       <span aria-hidden="true">🗑️</span>
     </button>
+  `;
+}
+
+function buildResourceCtaButtons(resource) {
+  const maxUses = Number(resource.max_uses) || 0;
+  const used = Number(resource.used) || 0;
+  if (maxUses === 0) return '';
+  const canUse = used < maxUses;
+  const canRecover = used > 0;
+  return `
+    <button class="resource-cta-button" data-use-resource="${resource.id}" ${canUse ? '' : 'disabled'}>Usa</button>
+    <button class="resource-cta-button" data-recover-resource="${resource.id}" ${canRecover ? '' : 'disabled'}>Recupera</button>
   `;
 }
 
