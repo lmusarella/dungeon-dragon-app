@@ -187,17 +187,7 @@ export async function renderHome(container) {
         pressTimer = setTimeout(async () => {
           const resource = resources.find((entry) => entry.id === card.dataset.resourceCard);
           if (!resource) return;
-          const maxUses = Number(resource.max_uses) || 0;
-          if (!maxUses || resource.used >= maxUses) return;
-          const shouldUse = await openConfirmModal({ message: 'Usare la risorsa?' });
-          if (!shouldUse) return;
-          try {
-            await updateResource(resource.id, { used: Math.min(resource.used + 1, maxUses) });
-            createToast('Risorsa usata');
-            renderHome(container);
-          } catch (error) {
-            createToast('Errore utilizzo risorsa', 'error');
-          }
+          openResourceDetail(resource);
         }, longPressDelay);
       };
       const cancelPress = () => {
@@ -212,6 +202,23 @@ export async function renderHome(container) {
       card.addEventListener('pointercancel', cancelPress);
       card.addEventListener('pointermove', cancelPress);
     });
+
+  container.querySelectorAll('[data-use-resource]')
+    .forEach((button) => button.addEventListener('click', async () => {
+      const resource = resources.find((entry) => entry.id === button.dataset.useResource);
+      if (!resource) return;
+      const maxUses = Number(resource.max_uses) || 0;
+      if (!maxUses || resource.used >= maxUses) return;
+      const shouldUse = await openConfirmModal({ message: 'Usare la risorsa?' });
+      if (!shouldUse) return;
+      try {
+        await updateResource(resource.id, { used: Math.min(resource.used + 1, maxUses) });
+        createToast('Risorsa usata');
+        renderHome(container);
+      } catch (error) {
+        createToast('Errore utilizzo risorsa', 'error');
+      }
+    }));
 
   container.querySelectorAll('[data-delete-resource]')
     .forEach((button) => button.addEventListener('click', async () => {
@@ -412,8 +419,10 @@ function openResourceDetail(resource) {
   detail.innerHTML = `
     <div class="detail-card detail-card--text">
       <h4>${resource.name}</h4>
+      ${resource.cast_time ? `<p class="resource-chip">${resource.cast_time}</p>` : ''}
       <p class="muted">${formatResourceRecovery(resource)}</p>
       <p>Cariche: ${usageLabel}</p>
+      ${resource.description ? `<p>${resource.description}</p>` : ''}
     </div>
   `;
   openFormModal({
@@ -1047,29 +1056,41 @@ function buildResourceList(resources, canManageResources, { showCharges = true }
     <ul class="resource-list resource-list--compact">
       ${resources.map((res) => `
         <li class="resource-card" data-resource-card="${res.id}">
-          <div class="resource-card-header">
-            <div class="resource-info">
-              ${res.image_url
+          <div class="resource-card-layout">
+            <div class="resource-card-cta">
+              <button
+                class="resource-cta-button resource-cta-button--label"
+                data-use-resource="${res.id}"
+                ${!Number(res.max_uses) || res.used >= Number(res.max_uses) ? 'disabled' : ''}
+              >
+                Usa
+              </button>
+            </div>
+            <div class="resource-card-header">
+              <div class="resource-info">
+                ${res.image_url
     ? `<img class="resource-avatar" src="${res.image_url}" alt="Foto di ${res.name}" />`
     : `<div class="resource-avatar resource-avatar--placeholder" aria-hidden="true">${res.name?.trim().charAt(0).toUpperCase() || 'R'}</div>`}
-              <div class="resource-meta">
-                <div class="resource-title-row">
-                  <strong>${res.name}</strong>
-                </div>
-                <div class="resource-submeta">
-                  ${showCharges && Number(res.max_uses)
+                <div class="resource-meta">
+                  <div class="resource-title-row">
+                    <strong>${res.name}</strong>
+                    ${res.cast_time ? `<span class="resource-chip">${res.cast_time}</span>` : ''}
+                  </div>
+                  <div class="resource-submeta">
+                    ${showCharges && Number(res.max_uses)
     ? `
-                      <div class="resource-charge-row">
-                        ${buildResourceCharges(res)}
-                      </div>
-                    `
+                        <div class="resource-charge-row">
+                          ${buildResourceCharges(res)}
+                        </div>
+                      `
     : ''}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="resource-card-actions">
-              <div class="resource-actions resource-actions--top">
-                ${canManageResources ? `<button class="resource-action-button resource-icon-button" data-edit-resource="${res.id}" aria-label="Modifica risorsa">✏️</button>` : ''}
+              <div class="resource-card-actions">
+                <div class="resource-actions resource-actions--top">
+                  ${canManageResources ? `<button class="resource-action-button resource-icon-button" data-edit-resource="${res.id}" aria-label="Modifica risorsa">✏️</button>` : ''}
+                </div>
               </div>
             </div>
           </div>
@@ -1083,8 +1104,8 @@ function buildResourceSections(resources, canManageResources) {
   if (!resources.length) {
     return '<p>Nessuna risorsa.</p>';
   }
-  const passiveResources = resources.filter((resource) => resource.reset_on === 'none');
-  const activeResources = resources.filter((resource) => resource.reset_on !== 'none');
+  const passiveResources = resources.filter((resource) => resource.reset_on === null || resource.reset_on === 'none');
+  const activeResources = resources.filter((resource) => resource.reset_on !== null && resource.reset_on !== 'none');
   const activeSection = activeResources.length
     ? buildResourceList(activeResources, canManageResources)
     : '<p class="muted">Nessuna risorsa attiva.</p>';
@@ -1127,10 +1148,28 @@ function openResourceDrawer(character, onSave, resource = null) {
     placeholder: 'https://.../risorsa.png',
     value: resource?.image_url ?? ''
   }));
+  form.appendChild(buildTextarea({
+    label: 'Descrizione',
+    name: 'description',
+    placeholder: 'Inserisci una descrizione...',
+    value: resource?.description ?? ''
+  }));
   const passiveField = document.createElement('label');
   passiveField.className = 'checkbox';
   passiveField.innerHTML = '<input type="checkbox" name="is_passive" /> <span>Passiva (senza cariche)</span>';
   form.appendChild(passiveField);
+  const castTimeField = document.createElement('label');
+  castTimeField.className = 'field';
+  castTimeField.innerHTML = '<span>Tipo di lancio</span>';
+  const castTimeSelect = buildSelect([
+    { value: 'Azione', label: 'Azione' },
+    { value: 'Reazione', label: 'Reazione' },
+    { value: 'Azione Bonus', label: 'Azione Bonus' },
+    { value: 'Azione Gratuita', label: 'Azione Gratuita' }
+  ], resource?.cast_time ?? 'Azione');
+  castTimeSelect.name = 'cast_time';
+  castTimeField.appendChild(castTimeSelect);
+  form.appendChild(castTimeField);
   form.appendChild(buildInput({ label: 'Cariche massime', name: 'max_uses', type: 'number', value: resource?.max_uses ?? 1 }));
   form.appendChild(buildInput({ label: 'Cariche consumate', name: 'used', type: 'number', value: resource?.used ?? 0 }));
 
@@ -1155,8 +1194,7 @@ function openResourceDrawer(character, onSave, resource = null) {
   resetField.innerHTML = '<span>Tipo ricarica</span>';
   const resetSelect = buildSelect([
     { value: 'short_rest', label: 'Riposo breve' },
-    { value: 'long_rest', label: 'Riposo lungo' },
-    { value: 'none', label: 'Nessuna ricarica' }
+    { value: 'long_rest', label: 'Riposo lungo' }
   ], resource?.reset_on ?? 'long_rest');
   resetSelect.name = 'reset_on';
   resetField.appendChild(resetSelect);
@@ -1168,7 +1206,7 @@ function openResourceDrawer(character, onSave, resource = null) {
   const recoveryLongInput = form.querySelector('input[name="recovery_long"]');
   const passiveInput = form.querySelector('input[name="is_passive"]');
   if (passiveInput) {
-    passiveInput.checked = Number(resource?.max_uses) === 0;
+    passiveInput.checked = Number(resource?.max_uses) === 0 || resource?.reset_on === null || resource?.reset_on === 'none';
   }
   const syncPassiveState = () => {
     const isPassive = passiveInput?.checked;
@@ -1177,7 +1215,6 @@ function openResourceDrawer(character, onSave, resource = null) {
       if (usedInput) usedInput.value = '0';
       if (recoveryShortInput) recoveryShortInput.value = '0';
       if (recoveryLongInput) recoveryLongInput.value = '0';
-      resetSelect.value = 'none';
     }
     if (maxUsesInput) maxUsesInput.disabled = isPassive;
     if (usedInput) usedInput.disabled = isPassive;
@@ -1203,14 +1240,17 @@ function openResourceDrawer(character, onSave, resource = null) {
     const toNumberOrNull = (value) => (value === '' || value === null ? null : Number(value));
     const maxUses = Number(formData.get('max_uses')) || 0;
     const used = Math.min(Number(formData.get('used')) || 0, maxUses || 0);
+    const isPassive = formData.get('is_passive') === 'on';
     const payload = {
       user_id: currentUser?.id ?? character.user_id,
       character_id: character.id,
       name,
       image_url: formData.get('image_url')?.trim() || null,
+      description: formData.get('description')?.trim() || null,
+      cast_time: formData.get('cast_time') || null,
       max_uses: maxUses,
       used,
-      reset_on: formData.get('reset_on'),
+      reset_on: isPassive ? null : formData.get('reset_on'),
       recovery_short: toNumberOrNull(formData.get('recovery_short')),
       recovery_long: toNumberOrNull(formData.get('recovery_long'))
     };
@@ -1426,7 +1466,7 @@ function formatResourceRecovery(resource) {
   const longRecovery = Number(resource.recovery_long);
   const hasShort = !Number.isNaN(shortRecovery) && shortRecovery > 0;
   const hasLong = !Number.isNaN(longRecovery) && longRecovery > 0;
-  if (resource.reset_on === 'none' && !hasShort && !hasLong) {
+  if ((resource.reset_on === 'none' || resource.reset_on === null) && !hasShort && !hasLong) {
     return 'Nessuna ricarica';
   }
   if (!hasShort && !hasLong) {

@@ -43,7 +43,7 @@ export async function updateResourcesReset(characterId, resetOn) {
       const maxUses = Number(resource.max_uses) || 0;
       const used = Number(resource.used) || 0;
       if (maxUses === 0 || used === 0) return null;
-      if (resource.reset_on === 'none') return null;
+      if (resource.reset_on === 'none' || resource.reset_on === null) return null;
       const recoveryShort = Number(resource.recovery_short);
       const recoveryLong = Number(resource.recovery_long);
       const defaultShort = resource.reset_on === 'short_rest' ? maxUses : 0;
