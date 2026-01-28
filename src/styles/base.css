@@ -434,6 +434,11 @@ button {
   overflow-y: auto;
 }
 
+.modal-card--scrollable {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

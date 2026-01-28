@@ -138,7 +138,8 @@ export function openFormModal({
   title = 'Inserisci dati',
   content = '',
   submitLabel = 'Conferma',
-  cancelLabel = 'Annulla'
+  cancelLabel = 'Annulla',
+  cardClass = ''
 } = {}) {
   return new Promise((resolve) => {
     const modal = document.querySelector('[data-form-modal]');
@@ -146,12 +147,26 @@ export function openFormModal({
       resolve(null);
       return;
     }
+    const modalCard = modal.querySelector('.modal-card');
     const titleEl = modal.querySelector('[data-form-title]');
     const formEl = modal.querySelector('[data-form-body]');
     const fieldsEl = modal.querySelector('[data-form-fields]');
     const submitButton = modal.querySelector('[data-form-submit]');
     const cancelButton = modal.querySelector('[data-form-cancel]');
     const overlay = modal.querySelector('[data-form-overlay]');
+    const previousClasses = modal.dataset.formCardClasses?.split(' ').filter(Boolean) ?? [];
+    if (modalCard && previousClasses.length) {
+      previousClasses.forEach((cls) => modalCard.classList.remove(cls));
+    }
+    const nextClasses = Array.isArray(cardClass)
+      ? cardClass
+      : cardClass
+        ? [cardClass]
+        : [];
+    if (modalCard && nextClasses.length) {
+      nextClasses.forEach((cls) => modalCard.classList.add(cls));
+    }
+    modal.dataset.formCardClasses = nextClasses.join(' ');
 
     if (titleEl) titleEl.textContent = title;
     if (submitButton) submitButton.textContent = submitLabel;
@@ -171,6 +186,11 @@ export function openFormModal({
     const cleanup = (result) => {
       modal.classList.remove('open');
       modal.hidden = true;
+      if (modalCard && modal.dataset.formCardClasses) {
+        modal.dataset.formCardClasses.split(' ').filter(Boolean)
+          .forEach((cls) => modalCard.classList.remove(cls));
+        modal.dataset.formCardClasses = '';
+      }
       formEl?.removeEventListener('submit', onSubmit);
       cancelButton?.removeEventListener('click', onCancel);
       overlay?.removeEventListener('click', onCancel);
