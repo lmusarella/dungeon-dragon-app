@@ -902,6 +902,9 @@ button {
 }
 
 .doll-slot {
+  appearance: none;
+  width: 100%;
+  font-family: inherit;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -915,12 +918,31 @@ button {
   background: #fdf7ea;
   font-size: 0.7rem;
   color: #6f4e37;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.doll-slot:focus-visible {
+  outline: 3px solid rgba(134, 87, 44, 0.35);
+  outline-offset: 2px;
+}
+
+.doll-slot:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(22, 20, 18, 0.08);
 }
 
 .doll-slot.is-filled {
   border-style: solid;
   background: #efe2c8;
   color: #3e2a1a;
+}
+
+.doll-slot.is-selected {
+  border-color: #86572c;
+  box-shadow: 0 0 0 2px rgba(134, 87, 44, 0.2);
+  background: #f4d9b0;
+  color: #3a2412;
 }
 
 .doll-slot-label {
@@ -1034,6 +1056,11 @@ button {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.equipment-slot-card.is-selected {
+  border-color: #86572c;
+  box-shadow: 0 10px 18px rgba(65, 37, 11, 0.12);
 }
 
 .equipment-slot-card-header {

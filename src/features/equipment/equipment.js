@@ -64,6 +64,27 @@ export async function renderEquipment(container) {
     </section>
   `;
 
+  const dollSlots = Array.from(container.querySelectorAll('[data-doll-slot]'));
+  const slotCards = Array.from(container.querySelectorAll('[data-slot-card]'));
+
+  const updateSelection = (slotValue) => {
+    dollSlots.forEach((slot) => {
+      const isSelected = slot.dataset.dollSlot === slotValue;
+      slot.classList.toggle('is-selected', isSelected);
+      slot.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+    });
+    slotCards.forEach((card) => {
+      card.classList.toggle('is-selected', card.dataset.slotCard === slotValue);
+    });
+  };
+
+  dollSlots.forEach((slot) => {
+    slot.addEventListener('click', () => {
+      const nextValue = slot.classList.contains('is-selected') ? null : slot.dataset.dollSlot;
+      updateSelection(nextValue);
+    });
+  });
+
   container.querySelectorAll('[data-unequip]')
     .forEach((btn) => btn.addEventListener('click', async () => {
       const item = items.find((entry) => entry.id === btn.dataset.unequip);
@@ -102,11 +123,11 @@ function buildEquipmentDoll(slotSummary, occupiedSlots) {
         ${slotSummary.map((slot) => {
     const firstItem = slot.items[0];
     return `
-          <div class="doll-slot doll-slot--${slot.value} ${slot.items.length ? 'is-filled' : ''}">
+          <button type="button" class="doll-slot doll-slot--${slot.value} ${slot.items.length ? 'is-filled' : ''}" data-doll-slot="${slot.value}" aria-pressed="false">
             <span class="doll-slot-label">${slot.label}</span>
             <span class="doll-slot-item">${firstItem ? firstItem.name : 'Libero'}</span>
             ${slot.items.length > 1 ? `<span class="doll-slot-count">+${slot.items.length - 1}</span>` : ''}
-          </div>
+          </button>
         `;
   }).join('')}
       </div>
@@ -118,7 +139,7 @@ function buildEquipmentSlotList(slotSummary) {
   return `
     <div class="equipment-slot-list">
       ${slotSummary.map((slot) => `
-        <div class="equipment-slot-card">
+        <div class="equipment-slot-card" data-slot-card="${slot.value}">
           <div class="equipment-slot-card-header">
             <h3>${slot.label}</h3>
             <span class="pill">${slot.items.length ? 'Occupato' : 'Libero'}</span>
