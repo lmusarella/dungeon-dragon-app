@@ -899,6 +899,7 @@ button {
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(9, minmax(48px, 1fr));
   gap: 8px;
+  position: relative;
 }
 
 .doll-slot {
@@ -911,15 +912,27 @@ button {
   align-items: center;
   justify-content: center;
   text-align: center;
-  min-height: 64px;
+  min-height: 72px;
   padding: 6px;
-  border-radius: 12px;
-  border: 1px dashed #d8c5a5;
+  border-radius: 18px;
+  border: 2px dashed #d8c5a5;
   background: #fdf7ea;
   font-size: 0.7rem;
   color: #6f4e37;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.doll-slot::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: inset 0 0 0 1px rgba(216, 197, 165, 0.4);
+  z-index: 0;
 }
 
 .doll-slot:focus-visible {
@@ -950,96 +963,162 @@ button {
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  z-index: 1;
 }
 
 .doll-slot-item {
   font-weight: 600;
   font-size: 0.75rem;
+  z-index: 1;
 }
 
 .doll-slot-count {
   font-size: 0.65rem;
   color: #8a7761;
+  z-index: 1;
 }
 
 .doll-slot--head {
   grid-column: 2;
   grid-row: 1;
+  width: 72%;
+  min-height: 86px;
+  border-radius: 50%;
+  justify-self: center;
 }
 
 .doll-slot--eyes {
   grid-column: 2;
   grid-row: 2;
+  width: 65%;
+  min-height: 60px;
+  border-radius: 999px;
+  justify-self: center;
 }
 
 .doll-slot--ears {
   grid-column: 1;
   grid-row: 2;
+  width: 65%;
+  min-height: 60px;
+  border-radius: 999px;
+  justify-self: center;
 }
 
 .doll-slot--neck {
   grid-column: 2;
   grid-row: 3;
+  width: 50%;
+  min-height: 50px;
+  border-radius: 14px;
+  justify-self: center;
 }
 
 .doll-slot--shoulders {
   grid-column: 2;
   grid-row: 4;
+  width: 100%;
+  min-height: 70px;
+  border-radius: 26px;
 }
 
 .doll-slot--back {
   grid-column: 3;
   grid-row: 4;
+  width: 80%;
+  min-height: 80px;
+  border-radius: 26px;
+  justify-self: center;
 }
 
 .doll-slot--chest {
   grid-column: 2;
   grid-row: 5;
+  width: 92%;
+  min-height: 90px;
+  border-radius: 28px 28px 32px 32px;
+  justify-self: center;
 }
 
 .doll-slot--arms {
   grid-column: 1;
   grid-row: 5;
+  width: 72%;
+  min-height: 80px;
+  border-radius: 40px;
+  justify-self: center;
 }
 
 .doll-slot--hands {
   grid-column: 1;
   grid-row: 6;
+  width: 65%;
+  min-height: 60px;
+  border-radius: 34px;
+  justify-self: center;
 }
 
 .doll-slot--wrists {
   grid-column: 3;
   grid-row: 6;
+  width: 58%;
+  min-height: 52px;
+  border-radius: 20px;
+  justify-self: center;
 }
 
 .doll-slot--waist {
   grid-column: 2;
   grid-row: 6;
+  width: 76%;
+  min-height: 70px;
+  border-radius: 24px;
+  justify-self: center;
 }
 
 .doll-slot--legs {
   grid-column: 2;
   grid-row: 7;
+  width: 74%;
+  min-height: 110px;
+  border-radius: 28px;
+  justify-self: center;
 }
 
 .doll-slot--feet {
   grid-column: 2;
   grid-row: 8;
+  width: 86%;
+  min-height: 60px;
+  border-radius: 18px 18px 28px 28px;
+  justify-self: center;
 }
 
 .doll-slot--ring {
   grid-column: 3;
   grid-row: 8;
+  width: 55%;
+  min-height: 52px;
+  border-radius: 999px;
+  justify-self: center;
 }
 
 .doll-slot--main-hand {
   grid-column: 1;
   grid-row: 9;
+  width: 78%;
+  min-height: 70px;
+  border-radius: 22px 22px 30px 30px;
+  justify-self: center;
 }
 
 .doll-slot--off-hand {
   grid-column: 3;
   grid-row: 9;
+  width: 78%;
+  min-height: 70px;
+  border-radius: 22px 22px 30px 30px;
+  justify-self: center;
 }
 
 .equipment-slot-list {
