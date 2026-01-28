@@ -89,15 +89,23 @@ export async function renderInventory(container) {
   const weightStep = weightUnit === 'kg' ? '0.1' : '1';
   const equippedItems = items.filter((item) => item.equip_slot || item.equipable);
   const attunedCount = items.filter((item) => item.attunement_active).length;
+  const slotSummary = bodyParts.map((part) => ({
+    ...part,
+    items: equippedItems.filter((item) => item.equip_slot === part.value)
+  }));
+  const occupiedSlots = slotSummary.filter((slot) => slot.items.length).length;
   container.innerHTML = `
-    <section class="card compact-card">
+    <section class="card">
       <header class="card-header">
-        <h2>Equip</h2>
+        <h2>Equipaggiamento</h2>
         <span class="pill">Slot Sintonia Attivi: ${attunedCount}</span>
       </header>
-      <div data-equipment-list>
-        ${buildEquipmentCompact(equippedItems)}
+      <div class="equipment-layout" data-equipment-list>
+        ${buildEquipmentDoll(slotSummary, occupiedSlots)}
+        ${buildEquipmentSlotList(slotSummary)}
       </div>
+      ${buildUnassignedSection(equippedItems)}
+      ${!equippedItems.length ? '<p class="muted">Nessun oggetto equipaggiato.</p>' : ''}
     </section>
      <section class="card compact-card">
       <div class="compact-grid">
@@ -139,6 +147,26 @@ export async function renderInventory(container) {
   const searchInput = container.querySelector('[data-search]');
   const categorySelect = container.querySelector('[data-category]');
   const equipableSelect = container.querySelector('[data-equipable]');
+  const dollSlots = Array.from(container.querySelectorAll('[data-doll-slot]'));
+  const slotCards = Array.from(container.querySelectorAll('[data-slot-card]'));
+
+  const updateSelection = (slotValue) => {
+    dollSlots.forEach((slot) => {
+      const isSelected = slot.dataset.dollSlot === slotValue;
+      slot.classList.toggle('is-selected', isSelected);
+      slot.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+    });
+    slotCards.forEach((card) => {
+      card.classList.toggle('is-selected', card.dataset.slotCard === slotValue);
+    });
+  };
+
+  dollSlots.forEach((slot) => {
+    slot.addEventListener('click', () => {
+      const nextValue = slot.classList.contains('is-selected') ? null : slot.dataset.dollSlot;
+      updateSelection(nextValue);
+    });
+  });
   categories.forEach((cat) => {
     const option = document.createElement('option');
     option.value = cat.value;
@@ -459,56 +487,89 @@ function buildItemList(items) {
   `;
 }
 
-function buildEquipmentCompact(items) {
-  if (!items.length) {
-    return '<p class="muted">Nessun oggetto equipaggiato.</p>';
-  }
-  const unassigned = items.filter((item) => !item.equip_slot && item.equipable);
+function buildEquipmentDoll(slotSummary, occupiedSlots) {
   return `
-    ${bodyParts.map((part) => {
-      const sectionItems = items.filter((item) => item.equip_slot === part.value);
-      return `
-        <div class="compact-section">
-          <h4>${part.label}</h4>
-          ${sectionItems.length ? `
-            <ul class="compact-list">
-              ${sectionItems.map((item) => `
-                <li>
-                  <div class="compact-info">
-                    <span>${item.name}</span>
-                    <span class="muted">${item.category || 'misc'}</span>
-                  </div>
-                  <div class="compact-actions">
-                    <button data-unequip="${item.id}">Rimuovi</button>
-                    <button data-attune="${item.id}">
-                      ${item.attunement_active ? 'Disattiva sintonia' : 'Attiva sintonia'}
-                    </button>
-                  </div>
-                </li>
-              `).join('')}
-            </ul>
-          ` : '<p class="muted">Nessun oggetto.</p>'}
-        </div>
-      `;
-    }).join('')}
-    ${unassigned.length ? `
-      <div class="compact-section">
-        <h4>Equipaggiabili senza slot</h4>
-        <ul class="compact-list">
-          ${unassigned.map((item) => `
-            <li>
-              <div class="compact-info">
-                <span>${item.name}</span>
-                <span class="muted">${item.category || 'misc'}</span>
-              </div>
-              <div class="compact-actions">
-                <button data-unequip="${item.id}">Rimuovi</button>
-              </div>
-            </li>
-          `).join('')}
-        </ul>
+    <div class="equipment-doll">
+      <div class="equipment-doll-header">
+        <h3>Manichino</h3>
+        <span class="muted">${occupiedSlots}/${slotSummary.length} slot occupati</span>
       </div>
-    ` : ''}
+      <div class="equipment-doll-grid">
+        ${slotSummary.map((slot) => {
+    const firstItem = slot.items[0];
+    return `
+          <button type="button" class="doll-slot doll-slot--${slot.value} ${slot.items.length ? 'is-filled' : ''}" data-doll-slot="${slot.value}" aria-pressed="false">
+            <span class="doll-slot-label">${slot.label}</span>
+            <span class="doll-slot-item">${firstItem ? firstItem.name : 'Libero'}</span>
+            ${slot.items.length > 1 ? `<span class="doll-slot-count">+${slot.items.length - 1}</span>` : ''}
+          </button>
+        `;
+  }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function buildEquipmentSlotList(slotSummary) {
+  return `
+    <div class="equipment-slot-list">
+      ${slotSummary.map((slot) => `
+        <div class="equipment-slot-card" data-slot-card="${slot.value}">
+          <div class="equipment-slot-card-header">
+            <h3>${slot.label}</h3>
+            <span class="pill">${slot.items.length ? 'Occupato' : 'Libero'}</span>
+          </div>
+          ${slot.items.length
+    ? slot.items.map((item) => `
+              <div class="equipment-slot-item">
+                <div class="item-info">
+                  ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
+                  <div>
+                    <strong>${item.name}</strong>
+                    <p class="muted">${item.category || 'misc'}</p>
+                  </div>
+                </div>
+                <div class="actions">
+                  <button data-unequip="${item.id}">Rimuovi</button>
+                  <button data-attune="${item.id}">
+                    ${item.attunement_active ? 'Disattiva attune' : 'Attiva attune'}
+                  </button>
+                </div>
+              </div>
+            `).join('')
+    : '<div class="equipment-slot-item empty">Slot libero</div>'}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function buildUnassignedSection(items) {
+  const unassigned = items.filter((item) => item.equipable && !item.equip_slot);
+  if (!unassigned.length) return '';
+  return `
+    <div class="equipment-section">
+      <h3>Equipaggiabili senza slot</h3>
+      <ul class="inventory-list">
+        ${unassigned.map((item) => `
+          <li>
+            <div class="item-info">
+              ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
+              <div>
+                <strong>${item.name}</strong>
+                <p class="muted">${item.category || 'misc'}</p>
+              </div>
+            </div>
+            <div class="actions">
+              <button data-unequip="${item.id}">Rimuovi</button>
+              <button data-attune="${item.id}">
+                ${item.attunement_active ? 'Disattiva attune' : 'Attiva attune'}
+              </button>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
   `;
 }
 
