@@ -1160,6 +1160,35 @@ button {
   box-shadow: 0 2px 6px rgba(111, 78, 55, 0.2);
 }
 
+.weakness-track {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.65rem;
+  color: #6a5540;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.weakness-track__label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.weakness-track__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.weakness-track__description {
+  max-width: 180px;
+  font-size: 0.6rem;
+  color: rgba(106, 85, 64, 0.85);
+}
+
 .stat-mini-card {
   background: rgba(255, 255, 255, 0.75);
   border: 1px solid rgba(234, 223, 201, 0.9);
