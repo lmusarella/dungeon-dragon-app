@@ -69,6 +69,16 @@ const weaponTypes = [
   { value: 'simple', label: 'Semplice' },
   { value: 'martial', label: 'Da guerra' }
 ];
+const weaponRanges = [
+  { value: '', label: 'Seleziona' },
+  { value: 'melee', label: 'Mischia' },
+  { value: 'ranged', label: 'Distanza' }
+];
+const weaponAbilities = [
+  { value: '', label: 'Seleziona' },
+  { value: 'str', label: 'FOR' },
+  { value: 'dex', label: 'DES' }
+];
 const armorTypes = [
   { value: '', label: 'Seleziona' },
   { value: 'light', label: 'Leggera' },
@@ -769,6 +779,18 @@ async function openItemModal(character, item, items, onSave) {
   const weaponTypeSelect = buildSelect(weaponTypes, item?.weapon_type ?? '');
   weaponTypeSelect.name = 'weapon_type';
   weaponTypeField.appendChild(weaponTypeSelect);
+  const weaponRangeField = document.createElement('label');
+  weaponRangeField.className = 'field';
+  weaponRangeField.innerHTML = '<span>Proprietà arma</span>';
+  const weaponRangeSelect = buildSelect(weaponRanges, item?.weapon_range ?? '');
+  weaponRangeSelect.name = 'weapon_range';
+  weaponRangeField.appendChild(weaponRangeSelect);
+  const weaponAbilityField = document.createElement('label');
+  weaponAbilityField.className = 'field';
+  weaponAbilityField.innerHTML = '<span>Caratteristica tiro per colpire</span>';
+  const weaponAbilitySelect = buildSelect(weaponAbilities, item?.attack_ability ?? '');
+  weaponAbilitySelect.name = 'attack_ability';
+  weaponAbilityField.appendChild(weaponAbilitySelect);
   const damageDieField = buildInput({
     label: 'Dado danno',
     name: 'damage_die',
@@ -843,6 +865,8 @@ async function openItemModal(character, item, items, onSave) {
   const shieldBonusInput = shieldBonusField.querySelector('input');
 
   proficiencySection.appendChild(weaponTypeField);
+  proficiencySection.appendChild(weaponRangeField);
+  proficiencySection.appendChild(weaponAbilityField);
   proficiencySection.appendChild(damageDieField);
   proficiencySection.appendChild(attackModifierField);
   proficiencySection.appendChild(damageModifierField);
@@ -888,6 +912,8 @@ async function openItemModal(character, item, items, onSave) {
     const isWeapon = categorySelect.value === 'weapon';
     const isArmor = categorySelect.value === 'armor';
     weaponTypeSelect.disabled = !isWeapon;
+    weaponRangeSelect.disabled = !isWeapon;
+    weaponAbilitySelect.disabled = !isWeapon;
     damageDieField.querySelector('input').disabled = !isWeapon;
     attackModifierField.querySelector('input').disabled = !isWeapon;
     damageModifierField.querySelector('input').disabled = !isWeapon;
@@ -962,6 +988,8 @@ async function openItemModal(character, item, items, onSave) {
     attunement_active: formData.get('attunement_active') === 'on',
     notes: formData.get('notes'),
     weapon_type: formData.get('weapon_type') || null,
+    weapon_range: formData.get('weapon_range') || null,
+    attack_ability: formData.get('attack_ability') || null,
     damage_die: formData.get('damage_die')?.trim() || null,
     attack_modifier: Number(formData.get('attack_modifier')) || 0,
     damage_modifier: Number(formData.get('damage_modifier')) || 0,
