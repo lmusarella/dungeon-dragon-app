@@ -341,10 +341,11 @@ async function handleHpAction(action, container) {
   const formData = await openFormModal({
     title,
     submitLabel,
-    content: buildHpShortcutFields(activeCharacter, action === 'heal')
+    content: buildHpShortcutFields(activeCharacter, action === 'heal', action === 'heal')
   });
   if (!formData) return;
   const useHitDice = formData.has('use_hit_dice');
+  const useTempHp = formData.has('temp_hp');
   const hitDice = activeCharacter.data?.hit_dice || {};
   const abilities = activeCharacter.data?.abilities || {};
   const hitDiceUsed = Number(hitDice.used) || 0;
@@ -378,13 +379,23 @@ async function handleHpAction(action, container) {
     return;
   }
   const currentHp = Number(activeCharacter.data?.hp?.current) || 0;
+  const currentTempHp = Number(activeCharacter.data?.hp?.temp) || 0;
   const maxHp = activeCharacter.data?.hp?.max;
-  const nextHp = action === 'heal'
-    ? currentHp + amount
-    : Math.max(currentHp - amount, 0);
+  let nextCurrent = currentHp;
+  let nextTemp = currentTempHp;
+  if (action === 'heal' && useTempHp) {
+    nextTemp = currentTempHp + amount;
+  } else if (action === 'heal') {
+    nextCurrent = currentHp + amount;
+  } else {
+    const absorbed = Math.min(currentTempHp, amount);
+    nextTemp = currentTempHp - absorbed;
+    const remainingDamage = amount - absorbed;
+    nextCurrent = Math.max(currentHp - remainingDamage, 0);
+  }
   const adjusted = maxHp !== null && maxHp !== undefined
-    ? Math.min(nextHp, Number(maxHp))
-    : nextHp;
+    ? Math.min(nextCurrent, Number(maxHp))
+    : nextCurrent;
   const nextHitDice = action === 'heal' && useHitDice
     ? {
       ...hitDice,
@@ -392,13 +403,14 @@ async function handleHpAction(action, container) {
     }
     : hitDice;
   const message = action === 'heal'
-    ? `PF curati +${amount}${useHitDice ? ` (${diceCount}d${hitDiceSides})` : ''}`
+    ? `${useTempHp ? 'HP temporanei +' : 'PF curati +'}${amount}${useHitDice ? ` (${diceCount}d${hitDiceSides})` : ''}`
     : `Danno ${amount}`;
   await saveCharacterData(activeCharacter, {
     ...activeCharacter.data,
     hp: {
       ...activeCharacter.data?.hp,
-      current: adjusted
+      current: adjusted,
+      temp: nextTemp
     },
     hit_dice: nextHitDice
   }, message, container);
@@ -546,6 +558,7 @@ export async function openCharacterDrawer(user, onSave, character = null) {
   statsGrid.appendChild(buildInput({ label: 'Classe Armatura', name: 'ac', type: 'number', value: characterData.ac ?? '' }));
   statsGrid.appendChild(buildInput({ label: 'Velocità', name: 'speed', type: 'number', value: characterData.speed ?? '' }));
   statsGrid.appendChild(buildInput({ label: 'HP attuali', name: 'hp_current', type: 'number', value: hp.current ?? '' }));
+  statsGrid.appendChild(buildInput({ label: 'HP temporanei', name: 'hp_temp', type: 'number', value: hp.temp ?? '' }));
   statsGrid.appendChild(buildInput({ label: 'HP massimi', name: 'hp_max', type: 'number', value: hp.max ?? '' }));
   statsGrid.appendChild(buildInput({ label: 'Dado vita (es. d8)', name: 'hit_dice_die', value: hitDice.die ?? '' }));
   statsGrid.appendChild(buildInput({ label: 'Dadi vita totali', name: 'hit_dice_max', type: 'number', value: hitDice.max ?? '' }));
@@ -655,7 +668,7 @@ export async function openCharacterDrawer(user, onSave, character = null) {
   proficiencyNotesSection.appendChild(buildTextarea({
     label: 'Competenze (strumenti, lingue, ecc.)',
     name: 'proficiency_notes',
-    placeholder: 'Es. kit da ladro, strumenti musicali, linguaggi conosciuti...',
+    placeholder: 'Es. Strumenti: kit da ladro, strumenti musicali; Lingue: comune, elfico',
     value: characterData.proficiency_notes ?? ''
   }));
 
@@ -710,6 +723,7 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     description: formData.get('description')?.trim() || null,
     hp: {
       current: toNumberOrNull(formData.get('hp_current')),
+      temp: toNumberOrNull(formData.get('hp_temp')),
       max: toNumberOrNull(formData.get('hp_max'))
     },
     hit_dice: {
@@ -780,8 +794,11 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
   const passivePerception = calculatePassivePerception(abilities, proficiencyBonus, skillStates, skillMasteryStates);
   const currentHp = normalizeNumber(hp.current);
   const maxHp = normalizeNumber(hp.max);
+  const tempHp = normalizeNumber(hp.temp);
   const hpPercent = maxHp ? Math.min(Math.max((Number(currentHp) / maxHp) * 100, 0), 100) : 0;
+  const tempHpPercent = maxHp ? Math.min(Math.max((Number(tempHp) / maxHp) * 100, 0), 100) : 0;
   const hpLabel = maxHp ? `${currentHp ?? '-'}/${maxHp}` : `${currentHp ?? '-'}`;
+  const tempHpLabel = tempHp ?? '-';
   const armorClass = calculateArmorClass(data, abilities, items);
   const abilityCards = [
     { key: 'str', label: abilityShortLabel.str, value: abilities.str },
@@ -816,12 +833,17 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
       </div>
       <div class="stat-panel">     
         <div class="stat-grid stat-grid--compact stat-grid--abilities">
-          ${abilityCards.map((ability) => `
+          ${abilityCards.map((ability) => {
+    const score = normalizeNumber(ability.value);
+    const modifier = score === null ? '-' : formatModifier(score);
+    return `
             <div class="stat-card stat-card--${ability.key}">
               <span>${ability.label}</span>
-              <strong>${formatAbility(ability.value)}</strong>
+              <strong>${score ?? '-'}</strong>
+              <span class="stat-card__modifier" aria-label="Modificatore ${ability.label}">${modifier}</span>
             </div>
-          `).join('')}
+          `;
+  }).join('')}
         </div>
       </div>
       <div class="hp-panel">
@@ -840,9 +862,17 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
             <div class="hp-bar-label">
               <span>HP</span>
               <strong>${hpLabel}</strong>
+              <span class="hp-bar-label__divider" aria-hidden="true">•</span>
+              <span class="hp-bar-label__temp">HP temporanei</span>
+              <strong>${tempHpLabel}</strong>
             </div>
-            <div class="hp-bar">
-              <div class="hp-bar__fill" style="width: ${hpPercent}%;"></div>
+            <div class="hp-bar-track">
+              <div class="hp-bar">
+                <div class="hp-bar__fill" style="width: ${hpPercent}%;"></div>
+              </div>
+              <div class="hp-bar hp-bar--temp">
+                <div class="hp-bar__fill hp-bar__fill--temp" style="width: ${tempHpPercent}%;"></div>
+              </div>
             </div>
             <div class="hp-panel-hit-dice">
               <span>Dadi vita</span>
@@ -944,32 +974,44 @@ function buildProficiencyOverview(character) {
   const data = character.data || {};
   const proficiencies = data.proficiencies || {};
   const notes = data.proficiency_notes || '';
-  const noteItems = parseProficiencyNotes(notes);
+  const { tools, languages } = parseProficiencyNotesSections(notes);
   const equipped = equipmentProficiencyList
     .filter((prof) => proficiencies[prof.key])
     .map((prof) => prof.label);
 
   return `
     <div class="detail-section">
-      <div class="detail-card detail-card--text">
-        <div>
-          <strong>Equipaggiamento</strong>
-          ${equipped.length
+      <div class="accordion-stack">
+        <details class="accordion">
+          <summary>Equipaggiamento</summary>
+          <div class="detail-card detail-card--text">
+            ${equipped.length
     ? `<div class="tag-row">${equipped.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
     : '<p class="muted">Nessuna competenza equipaggiamento.</p>'}
-        </div>
-        <div>
-          <strong>Strumenti e lingue</strong>
-          ${noteItems.length
-    ? `<div class="tag-row">${noteItems.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
-    : '<p class="muted">Aggiungi strumenti o lingue nel profilo.</p>'}
-        </div>
+          </div>
+        </details>
+        <details class="accordion">
+          <summary>Strumenti</summary>
+          <div class="detail-card detail-card--text">
+            ${tools.length
+    ? `<div class="tag-row">${tools.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
+    : '<p class="muted">Aggiungi strumenti nel profilo.</p>'}
+          </div>
+        </details>
+        <details class="accordion">
+          <summary>Lingue</summary>
+          <div class="detail-card detail-card--text">
+            ${languages.length
+    ? `<div class="tag-row">${languages.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
+    : '<p class="muted">Aggiungi lingue conosciute nel profilo.</p>'}
+          </div>
+        </details>
       </div>
     </div>
   `;
 }
 
-function buildHpShortcutFields(character, allowHitDice = true) {
+function buildHpShortcutFields(character, allowHitDice = true, allowTempHp = false) {
   const wrapper = document.createElement('div');
   const amountField = buildInput({ label: 'Valore', name: 'amount', type: 'number', value: '1' });
   const amountInput = amountField.querySelector('input');
@@ -978,6 +1020,16 @@ function buildHpShortcutFields(character, allowHitDice = true) {
     amountInput.required = true;
   }
   wrapper.appendChild(amountField);
+
+  if (allowTempHp) {
+    const tempHpField = document.createElement('label');
+    tempHpField.className = 'checkbox';
+    tempHpField.innerHTML = `
+      <input type="checkbox" name="temp_hp" />
+      <span>HP temporanei</span>
+    `;
+    wrapper.appendChild(tempHpField);
+  }
 
   if (!allowHitDice) {
     return wrapper;
@@ -1346,6 +1398,38 @@ function parseProficiencyNotes(notes) {
     .filter(Boolean);
 }
 
+function parseProficiencyNotesSections(notes) {
+  if (!notes) {
+    return { tools: [], languages: [] };
+  }
+  const normalized = notes.replace(/\r/g, '');
+  const sectionRegex = /(lingue|lingua|strumenti|strumento)\s*:/gi;
+  const sections = { tools: [], languages: [] };
+  let lastIndex = 0;
+  let lastKey = null;
+  let match;
+  const pushEntries = (key, chunk) => {
+    if (!key || !chunk) return;
+    const entries = chunk
+      .split(/[,;\n]/)
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    sections[key].push(...entries);
+  };
+  while ((match = sectionRegex.exec(normalized)) !== null) {
+    if (lastKey) {
+      pushEntries(lastKey, normalized.slice(lastIndex, match.index));
+    }
+    lastKey = match[1].toLowerCase().startsWith('ling') ? 'languages' : 'tools';
+    lastIndex = sectionRegex.lastIndex;
+  }
+  if (lastKey) {
+    pushEntries(lastKey, normalized.slice(lastIndex));
+    return sections;
+  }
+  return { tools: parseProficiencyNotes(notes), languages: [] };
+}
+
 function normalizeNumber(value) {
   if (value === null || value === undefined || value === '') return null;
   const numberValue = Number(value);
@@ -1451,7 +1535,11 @@ function formatHitDice(hitDice) {
   const max = hitDice.max ?? '-';
   const die = hitDice.die ? ` ${hitDice.die}` : '';
   if (used === '-' && max === '-' && !die) return '-';
-  return `${used} / ${max}${die}`;
+  if (used === '-' || max === '-') {
+    return `${used} / ${max}${die}`;
+  }
+  const remaining = Math.max(Number(max) - Number(used), 0);
+  return `${remaining} / ${max}${die}`;
 }
 
 function calculateArmorClass(data, abilities, items) {
