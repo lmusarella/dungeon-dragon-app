@@ -1610,42 +1610,34 @@ button {
 }
 
 .spell-list {
-  display: grid;
-  gap: 10px;
   margin-top: 12px;
 }
 
 .spell-card {
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid #eadfc9;
-  background: #fdf7ea;
-  display: grid;
-  gap: 6px;
+  position: relative;
 }
 
-.spell-card__header {
-  display: flex;
-  justify-content: space-between;
+.spell-card__title {
   align-items: center;
-  gap: 8px;
-}
-
-.spell-card__header strong {
-  display: block;
-  font-size: 0.95rem;
 }
 
 .spell-card__meta {
-  margin: 0;
-  font-size: 0.75rem;
+  margin: 4px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.7rem;
   color: #6a5442;
 }
 
 .spell-card__description {
-  margin: 0;
-  font-size: 0.85rem;
+  margin: 4px 0 0;
+  font-size: 0.75rem;
   color: #4a3425;
+}
+
+.spell-slots__empty {
+  margin: 0;
 }
 
 .accordion-stack {

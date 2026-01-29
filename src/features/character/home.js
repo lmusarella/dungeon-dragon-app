@@ -1622,6 +1622,7 @@ function buildSpellSection(character) {
   const slots = spellcasting.slots || {};
   const recharge = spellcasting.recharge || 'long_rest';
   const slotLevels = Array.from({ length: 9 }, (_, index) => index + 1);
+  const availableSlotLevels = slotLevels.filter((level) => (Number(slots[level]) || 0) > 0);
   const rechargeLabel = recharge === 'short_rest' ? 'Riposo breve' : 'Riposo lungo';
   const slotShapeClass = recharge === 'short_rest'
     ? 'spell-slot-indicator--short'
@@ -1662,8 +1663,10 @@ function buildSpellSection(character) {
             <span>Slot incantesimo disponibili</span>
             <span class="spell-slots__recharge">${rechargeLabel}</span>
           </div>
+          ${availableSlotLevels.length
+    ? `
           <div class="spell-slots__grid">
-            ${slotLevels.map((level) => {
+            ${availableSlotLevels.map((level) => {
     const count = Math.max(0, Number(slots[level]) || 0);
     const indicators = Array.from({ length: count }, () => `
                 <span class="spell-slot-indicator ${slotShapeClass}" aria-hidden="true"></span>
@@ -1678,38 +1681,51 @@ function buildSpellSection(character) {
             `;
   }).join('')}
           </div>
+          `
+    : '<p class="muted spell-slots__empty">Nessuno slot disponibile.</p>'}
         </div>
         ${notes ? `<p class="spell-notes">${notes}</p>` : ''}
       </div>
       ${spells.length
     ? `
-        <div class="spell-list">
+        <ul class="resource-list resource-list--compact spell-list">
           ${spells.map((spell) => {
     const levelLabel = Number(spell.level) === 0 ? 'Trucchetto' : `Livello ${spell.level}°`;
+    const castTimeLabel = spell.cast_time?.trim() || null;
+    const castTimeClass = getResourceCastTimeClass(normalizeSpellCastTime(castTimeLabel));
     const metaParts = [
-      spell.cast_time ? `Lancio ${spell.cast_time}` : null,
       spell.duration ? `Durata ${spell.duration}` : null,
       spell.range ? `Gittata ${spell.range}` : null,
       spell.concentration ? 'Concentrazione' : null
     ].filter(Boolean);
     return `
-            <div class="spell-card">
-              <div class="spell-card__header">
-                <div>
-                  <strong>${spell.name}</strong>
+            <li class="modifier-card attack-card resource-card spell-card">
+              ${castTimeLabel ? `<span class="resource-chip resource-chip--floating ${castTimeClass}">${castTimeLabel}</span>` : ''}
+              <div class="attack-card__body resource-card__body">
+                <div class="attack-card__title resource-card__title spell-card__title">
+                  <strong class="attack-card__name">${spell.name}</strong>
+                  <span class="chip chip--small">${levelLabel}</span>
                 </div>
-                <span class="chip chip--small">${levelLabel}</span>
+                ${metaParts.length ? `<p class="spell-card__meta">${metaParts.join(' · ')}</p>` : ''}
+                ${spell.description ? `<p class="spell-card__description">${spell.description}</p>` : ''}
               </div>
-              ${metaParts.length ? `<p class="spell-card__meta">${metaParts.join(' · ')}</p>` : ''}
-              ${spell.description ? `<p class="spell-card__description">${spell.description}</p>` : ''}
-            </div>
+            </li>
           `;
   }).join('')}
-        </div>
+        </ul>
       `
     : '<p class="muted">Nessun incantesimo configurato.</p>'}
     </div>
   `;
+}
+
+function normalizeSpellCastTime(castTime) {
+  if (!castTime) return null;
+  const normalized = castTime.toLowerCase();
+  if (normalized.includes('bonus')) return 'Azione Bonus';
+  if (normalized.includes('reazione')) return 'Reazione';
+  if (normalized.includes('azione')) return 'Azione';
+  return castTime;
 }
 
 function openSpellDrawer(character, onSave) {
