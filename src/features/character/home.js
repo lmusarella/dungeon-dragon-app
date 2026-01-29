@@ -762,16 +762,28 @@ export async function openCharacterDrawer(user, onSave, character = null) {
   const combatGrid = document.createElement('div');
   combatGrid.className = 'character-edit-grid';
   combatGrid.appendChild(buildInput({
-    label: 'Bonus attacco extra',
-    name: 'attack_bonus',
+    label: 'Bonus attacco extra (mischia)',
+    name: 'attack_bonus_melee',
     type: 'number',
-    value: characterData.attack_bonus ?? 0
+    value: characterData.attack_bonus_melee ?? characterData.attack_bonus ?? 0
   }));
   combatGrid.appendChild(buildInput({
-    label: 'Bonus danni extra',
-    name: 'damage_bonus',
+    label: 'Bonus attacco extra (distanza)',
+    name: 'attack_bonus_ranged',
     type: 'number',
-    value: characterData.damage_bonus ?? 0
+    value: characterData.attack_bonus_ranged ?? characterData.attack_bonus ?? 0
+  }));
+  combatGrid.appendChild(buildInput({
+    label: 'Bonus danni extra (mischia)',
+    name: 'damage_bonus_melee',
+    type: 'number',
+    value: characterData.damage_bonus_melee ?? characterData.damage_bonus ?? 0
+  }));
+  combatGrid.appendChild(buildInput({
+    label: 'Bonus danni extra (distanza)',
+    name: 'damage_bonus_ranged',
+    type: 'number',
+    value: characterData.damage_bonus_ranged ?? characterData.damage_bonus ?? 0
   }));
   combatSection.appendChild(combatGrid);
   const spellcasterField = document.createElement('label');
@@ -886,8 +898,10 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     speed: toNumberOrNull(formData.get('speed')),
     proficiency_bonus: toNumberOrNull(formData.get('proficiency_bonus')),
     initiative: toNumberOrNull(formData.get('initiative')),
-    attack_bonus: toNumberOrNull(formData.get('attack_bonus')) ?? 0,
-    damage_bonus: toNumberOrNull(formData.get('damage_bonus')) ?? 0,
+    attack_bonus_melee: toNumberOrNull(formData.get('attack_bonus_melee')) ?? 0,
+    attack_bonus_ranged: toNumberOrNull(formData.get('attack_bonus_ranged')) ?? 0,
+    damage_bonus_melee: toNumberOrNull(formData.get('damage_bonus_melee')) ?? 0,
+    damage_bonus_ranged: toNumberOrNull(formData.get('damage_bonus_ranged')) ?? 0,
     is_spellcaster: formData.get('is_spellcaster') === 'on',
     spell_notes: formData.get('spell_notes')?.trim() || null,
     ac_ability_modifiers: nextAcModifiers,
@@ -1296,22 +1310,44 @@ function buildTalentOverview(character) {
 
 function buildAttackSection(character, items = []) {
   const data = character.data || {};
-  const attackBonus = Number(data.attack_bonus) || 0;
-  const damageBonus = Number(data.damage_bonus) || 0;
+  const attackBonusMelee = Number(data.attack_bonus_melee ?? data.attack_bonus) || 0;
+  const attackBonusRanged = Number(data.attack_bonus_ranged ?? data.attack_bonus) || 0;
+  const damageBonusMelee = Number(data.damage_bonus_melee ?? data.damage_bonus) || 0;
+  const damageBonusRanged = Number(data.damage_bonus_ranged ?? data.damage_bonus) || 0;
   const equippedWeapons = items.filter((item) => item.category === 'weapon' && item.equipable && getEquipSlots(item).length);
   if (!equippedWeapons.length) {
     return '<p class="muted">Nessuna arma equipaggiata.</p>';
   }
-  const bonusLabel = attackBonus || damageBonus
-    ? `<p class="muted">Bonus extra: attacco ${formatSigned(attackBonus)} · danni ${formatSigned(damageBonus)}</p>`
+  const bonusBits = [];
+  if (attackBonusMelee || damageBonusMelee) {
+    bonusBits.push(`Mischia attacco ${formatSigned(attackBonusMelee)} · danni ${formatSigned(damageBonusMelee)}`);
+  }
+  if (attackBonusRanged || damageBonusRanged) {
+    bonusBits.push(`Distanza attacco ${formatSigned(attackBonusRanged)} · danni ${formatSigned(damageBonusRanged)}`);
+  }
+  const bonusLabel = bonusBits.length
+    ? `<p class="muted">Bonus extra: ${bonusBits.join(' · ')}</p>`
     : '';
   return `
     ${bonusLabel}
     <div class="detail-section">
       <div class="detail-grid detail-grid--compact">
         ${equippedWeapons.map((weapon) => {
-    const attackTotal = (Number(weapon.attack_modifier) || 0) + attackBonus;
-    const damageTotal = (Number(weapon.damage_modifier) || 0) + damageBonus;
+    const weaponRange = weapon.weapon_range || (weapon.range_normal ? 'ranged' : 'melee');
+    const attackAbility = weapon.attack_ability
+      || (weaponRange === 'ranged' ? 'dex' : 'str');
+    const abilityMod = getAbilityModifier(data.abilities?.[attackAbility]) ?? 0;
+    const proficiencies = data.proficiencies || {};
+    const proficient = weapon.weapon_type === 'simple'
+      ? Boolean(proficiencies.weapon_simple)
+      : weapon.weapon_type === 'martial'
+        ? Boolean(proficiencies.weapon_martial)
+        : false;
+    const proficiencyBonus = proficient ? (normalizeNumber(data.proficiency_bonus) ?? 0) : 0;
+    const attackBonus = weaponRange === 'ranged' ? attackBonusRanged : attackBonusMelee;
+    const damageBonus = weaponRange === 'ranged' ? damageBonusRanged : damageBonusMelee;
+    const attackTotal = abilityMod + proficiencyBonus + (Number(weapon.attack_modifier) || 0) + attackBonus;
+    const damageTotal = abilityMod + (Number(weapon.damage_modifier) || 0) + damageBonus;
     const damageDie = weapon.damage_die ? weapon.damage_die : '-';
     const damageText = damageDie === '-'
       ? '-'
