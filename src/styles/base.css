@@ -951,6 +951,18 @@ button {
   color: #3a4d8c;
 }
 
+.hp-bar-label__temp-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.45;
+  transition: opacity 0.4s ease;
+}
+
+.hp-bar-label__temp-group.is-active {
+  opacity: 1;
+}
+
 .hp-bar-track {
   display: flex;
   gap: 8px;
@@ -987,6 +999,16 @@ button {
 
 .hp-bar--temp {
   background: #d8e6ff;
+  opacity: 0;
+  height: 0;
+  transform: scaleX(0.95);
+  transition: opacity 0.4s ease, height 0.4s ease, transform 0.4s ease;
+}
+
+.hp-bar--temp.is-active {
+  opacity: 1;
+  height: 8px;
+  transform: scaleX(1);
 }
 
 .hp-bar__fill {
@@ -1014,6 +1036,70 @@ button {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
+  align-items: center;
+}
+
+.death-saves {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.65rem;
+  color: #6a5540;
+  align-items: flex-end;
+}
+
+.death-saves__label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.death-saves__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.death-saves__tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #6f4e37;
+}
+
+.death-save-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(111, 78, 55, 0.35);
+  background: #fffaf1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.death-save-dot span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.death-save-dot.is-filled span {
+  background: #c34a36;
+}
+
+.death-save-dot:focus-visible {
+  outline: 2px solid #6f4e37;
+  outline-offset: 2px;
+}
+
+.death-save-dot:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 6px rgba(111, 78, 55, 0.2);
 }
 
 .stat-mini-card {
@@ -1062,9 +1148,11 @@ button {
 }
 
 .stat-grid--compact .stat-card__modifier {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   font-size: 0.65rem;
+  top: -6px;
+  right: -6px;
 }
 
 .stat-grid--abilities {
@@ -1098,19 +1186,20 @@ button {
 
 .stat-card__modifier {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 26px;
-  height: 26px;
+  top: -8px;
+  right: -8px;
+  width: 30px;
+  height: 30px;
   border-radius: 999px;
-  background: #fffaf1;
-  border: 1px solid rgba(111, 78, 55, 0.2);
+  background: #6f4e37;
+  border: 1px solid rgba(255, 255, 255, 0.45);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #6f4e37;
+  color: #fff;
+  box-shadow: 0 4px 8px rgba(111, 78, 55, 0.25);
 }
 
 .stat-card--str {
