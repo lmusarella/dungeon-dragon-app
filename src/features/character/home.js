@@ -263,8 +263,23 @@ export async function renderHome(container) {
   container.querySelectorAll('[data-roll-damage]')
     .forEach((button) => button.addEventListener('click', () => {
       if (!activeCharacter) return;
-      const weaponKey = button.dataset.rollDamage;
-      const weapon = items?.find((entry) => String(entry.id) === weaponKey || entry.name === weaponKey);
+      const rollKey = button.dataset.rollDamage;
+      if (!rollKey) return;
+      if (rollKey.startsWith('spell:')) {
+        const spellId = rollKey.replace('spell:', '');
+        const spells = Array.isArray(activeCharacter.data?.spells) ? activeCharacter.data.spells : [];
+        const spell = spells.find((entry) => entry.id === spellId);
+        if (!spell) return;
+        const roll = calculateSpellDamageRoll(spell);
+        if (!roll) {
+          createToast('Danno non calcolabile per questo trucchetto.', 'error');
+          return;
+        }
+        const { label, total } = roll;
+        createToast(`Danni ${label}: ${total}`);
+        return;
+      }
+      const weapon = items?.find((entry) => String(entry.id) === rollKey || entry.name === rollKey);
       if (!weapon) return;
       const roll = calculateWeaponDamageRoll(activeCharacter, weapon);
       if (!roll) {
@@ -1054,6 +1069,10 @@ export async function openCharacterDrawer(user, onSave, character = null) {
       slots: spellSlotLevels.reduce((acc, level) => {
         acc[level] = toNumberOrNull(formData.get(`spell_slot_${level}`)) ?? 0;
         return acc;
+      }, {}),
+      slots_max: spellSlotLevels.reduce((acc, level) => {
+        acc[level] = toNumberOrNull(formData.get(`spell_slot_${level}`)) ?? 0;
+        return acc;
       }, {})
     }
     : characterData.spellcasting ?? null;
@@ -1625,6 +1644,7 @@ function buildAttackSection(character, items = []) {
       const damageModifier = Number(spell.damage_modifier) || 0;
       const damageText = `${spell.damage_die}${damageModifier ? ` ${formatSigned(damageModifier)}` : ''}`;
       const abilityLabel = abilityShortLabel[spellAbilityKey] ?? spellAbilityKey?.toUpperCase();
+      const rangeText = spell.range ? `Range ${spell.range}` : '';
       return `
             <div class="modifier-card attack-card">
               <div class="attack-card__body">
@@ -1636,8 +1656,12 @@ function buildAttackSection(character, items = []) {
                 <div class="attack-card__meta">
                   <span class="attack-card__damage">${damageText}</span>
                   <span class="chip chip--small">Trucchetto</span>
+                  ${rangeText ? `<span class="muted">${rangeText}</span>` : ''}
                 </div>
               </div>
+              <button class="icon-button icon-button--fire" data-roll-damage="spell:${spell.id}" aria-label="Calcola danni ${spell.name}">
+                <span aria-hidden="true">🔥</span>
+              </button>
             </div>
           `;
     }).join('')
@@ -1663,12 +1687,18 @@ function buildSpellSection(character) {
     : abilityMod + proficiencyBonus;
   const spellAbilityLabel = abilityKey ? abilityShortLabel[abilityKey] : null;
   const slots = spellcasting.slots || {};
+  const slotsMax = spellcasting.slots_max || {};
   const recharge = spellcasting.recharge || 'long_rest';
   const slotLevels = Array.from({ length: 9 }, (_, index) => index + 1);
-  const slotEntries = slotLevels.map((level) => ({
-    level,
-    count: Math.max(0, Number(slots[level]) || 0)
-  }));
+  const slotEntries = slotLevels.map((level) => {
+    const remaining = Math.max(0, Number(slots[level]) || 0);
+    const max = Math.max(remaining, Number(slotsMax[level]) || 0);
+    return {
+      level,
+      count: remaining,
+      max
+    };
+  }).filter((entry) => entry.max > 0);
   const summaryChips = [
     `Caratteristica ${spellAbilityLabel ?? '-'}`,
     `CD incantesimi ${spellSaveDc === null ? '-' : spellSaveDc}`,
@@ -1685,8 +1715,12 @@ function buildSpellSection(character) {
           <span class="spell-slots__title">Slot rimanenti</span>
           <div class="spell-slots__list">
             ${slotEntries.map((entry) => {
-    const indicatorClass = recharge === 'short_rest' ? 'charge-indicator' : 'charge-indicator charge-indicator--long';
-    const charges = Array.from({ length: entry.count }, () => `<span class="${indicatorClass}"></span>`).join('');
+    const baseIndicatorClass = recharge === 'short_rest' ? 'charge-indicator' : 'charge-indicator charge-indicator--long';
+    const charges = Array.from({ length: entry.max }, (_, index) => {
+      const usedClass = index >= entry.count ? 'charge-indicator--used' : '';
+      const classes = [baseIndicatorClass, usedClass].filter(Boolean).join(' ');
+      return `<span class="${classes}"></span>`;
+    }).join('');
     return `
               <div class="spell-slot-row">
                 <span class="spell-slot-label">Slot ${entry.level}°</span>
@@ -1698,9 +1732,9 @@ function buildSpellSection(character) {
           </div>
         </div>
         ${notes ? `<p class="spell-notes">${notes}</p>` : ''}
-        <div class="spell-list-actions">
-          <button class="primary spell-list-button" type="button" data-spell-list>Lista Incantesimi</button>
-        </div>
+      </div>
+      <div class="spell-list-actions">
+        <button class="primary spell-list-button" type="button" data-spell-list>Lista Incantesimi</button>
       </div>
     </div>
   `;
@@ -2519,6 +2553,21 @@ function calculateWeaponDamageRoll(character, weapon) {
   return {
     total,
     label: `${weapon.name} (${dice.count}d${dice.sides}: ${rolls.join(' + ')}${bonusLabel})`
+  };
+}
+
+function calculateSpellDamageRoll(spell) {
+  if (!spell) return null;
+  const dice = parseDamageDice(spell.damage_die);
+  if (!dice) return null;
+  const damageModifier = Number(spell.damage_modifier) || 0;
+  const rolls = Array.from({ length: dice.count }, () => rollDie(dice.sides));
+  const diceTotal = rolls.reduce((sum, value) => sum + value, 0);
+  const total = diceTotal + damageModifier;
+  const bonusLabel = damageModifier ? ` ${formatSigned(damageModifier)}` : '';
+  return {
+    total,
+    label: `${spell.name} (${dice.count}d${dice.sides}: ${rolls.join(' + ')}${bonusLabel})`
   };
 }
 

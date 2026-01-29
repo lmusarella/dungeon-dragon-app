@@ -1577,6 +1577,7 @@ button {
 .spell-list-actions {
   display: flex;
   justify-content: flex-start;
+  margin-top: 8px;
 }
 
 .spell-list-button {
