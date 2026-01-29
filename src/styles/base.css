@@ -498,7 +498,7 @@ button {
   padding: 6px 8px;
   border-bottom: none;
   margin-bottom: 4px;
-      margin-top: 4px;
+  margin-top: 4px;
 }
 
 .resource-list--compact li:last-child {
@@ -531,9 +531,10 @@ button {
 }
 
 .resource-section__body {
-  max-height: 30vh;
+  max-height: 38vh;
   overflow-y: auto;
   padding-right: 6px;
+  margin-bottom: 16px;
 }
 
 .resource-card {
@@ -666,7 +667,7 @@ button {
 .resource-cta-button--label {
   width: auto;
   min-width: 35px;
- 
+
   height: 26px;
   font-size: 0.75rem;
 }
@@ -1085,6 +1086,7 @@ button {
   align-items: center;
   margin-top: 6px;
 }
+
 .hp-panel-title,
 .hp-panel-hit-dice {
   display: flex;
@@ -2019,7 +2021,7 @@ button {
   background: #fdf7ea;
 }
 
-.character-skill-row > div {
+.character-skill-row>div {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -2075,7 +2077,7 @@ button {
   font-size: 12px;
 }
 
-.modifier-card > div {
+.modifier-card>div {
   display: flex;
   gap: 3px;
   flex-wrap: nowrap;
@@ -2587,13 +2589,16 @@ button {
   .app-main {
     padding: 16px 8px 90px;
   }
+
   .card {
     margin: 0px auto;
     max-width: 900px;
   }
+
   .home-layout {
     gap: 8px;
   }
+
   .drawer-panel {
     width: 420px;
   }

@@ -1690,7 +1690,7 @@ function buildResourceSections(resources, canManageResources) {
   const passiveSection = passiveResources.length
     ? `
       <div class="resource-section">
-        <header class="card-header"><div><p class="eyebrow">Abilità Passive</p></div></header>
+        <header class="card-header"><div><p class="eyebrow">Risorse Passive</p></div></header>
         <div class="resource-section__body">
           ${buildResourceList(passiveResources, canManageResources, {
     showCharges: false,
