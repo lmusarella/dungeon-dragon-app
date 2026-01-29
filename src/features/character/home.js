@@ -818,6 +818,12 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     value: characterData.attack_bonus_ranged ?? characterData.attack_bonus ?? 0
   }));
   combatGrid.appendChild(buildInput({
+    label: 'Attacchi extra',
+    name: 'extra_attacks',
+    type: 'number',
+    value: characterData.extra_attacks ?? 0
+  }));
+  combatGrid.appendChild(buildInput({
     label: 'Bonus danni extra (mischia)',
     name: 'damage_bonus_melee',
     type: 'number',
@@ -944,6 +950,7 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     initiative: toNumberOrNull(formData.get('initiative')),
     attack_bonus_melee: toNumberOrNull(formData.get('attack_bonus_melee')) ?? 0,
     attack_bonus_ranged: toNumberOrNull(formData.get('attack_bonus_ranged')) ?? 0,
+    extra_attacks: toNumberOrNull(formData.get('extra_attacks')) ?? 0,
     damage_bonus_melee: toNumberOrNull(formData.get('damage_bonus_melee')) ?? 0,
     damage_bonus_ranged: toNumberOrNull(formData.get('damage_bonus_ranged')) ?? 0,
     ac_bonus: toNumberOrNull(formData.get('ac_bonus')) ?? 0,
@@ -1392,11 +1399,13 @@ function buildAttackSection(character, items = []) {
   const attackBonusRanged = Number(data.attack_bonus_ranged ?? data.attack_bonus) || 0;
   const damageBonusMelee = Number(data.damage_bonus_melee ?? data.damage_bonus) || 0;
   const damageBonusRanged = Number(data.damage_bonus_ranged ?? data.damage_bonus) || 0;
+  const extraAttacks = Number(data.extra_attacks) || 0;
   const equippedWeapons = items.filter((item) => item.category === 'weapon' && item.equipable && getEquipSlots(item).length);
   if (!equippedWeapons.length) {
     return '<p class="muted">Nessuna arma equipaggiata.</p>';
   }
   const bonusChips = [];
+  if (extraAttacks > 1) bonusChips.push(`Attacco Extra (${extraAttacks})`);
   if (attackBonusMelee) bonusChips.push(`Mischia attacco ${formatSigned(attackBonusMelee)}`);
   if (damageBonusMelee) bonusChips.push(`Mischia danni ${formatSigned(damageBonusMelee)}`);
   if (attackBonusRanged) bonusChips.push(`Distanza attacco ${formatSigned(attackBonusRanged)}`);
@@ -1586,18 +1595,28 @@ function buildHpShortcutFields(
   return wrapper;
 }
 
-function buildResourceList(resources, canManageResources, { showCharges = true, showUseButton = true } = {}) {
+function buildResourceList(
+  resources,
+  canManageResources,
+  {
+    showCharges = true,
+    showUseButton = true,
+    showDescription = false,
+    showCastTime = true
+  } = {}
+) {
   return `
     <ul class="resource-list resource-list--compact">
       ${resources.map((res) => `
         <li class="modifier-card attack-card resource-card" data-resource-card="${res.id}">
+          ${showCastTime && res.cast_time ? `<span class="resource-chip resource-chip--floating">${res.cast_time}</span>` : ''}
           <div class="attack-card__body resource-card__body">
             <div class="attack-card__title resource-card__title">
               <strong class="attack-card__name">${res.name}</strong>
             </div>
-            <div class="attack-card__meta resource-card__meta">
-              ${res.cast_time ? `<span class="resource-chip">${res.cast_time}</span>` : ''}
-            </div>
+            ${showDescription
+    ? `<p class="resource-card__description">${res.description ?? ''}</p>`
+    : ''}
             ${showCharges && Number(res.max_uses)
     ? `
               <div class="resource-card__charges">
@@ -1640,7 +1659,12 @@ function buildResourceSections(resources, canManageResources) {
       <div class="resource-section">
         <header class="card-header"><div><p class="eyebrow">Abilità Passive</p></div></header>
         
-        ${buildResourceList(passiveResources, canManageResources, { showCharges: false, showUseButton: false })}
+        ${buildResourceList(passiveResources, canManageResources, {
+    showCharges: false,
+    showUseButton: false,
+    showDescription: true,
+    showCastTime: false
+  })}
       </div>
     `
     : '';

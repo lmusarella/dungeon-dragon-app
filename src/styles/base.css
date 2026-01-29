@@ -518,6 +518,7 @@ button {
 }
 
 .resource-card {
+  position: relative;
   flex-direction: row;
   align-items: flex-start;
   justify-content: space-between;
@@ -557,6 +558,12 @@ button {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-start;
+}
+
+.resource-card__description {
+  margin: 4px 0 0;
+  color: #6a5540;
+  font-size: 0.75rem;
 }
 
 .resource-card__charges {
@@ -690,6 +697,18 @@ button {
   color: #6a5540;
   font-size: 0.68rem;
   font-weight: 600;
+}
+
+.resource-chip--floating {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #6f4e37;
+  color: #fff;
+  box-shadow: 0 4px 8px rgba(111, 78, 55, 0.25);
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  padding: 2px 6px;
 }
 
 .resource-form-actions {
