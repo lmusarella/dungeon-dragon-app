@@ -769,6 +769,44 @@ async function openItemModal(character, item, items, onSave) {
   const weaponTypeSelect = buildSelect(weaponTypes, item?.weapon_type ?? '');
   weaponTypeSelect.name = 'weapon_type';
   weaponTypeField.appendChild(weaponTypeSelect);
+  const damageDieField = buildInput({
+    label: 'Dado danno',
+    name: 'damage_die',
+    placeholder: 'Es. 1d8',
+    value: item?.damage_die ?? ''
+  });
+  const attackModifierField = buildInput({
+    label: 'Modificatore per colpire',
+    name: 'attack_modifier',
+    type: 'number',
+    value: item?.attack_modifier ?? 0
+  });
+  const damageModifierField = buildInput({
+    label: 'Modificatore danno',
+    name: 'damage_modifier',
+    type: 'number',
+    value: item?.damage_modifier ?? 0
+  });
+  const thrownField = document.createElement('label');
+  thrownField.className = 'checkbox';
+  thrownField.innerHTML = '<input type="checkbox" name="is_thrown" /> <span>Proprietà lancio</span>';
+  const thrownInput = thrownField.querySelector('input');
+  const rangeGrid = document.createElement('div');
+  rangeGrid.className = 'compact-field-grid';
+  const rangeNormalField = buildInput({
+    label: 'Gittata normale',
+    name: 'range_normal',
+    type: 'number',
+    value: item?.range_normal ?? ''
+  });
+  const rangeDisadvantageField = buildInput({
+    label: 'Gittata svantaggio',
+    name: 'range_disadvantage',
+    type: 'number',
+    value: item?.range_disadvantage ?? ''
+  });
+  rangeGrid.appendChild(rangeNormalField);
+  rangeGrid.appendChild(rangeDisadvantageField);
 
   const armorTypeField = document.createElement('label');
   armorTypeField.className = 'field';
@@ -805,6 +843,11 @@ async function openItemModal(character, item, items, onSave) {
   const shieldBonusInput = shieldBonusField.querySelector('input');
 
   proficiencySection.appendChild(weaponTypeField);
+  proficiencySection.appendChild(damageDieField);
+  proficiencySection.appendChild(attackModifierField);
+  proficiencySection.appendChild(damageModifierField);
+  proficiencySection.appendChild(thrownField);
+  proficiencySection.appendChild(rangeGrid);
   proficiencySection.appendChild(armorTypeField);
   proficiencySection.appendChild(shieldField);
   proficiencySection.appendChild(armorClassField);
@@ -824,6 +867,9 @@ async function openItemModal(character, item, items, onSave) {
   if (shieldInput) {
     shieldInput.checked = item?.is_shield ?? false;
   }
+  if (thrownInput) {
+    thrownInput.checked = item?.is_thrown ?? false;
+  }
   const updateEquipmentFields = () => {
     const equipableEnabled = equipableInput?.checked ?? false;
     equipSlotInputs.forEach((input) => {
@@ -842,6 +888,19 @@ async function openItemModal(character, item, items, onSave) {
     const isWeapon = categorySelect.value === 'weapon';
     const isArmor = categorySelect.value === 'armor';
     weaponTypeSelect.disabled = !isWeapon;
+    damageDieField.querySelector('input').disabled = !isWeapon;
+    attackModifierField.querySelector('input').disabled = !isWeapon;
+    damageModifierField.querySelector('input').disabled = !isWeapon;
+    if (thrownInput) {
+      thrownInput.disabled = !isWeapon;
+    }
+    const rangeInputs = rangeGrid.querySelectorAll('input');
+    rangeInputs.forEach((input) => {
+      input.disabled = !isWeapon;
+      if (!isWeapon) {
+        input.value = '';
+      }
+    });
     armorTypeSelect.disabled = !isArmor;
     if (shieldInput) {
       shieldInput.disabled = !isArmor;
@@ -859,6 +918,7 @@ async function openItemModal(character, item, items, onSave) {
   equipableInput?.addEventListener('change', updateEquipmentFields);
   categorySelect.addEventListener('change', updateEquipmentFields);
   shieldInput?.addEventListener('change', updateEquipmentFields);
+  thrownInput?.addEventListener('change', updateEquipmentFields);
   updateEquipmentFields();
 
   const formData = await openFormModal({
@@ -902,6 +962,12 @@ async function openItemModal(character, item, items, onSave) {
     attunement_active: formData.get('attunement_active') === 'on',
     notes: formData.get('notes'),
     weapon_type: formData.get('weapon_type') || null,
+    damage_die: formData.get('damage_die')?.trim() || null,
+    attack_modifier: Number(formData.get('attack_modifier')) || 0,
+    damage_modifier: Number(formData.get('damage_modifier')) || 0,
+    is_thrown: formData.get('is_thrown') === 'on',
+    range_normal: Number(formData.get('range_normal')) || null,
+    range_disadvantage: Number(formData.get('range_disadvantage')) || null,
     armor_type: formData.get('armor_type') || null,
     is_shield: formData.get('is_shield') === 'on',
     armor_class: Number(formData.get('armor_class')) || null,

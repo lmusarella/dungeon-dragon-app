@@ -124,6 +124,30 @@ export async function renderHome(container) {
         <section class="card home-card home-section home-scroll-panel">
           <header class="card-header">
             <div>
+              <p class="eyebrow">Attacchi</p>
+            </div>
+          </header>
+          <div class="home-scroll-body">
+            ${activeCharacter
+    ? buildAttackSection(activeCharacter, items || [])
+    : '<p>Nessun personaggio selezionato.</p>'}
+          </div>
+        </section>
+        ${activeCharacter?.data?.is_spellcaster ? `
+        <section class="card home-card home-section home-scroll-panel">
+          <header class="card-header">
+            <div>
+              <p class="eyebrow">Incantesimi</p>
+            </div>
+          </header>
+          <div class="home-scroll-body">
+            ${buildSpellSection(activeCharacter)}
+          </div>
+        </section>
+        ` : ''}
+        <section class="card home-card home-section home-scroll-panel">
+          <header class="card-header">
+            <div>
               <p class="eyebrow">Risorse</p>           
             </div>
             ${activeCharacter && canManageResources ? `
@@ -732,6 +756,39 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     </div>
   `;
 
+  const combatSection = document.createElement('div');
+  combatSection.className = 'character-edit-section';
+  combatSection.innerHTML = '<h4>Combattimento e magia</h4>';
+  const combatGrid = document.createElement('div');
+  combatGrid.className = 'character-edit-grid';
+  combatGrid.appendChild(buildInput({
+    label: 'Bonus attacco extra',
+    name: 'attack_bonus',
+    type: 'number',
+    value: characterData.attack_bonus ?? 0
+  }));
+  combatGrid.appendChild(buildInput({
+    label: 'Bonus danni extra',
+    name: 'damage_bonus',
+    type: 'number',
+    value: characterData.damage_bonus ?? 0
+  }));
+  combatSection.appendChild(combatGrid);
+  const spellcasterField = document.createElement('label');
+  spellcasterField.className = 'checkbox';
+  spellcasterField.innerHTML = '<input type="checkbox" name="is_spellcaster" /> <span>Incantatore</span>';
+  const spellcasterInput = spellcasterField.querySelector('input');
+  if (spellcasterInput) {
+    spellcasterInput.checked = Boolean(characterData.is_spellcaster);
+  }
+  combatSection.appendChild(spellcasterField);
+  combatSection.appendChild(buildTextarea({
+    label: 'Incantesimi (note)',
+    name: 'spell_notes',
+    placeholder: 'Descrivi gli incantesimi noti/preparati e gli slot principali.',
+    value: characterData.spell_notes ?? ''
+  }));
+
   const proficiencyNotesSection = document.createElement('div');
   proficiencyNotesSection.className = 'character-edit-section';
   proficiencyNotesSection.appendChild(buildTextarea({
@@ -764,6 +821,7 @@ export async function openCharacterDrawer(user, onSave, character = null) {
   form.appendChild(skillSection);
   form.appendChild(savingSection);
   form.appendChild(proficiencySection);
+  form.appendChild(combatSection);
   form.appendChild(proficiencyNotesSection);
   form.appendChild(languageNotesSection);
   form.appendChild(talentNotesSection);
@@ -828,6 +886,10 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     speed: toNumberOrNull(formData.get('speed')),
     proficiency_bonus: toNumberOrNull(formData.get('proficiency_bonus')),
     initiative: toNumberOrNull(formData.get('initiative')),
+    attack_bonus: toNumberOrNull(formData.get('attack_bonus')) ?? 0,
+    damage_bonus: toNumberOrNull(formData.get('damage_bonus')) ?? 0,
+    is_spellcaster: formData.get('is_spellcaster') === 'on',
+    spell_notes: formData.get('spell_notes')?.trim() || null,
     ac_ability_modifiers: nextAcModifiers,
     proficiency_notes: formData.get('proficiency_notes')?.trim() || null,
     language_proficiencies: formData.get('language_proficiencies')?.trim() || null,
@@ -1227,6 +1289,65 @@ function buildTalentOverview(character) {
         ${talents.length
     ? `<div class="tag-row">${talents.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
     : '<p class="muted">Aggiungi talenti nel profilo.</p>'}
+      </div>
+    </div>
+  `;
+}
+
+function buildAttackSection(character, items = []) {
+  const data = character.data || {};
+  const attackBonus = Number(data.attack_bonus) || 0;
+  const damageBonus = Number(data.damage_bonus) || 0;
+  const equippedWeapons = items.filter((item) => item.category === 'weapon' && item.equipable && getEquipSlots(item).length);
+  if (!equippedWeapons.length) {
+    return '<p class="muted">Nessuna arma equipaggiata.</p>';
+  }
+  const bonusLabel = attackBonus || damageBonus
+    ? `<p class="muted">Bonus extra: attacco ${formatSigned(attackBonus)} · danni ${formatSigned(damageBonus)}</p>`
+    : '';
+  return `
+    ${bonusLabel}
+    <div class="detail-section">
+      <div class="detail-grid detail-grid--compact">
+        ${equippedWeapons.map((weapon) => {
+    const attackTotal = (Number(weapon.attack_modifier) || 0) + attackBonus;
+    const damageTotal = (Number(weapon.damage_modifier) || 0) + damageBonus;
+    const damageDie = weapon.damage_die ? weapon.damage_die : '-';
+    const damageText = damageDie === '-'
+      ? '-'
+      : `${damageDie}${damageTotal ? ` ${formatSigned(damageTotal)}` : ''}`;
+    const rangeBits = [];
+    if (weapon.is_thrown) rangeBits.push('Lancio');
+    const normalRange = Number(weapon.range_normal) || null;
+    const disadvantageRange = Number(weapon.range_disadvantage) || null;
+    if (normalRange) {
+      rangeBits.push(`Gittata ${normalRange}${disadvantageRange ? `/${disadvantageRange}` : ''}`);
+    }
+    return `
+          <div class="modifier-card">
+            <div>
+              <div class="modifier-title">
+                <strong>${weapon.name}</strong>
+                <span class="muted">${damageText}</span>
+              </div>
+              ${rangeBits.length ? `<p class="muted">${rangeBits.join(' · ')}</p>` : ''}
+            </div>
+            <div class="modifier-value">${formatSigned(attackTotal)}</div>
+          </div>
+        `;
+  }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function buildSpellSection(character) {
+  const data = character.data || {};
+  const notes = data.spell_notes || '';
+  return `
+    <div class="detail-section">
+      <div class="detail-card detail-card--text">
+        ${notes ? `<p>${notes}</p>` : '<p class="muted">Nessun incantesimo configurato.</p>'}
       </div>
     </div>
   `;
@@ -1806,6 +1927,23 @@ function calculateArmorClass(data, abilities, items) {
   const fallbackBase = normalizeNumber(data.ac);
   const base = armorValue ?? fallbackBase ?? (10 + dexMod + extraMods);
   return base + shieldBonus;
+}
+
+function getEquipSlots(item) {
+  if (!item) return [];
+  if (Array.isArray(item.equip_slots)) {
+    return item.equip_slots.filter(Boolean);
+  }
+  if (typeof item.equip_slots === 'string' && item.equip_slots.trim()) {
+    try {
+      const parsed = JSON.parse(item.equip_slots);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch (error) {
+      return [item.equip_slots];
+    }
+  }
+  if (item.equip_slot) return [item.equip_slot];
+  return [];
 }
 
 function formatResourceRecovery(resource) {
