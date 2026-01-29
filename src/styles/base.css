@@ -489,8 +489,7 @@ button {
 
 .resource-list--compact li {
   padding: 0;
-  gap: 12px;
-  padding: 4px 6px;
+  padding: 6px 8px;
   border-bottom: none;
   margin-bottom: 4px;
 }
@@ -570,7 +569,7 @@ button {
 }
 
 .resource-card__title strong {
-  font-size: 0.74rem;
+  font-size: 0.82rem;
 }
 
 .resource-charge-row {
@@ -2024,7 +2023,7 @@ button {
 
 .modifier-card > div {
   display: flex;
-  gap: 2px;
+  gap: 3px;
   flex-wrap: nowrap;
   min-width: 0;
 }
@@ -2061,7 +2060,7 @@ button {
 }
 
 .attack-card__name {
-  font-size: 0.74rem;
+  font-size: 0.82rem;
 }
 
 .attack-card__hit {
