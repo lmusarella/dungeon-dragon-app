@@ -776,6 +776,12 @@ button {
   color: #6f4e37;
 }
 
+.icon-button--fire {
+  border-color: #e3a07f;
+  background: #fff1e8;
+  color: #b24a2b;
+}
+
 .icon-button--danger {
   border-color: rgba(178, 58, 72, 0.4);
   background: rgba(178, 58, 72, 0.1);
@@ -2008,6 +2014,52 @@ button {
 
 .modifier-title strong {
   white-space: nowrap;
+}
+
+.attack-card {
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.attack-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.attack-card__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.attack-card__name {
+  font-size: 0.85rem;
+}
+
+.attack-card__hit {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #efe2cf;
+  color: #6f4e37;
+  border: 1px solid #e2d0b6;
+  white-space: nowrap;
+}
+
+.attack-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.attack-card__damage {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3e2a1a;
 }
 
 .modifier-ability {

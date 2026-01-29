@@ -126,6 +126,11 @@ export async function renderHome(container) {
             <div>
               <p class="eyebrow">Attacchi</p>
             </div>
+            <div class="actions">
+              <button class="icon-button icon-button--dice" data-open-dice="roller" aria-label="Lancia dadi attacchi">
+                <span aria-hidden="true">🎲</span>
+              </button>
+            </div>
           </header>
           <div class="home-scroll-body">
             ${activeCharacter
@@ -234,6 +239,21 @@ export async function renderHome(container) {
       const resource = resources.find((entry) => entry.id === button.dataset.editResource);
       if (!resource) return;
       openResourceDrawer(activeCharacter, () => renderHome(container), resource);
+    }));
+
+  container.querySelectorAll('[data-roll-damage]')
+    .forEach((button) => button.addEventListener('click', () => {
+      if (!activeCharacter) return;
+      const weaponKey = button.dataset.rollDamage;
+      const weapon = items?.find((entry) => String(entry.id) === weaponKey || entry.name === weaponKey);
+      if (!weapon) return;
+      const roll = calculateWeaponDamageRoll(activeCharacter, weapon);
+      if (!roll) {
+        createToast('Danno non calcolabile per questa arma.', 'error');
+        return;
+      }
+      const { label, total } = roll;
+      createToast(`Danni ${label}: ${total}`);
     }));
 
   const longPressDelay = 500;
@@ -1318,15 +1338,13 @@ function buildAttackSection(character, items = []) {
   if (!equippedWeapons.length) {
     return '<p class="muted">Nessuna arma equipaggiata.</p>';
   }
-  const bonusBits = [];
-  if (attackBonusMelee || damageBonusMelee) {
-    bonusBits.push(`Mischia attacco ${formatSigned(attackBonusMelee)} · danni ${formatSigned(damageBonusMelee)}`);
-  }
-  if (attackBonusRanged || damageBonusRanged) {
-    bonusBits.push(`Distanza attacco ${formatSigned(attackBonusRanged)} · danni ${formatSigned(damageBonusRanged)}`);
-  }
-  const bonusLabel = bonusBits.length
-    ? `<p class="muted">Bonus extra: ${bonusBits.join(' · ')}</p>`
+  const bonusChips = [];
+  if (attackBonusMelee) bonusChips.push(`Mischia attacco ${formatSigned(attackBonusMelee)}`);
+  if (damageBonusMelee) bonusChips.push(`Mischia danni ${formatSigned(damageBonusMelee)}`);
+  if (attackBonusRanged) bonusChips.push(`Distanza attacco ${formatSigned(attackBonusRanged)}`);
+  if (damageBonusRanged) bonusChips.push(`Distanza danni ${formatSigned(damageBonusRanged)}`);
+  const bonusLabel = bonusChips.length
+    ? `<div class="tag-row">${bonusChips.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
     : '';
   return `
     ${bonusLabel}
@@ -1352,23 +1370,29 @@ function buildAttackSection(character, items = []) {
     const damageText = damageDie === '-'
       ? '-'
       : `${damageDie}${damageTotal ? ` ${formatSigned(damageTotal)}` : ''}`;
-    const rangeBits = [];
-    if (weapon.is_thrown) rangeBits.push('Lancio');
     const normalRange = Number(weapon.range_normal) || null;
     const disadvantageRange = Number(weapon.range_disadvantage) || null;
-    if (normalRange) {
-      rangeBits.push(`Gittata ${normalRange}${disadvantageRange ? `/${disadvantageRange}` : ''}`);
-    }
+    const rangeText = normalRange
+      ? `Gittata ${normalRange}${disadvantageRange ? `/${disadvantageRange}` : ''}`
+      : '';
+    const abilityLabel = attackAbility === 'dex' ? 'DES' : attackAbility === 'str' ? 'FOR' : attackAbility.toUpperCase();
+    const weaponKey = weapon.id ?? weapon.name;
     return `
-          <div class="modifier-card">
-            <div>
-              <div class="modifier-title">
-                <strong>${weapon.name}</strong>
-                <span class="muted">${damageText}</span>
+          <div class="modifier-card attack-card">
+            <div class="attack-card__body">
+              <div class="attack-card__title">
+                <strong class="attack-card__name">${weapon.name}</strong>
+                <span class="modifier-ability modifier-ability--${attackAbility}">${abilityLabel}</span>
+                <span class="attack-card__hit">Colpire ${formatSigned(attackTotal)}</span>
               </div>
-              ${rangeBits.length ? `<p class="muted">${rangeBits.join(' · ')}</p>` : ''}
+              <div class="attack-card__meta">
+                ${rangeText ? `<span class="muted">${rangeText}</span>` : ''}
+                <span class="attack-card__damage">${damageText}</span>
+              </div>
             </div>
-            <div class="modifier-value">${formatSigned(attackTotal)}</div>
+            <button class="icon-button icon-button--fire" data-roll-damage="${weaponKey}" aria-label="Calcola danni ${weapon.name}">
+              <span aria-hidden="true">🔥</span>
+            </button>
           </div>
         `;
   }).join('')}
@@ -1867,6 +1891,39 @@ function getHitDiceSides(hitDiceDie) {
 
 function rollDie(sides) {
   return Math.floor(Math.random() * sides) + 1;
+}
+
+function parseDamageDice(damageDie) {
+  if (!damageDie || typeof damageDie !== 'string') return null;
+  const match = damageDie.trim().match(/(\d+)d(\d+)/i);
+  if (!match) return null;
+  const count = Number(match[1]);
+  const sides = Number(match[2]);
+  if (!Number.isFinite(count) || !Number.isFinite(sides) || !count || !sides) return null;
+  return { count, sides };
+}
+
+function calculateWeaponDamageRoll(character, weapon) {
+  if (!character || !weapon) return null;
+  const data = character.data || {};
+  const weaponRange = weapon.weapon_range || (weapon.range_normal ? 'ranged' : 'melee');
+  const attackAbility = weapon.attack_ability
+    || (weaponRange === 'ranged' ? 'dex' : 'str');
+  const abilityMod = getAbilityModifier(data.abilities?.[attackAbility]) ?? 0;
+  const damageBonusMelee = Number(data.damage_bonus_melee ?? data.damage_bonus) || 0;
+  const damageBonusRanged = Number(data.damage_bonus_ranged ?? data.damage_bonus) || 0;
+  const damageBonus = weaponRange === 'ranged' ? damageBonusRanged : damageBonusMelee;
+  const damageTotal = abilityMod + (Number(weapon.damage_modifier) || 0) + damageBonus;
+  const dice = parseDamageDice(weapon.damage_die);
+  if (!dice) return null;
+  const rolls = Array.from({ length: dice.count }, () => rollDie(dice.sides));
+  const diceTotal = rolls.reduce((sum, value) => sum + value, 0);
+  const total = diceTotal + damageTotal;
+  const bonusLabel = damageTotal ? ` ${formatSigned(damageTotal)}` : '';
+  return {
+    total,
+    label: `${weapon.name} (${dice.count}d${dice.sides}: ${rolls.join(' + ')}${bonusLabel})`
+  };
 }
 
 function applyLongRestHitDice(data) {
