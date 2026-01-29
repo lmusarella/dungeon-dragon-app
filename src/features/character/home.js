@@ -876,7 +876,6 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
   const deathSaves = data.death_saves || {};
   const deathSaveSuccesses = Math.max(0, Math.min(3, Number(deathSaves.successes) || 0));
   const deathSaveFailures = Math.max(0, Math.min(3, Number(deathSaves.failures) || 0));
-  const hasTempHp = Number(tempHp) > 0;
   const hpPercent = maxHp ? Math.min(Math.max((Number(currentHp) / maxHp) * 100, 0), 100) : 0;
   const tempBase = maxHp || currentHp || tempHp;
   const tempHpPercent = tempBase ? Math.min(Math.max((Number(tempHp) / tempBase) * 100, 0), 100) : 0;
@@ -950,7 +949,7 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
               <span>HP</span>
               <strong>${hpLabel}</strong>
               <span class="hp-bar-label__divider" aria-hidden="true">•</span>
-              <span class="hp-bar-label__temp-group ${hasTempHp ? 'is-active' : ''}">
+              <span class="hp-bar-label__temp-group is-active">
                 <span class="hp-bar-label__temp">HP temporanei</span>
                 <strong>${tempHpLabel}</strong>
               </span>
@@ -959,11 +958,9 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
               <div class="hp-bar">
                 <div class="hp-bar__fill" style="width: ${hpPercent}%;"></div>
               </div>
-              ${hasTempHp ? `
-                <div class="hp-bar hp-bar--temp is-active">
-                  <div class="hp-bar__fill hp-bar__fill--temp" style="width: ${tempHpPercent}%;"></div>
-                </div>
-              ` : ''}
+              <div class="hp-bar hp-bar--temp is-active">
+                <div class="hp-bar__fill hp-bar__fill--temp" style="width: ${tempHpPercent}%;"></div>
+              </div>
             </div>
             <div class="hp-panel-hit-dice">
               <span>Dadi vita</span>
