@@ -1550,9 +1550,27 @@ button {
   gap: 8px;
 }
 
+.spell-slots-accordion summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.spell-slots__total {
+  font-weight: 700;
+  color: #5a381f;
+}
+
+.spell-slots__body {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
 .spell-slots__header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   font-size: 0.75rem;
   color: #6a5442;
 }
@@ -1603,6 +1621,29 @@ button {
   border-radius: 3px;
   background: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.spell-slots__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.spell-slots__table th,
+.spell-slots__table td {
+  text-align: left;
+  padding: 6px 4px;
+  border-bottom: 1px solid #eadfc9;
+}
+
+.spell-slots__table th {
+  font-weight: 600;
+  color: #5a381f;
+}
+
+.spell-slots__table td:last-child,
+.spell-slots__table th:last-child {
+  text-align: right;
 }
 
 .spell-notes {

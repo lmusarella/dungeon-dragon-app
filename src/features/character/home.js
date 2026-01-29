@@ -1622,32 +1622,34 @@ function buildSpellSection(character) {
   const slots = spellcasting.slots || {};
   const recharge = spellcasting.recharge || 'long_rest';
   const slotLevels = Array.from({ length: 9 }, (_, index) => index + 1);
-  const availableSlotLevels = slotLevels.filter((level) => (Number(slots[level]) || 0) > 0);
+  const slotEntries = slotLevels.map((level) => ({
+    level,
+    count: Math.max(0, Number(slots[level]) || 0)
+  }));
+  const availableSlotEntries = slotEntries.filter((entry) => entry.count > 0);
+  const totalSlotsRemaining = slotEntries.reduce((total, entry) => total + entry.count, 0);
   const rechargeLabel = recharge === 'short_rest' ? 'Riposo breve' : 'Riposo lungo';
-  const slotShapeClass = recharge === 'short_rest'
-    ? 'spell-slot-indicator--short'
-    : 'spell-slot-indicator--long';
   const spells = Array.isArray(data.spells) ? [...data.spells] : [];
   spells.sort((a, b) => {
     const levelDiff = Number(a.level) - Number(b.level);
     if (levelDiff !== 0) return levelDiff;
     return (a.name ?? '').localeCompare(b.name ?? '', 'it', { sensitivity: 'base' });
   });
+  const summaryChips = [
+    `CD incantesimi ${spellSaveDc === null ? '-' : spellSaveDc}`,
+    `Tiro per colpire ${spellAttackBonus === null ? '-' : formatSigned(spellAttackBonus)}`
+  ];
   const chipItems = [
     {
       label: 'Caratteristica',
       value: spellAbilityLabel ?? '-'
-    },
-    {
-      label: 'CD incantesimi',
-      value: spellSaveDc === null ? '-' : spellSaveDc
-    },
-    {
-      label: 'Tiro per colpire',
-      value: spellAttackBonus === null ? '-' : formatSigned(spellAttackBonus)
     }
   ];
+  const summaryChipRow = summaryChips.length
+    ? `<div class="tag-row">${summaryChips.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
+    : '';
   return `
+    ${summaryChipRow}
     <div class="detail-section">
       <div class="detail-card detail-card--text spell-summary-card">
         <div class="spell-chip-row">
@@ -1659,30 +1661,37 @@ function buildSpellSection(character) {
           `).join('')}
         </div>
         <div class="spell-slots">
-          <div class="spell-slots__header">
-            <span>Slot incantesimo disponibili</span>
-            <span class="spell-slots__recharge">${rechargeLabel}</span>
-          </div>
-          ${availableSlotLevels.length
-    ? `
-          <div class="spell-slots__grid">
-            ${availableSlotLevels.map((level) => {
-    const count = Math.max(0, Number(slots[level]) || 0);
-    const indicators = Array.from({ length: count }, () => `
-                <span class="spell-slot-indicator ${slotShapeClass}" aria-hidden="true"></span>
-              `).join('');
-    return `
-              <div class="spell-slot-row">
-                <span class="spell-slot-label">${level}°</span>
-                <div class="spell-slot-indicators">
-                  ${indicators || '<span class="muted">-</span>'}
-                </div>
+          <details class="accordion spell-slots-accordion">
+            <summary>
+              <span>Slot rimanenti</span>
+              <span class="spell-slots__total">${totalSlotsRemaining}</span>
+            </summary>
+            <div class="spell-slots__body">
+              <div class="spell-slots__header">
+                <span class="spell-slots__recharge">${rechargeLabel}</span>
               </div>
-            `;
-  }).join('')}
-          </div>
-          `
+              ${availableSlotEntries.length
+    ? `
+                <table class="spell-slots__table">
+                  <thead>
+                    <tr>
+                      <th>Livello Slot</th>
+                      <th>Slot rimasti</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${availableSlotEntries.map((entry) => `
+                      <tr>
+                        <td>${entry.level}°</td>
+                        <td>${entry.count}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              `
     : '<p class="muted spell-slots__empty">Nessuno slot disponibile.</p>'}
+            </div>
+          </details>
         </div>
         ${notes ? `<p class="spell-notes">${notes}</p>` : ''}
       </div>
