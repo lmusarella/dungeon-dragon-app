@@ -1319,7 +1319,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  padding: 6px 10px;
   border-radius: 999px;
   background: #f7edd9;
   border: 1px solid #eadfc9;
@@ -1330,6 +1330,18 @@ button {
 .stat-chip--wide {
   flex: 1 1 100%;
   justify-content: space-between;
+}
+
+.stat-chip--highlight {
+  background: linear-gradient(135deg, #fbe9c8, #f6d8a8);
+  border-color: #e4c994;
+  box-shadow: 0 6px 16px rgba(92, 63, 32, 0.12);
+  font-weight: 600;
+}
+
+.stat-chip--highlight strong {
+  color: #5a381f;
+  font-size: 0.85rem;
 }
 
 .wallet-note {
@@ -1500,6 +1512,140 @@ button {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 6px;
+}
+
+.spell-summary-card {
+  display: grid;
+  gap: 12px;
+}
+
+.spell-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.spell-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #e3d8c5;
+  background: #f9f1e2;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.spell-chip strong {
+  font-size: 0.9rem;
+  color: #5a381f;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.spell-slots {
+  display: grid;
+  gap: 8px;
+}
+
+.spell-slots__header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #6a5442;
+}
+
+.spell-slots__recharge {
+  font-weight: 600;
+  color: #6f4e37;
+}
+
+.spell-slots__grid {
+  display: grid;
+  gap: 6px;
+}
+
+.spell-slot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.spell-slot-label {
+  font-weight: 600;
+  min-width: 32px;
+  color: #5a381f;
+}
+
+.spell-slot-indicators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.spell-slot-indicator {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+}
+
+.spell-slot-indicator--short {
+  border-radius: 999px;
+  background: #5fc27b;
+  box-shadow: 0 0 0 2px rgba(95, 194, 123, 0.25);
+}
+
+.spell-slot-indicator--long {
+  border-radius: 3px;
+  background: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.spell-notes {
+  margin: 0;
+}
+
+.spell-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.spell-card {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #eadfc9;
+  background: #fdf7ea;
+  display: grid;
+  gap: 6px;
+}
+
+.spell-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.spell-card__header strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.spell-card__meta {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #6a5442;
+}
+
+.spell-card__description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #4a3425;
 }
 
 .accordion-stack {

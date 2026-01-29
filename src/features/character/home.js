@@ -144,6 +144,11 @@ export async function renderHome(container) {
             <div>
               <p class="eyebrow">Incantesimi</p>
             </div>
+            ${activeCharacter && canEditCharacter ? `
+              <button class="icon-button icon-button--add" data-add-spell aria-label="Aggiungi incantesimo">
+                <span aria-hidden="true">+</span>
+              </button>
+            ` : ''}
           </header>
           <div class="home-scroll-body">
             ${buildSpellSection(activeCharacter)}
@@ -207,6 +212,13 @@ export async function renderHome(container) {
   if (addResourceButton) {
     addResourceButton.addEventListener('click', () => {
       openResourceDrawer(activeCharacter, () => renderHome(container));
+    });
+  }
+
+  const addSpellButton = container.querySelector('[data-add-spell]');
+  if (addSpellButton) {
+    addSpellButton.addEventListener('click', () => {
+      openSpellDrawer(activeCharacter, () => renderHome(container));
     });
   }
 
@@ -647,6 +659,8 @@ export async function openCharacterDrawer(user, onSave, character = null) {
   const savingStates = characterData.saving_throws || {};
   const proficiencies = characterData.proficiencies || {};
   const acAbilityModifiers = characterData.ac_ability_modifiers || {};
+  const spellcasting = characterData.spellcasting || {};
+  const spellSlots = spellcasting.slots || {};
   const form = document.createElement('div');
   form.className = 'character-edit-form';
 
@@ -844,12 +858,112 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     spellcasterInput.checked = Boolean(characterData.is_spellcaster);
   }
   combatSection.appendChild(spellcasterField);
-  combatSection.appendChild(buildTextarea({
+  const spellcastingSection = document.createElement('div');
+  spellcastingSection.className = 'character-edit-section spellcasting-section';
+  spellcastingSection.innerHTML = '<h4>Incantesimi</h4>';
+  const spellcastingGrid = document.createElement('div');
+  spellcastingGrid.className = 'character-edit-grid';
+  const spellcastingAbilityField = document.createElement('label');
+  spellcastingAbilityField.className = 'field';
+  spellcastingAbilityField.innerHTML = '<span>Caratteristica da incantatore</span>';
+  const spellcastingAbilitySelect = buildSelect([
+    { value: '', label: 'Seleziona...' },
+    { value: 'int', label: 'Intelligenza' },
+    { value: 'wis', label: 'Saggezza' },
+    { value: 'cha', label: 'Carisma' },
+    { value: 'str', label: 'Forza' },
+    { value: 'dex', label: 'Destrezza' },
+    { value: 'con', label: 'Costituzione' }
+  ], spellcasting.ability ?? '');
+  spellcastingAbilitySelect.name = 'spellcasting_ability';
+  spellcastingAbilityField.appendChild(spellcastingAbilitySelect);
+  spellcastingGrid.appendChild(spellcastingAbilityField);
+  const spellSaveField = buildInput({
+    label: 'CD incantesimi',
+    name: 'spell_save_dc',
+    type: 'number',
+    value: ''
+  });
+  const spellSaveInput = spellSaveField.querySelector('input');
+  if (spellSaveInput) {
+    spellSaveInput.readOnly = true;
+    spellSaveInput.disabled = true;
+  }
+  spellcastingGrid.appendChild(spellSaveField);
+  const spellAttackField = buildInput({
+    label: 'Tiro per colpire incantesimi',
+    name: 'spell_attack_bonus',
+    type: 'number',
+    value: ''
+  });
+  const spellAttackInput = spellAttackField.querySelector('input');
+  if (spellAttackInput) {
+    spellAttackInput.readOnly = true;
+    spellAttackInput.disabled = true;
+  }
+  spellcastingGrid.appendChild(spellAttackField);
+  spellcastingSection.appendChild(spellcastingGrid);
+  const slotGrid = document.createElement('div');
+  slotGrid.className = 'character-edit-grid';
+  Array.from({ length: 9 }, (_, index) => index + 1).forEach((level) => {
+    slotGrid.appendChild(buildInput({
+      label: `Slot ${level}°`,
+      name: `spell_slot_${level}`,
+      type: 'number',
+      value: spellSlots[level] ?? 0
+    }));
+  });
+  spellcastingSection.appendChild(slotGrid);
+  const slotRechargeField = document.createElement('label');
+  slotRechargeField.className = 'field';
+  slotRechargeField.innerHTML = '<span>Ricarica slot</span>';
+  const slotRechargeSelect = buildSelect([
+    { value: 'short_rest', label: 'Riposo breve' },
+    { value: 'long_rest', label: 'Riposo lungo' }
+  ], spellcasting.recharge ?? 'long_rest');
+  slotRechargeSelect.name = 'spell_slot_recharge';
+  slotRechargeField.appendChild(slotRechargeSelect);
+  spellcastingSection.appendChild(slotRechargeField);
+  spellcastingSection.appendChild(buildTextarea({
     label: 'Incantesimi (note)',
     name: 'spell_notes',
     placeholder: 'Descrivi gli incantesimi noti/preparati e gli slot principali.',
     value: characterData.spell_notes ?? ''
   }));
+  combatSection.appendChild(spellcastingSection);
+  const abilityInputs = {
+    str: abilitySection.querySelector('input[name="ability_str"]'),
+    dex: abilitySection.querySelector('input[name="ability_dex"]'),
+    con: abilitySection.querySelector('input[name="ability_con"]'),
+    int: abilitySection.querySelector('input[name="ability_int"]'),
+    wis: abilitySection.querySelector('input[name="ability_wis"]'),
+    cha: abilitySection.querySelector('input[name="ability_cha"]')
+  };
+  const proficiencyInput = statsSection.querySelector('input[name="proficiency_bonus"]');
+  const syncSpellcastingDerived = () => {
+    const selectedAbility = spellcastingAbilitySelect.value;
+    const abilityValue = selectedAbility ? abilityInputs[selectedAbility]?.value : null;
+    const abilityMod = getAbilityModifier(abilityValue);
+    const proficiencyBonus = normalizeNumber(proficiencyInput?.value);
+    const saveValue = abilityMod === null || proficiencyBonus === null
+      ? ''
+      : String(8 + abilityMod + proficiencyBonus);
+    const attackValue = abilityMod === null || proficiencyBonus === null
+      ? ''
+      : String(abilityMod + proficiencyBonus);
+    if (spellSaveInput) spellSaveInput.value = saveValue;
+    if (spellAttackInput) spellAttackInput.value = attackValue;
+  };
+  const toggleSpellcastingSection = () => {
+    if (!spellcasterInput) return;
+    spellcastingSection.style.display = spellcasterInput.checked ? '' : 'none';
+  };
+  spellcasterInput?.addEventListener('change', toggleSpellcastingSection);
+  spellcastingAbilitySelect.addEventListener('change', syncSpellcastingDerived);
+  Object.values(abilityInputs).forEach((input) => input?.addEventListener('input', syncSpellcastingDerived));
+  proficiencyInput?.addEventListener('input', syncSpellcastingDerived);
+  toggleSpellcastingSection();
+  syncSpellcastingDerived();
 
   const proficiencyNotesSection = document.createElement('div');
   proficiencyNotesSection.className = 'character-edit-section';
@@ -924,6 +1038,18 @@ export async function openCharacterDrawer(user, onSave, character = null) {
   ['str', 'con', 'int', 'wis', 'cha'].forEach((ability) => {
     nextAcModifiers[ability] = formData.has(`ac_mod_${ability}`);
   });
+  const isSpellcaster = formData.get('is_spellcaster') === 'on';
+  const spellSlotLevels = Array.from({ length: 9 }, (_, index) => index + 1);
+  const nextSpellcasting = isSpellcaster
+    ? {
+      ability: formData.get('spellcasting_ability') || null,
+      recharge: formData.get('spell_slot_recharge') || 'long_rest',
+      slots: spellSlotLevels.reduce((acc, level) => {
+        acc[level] = toNumberOrNull(formData.get(`spell_slot_${level}`)) ?? 0;
+        return acc;
+      }, {})
+    }
+    : characterData.spellcasting ?? null;
   const nextData = {
     ...characterData,
     avatar_url: formData.get('avatar_url')?.trim() || null,
@@ -954,8 +1080,9 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     damage_bonus_melee: toNumberOrNull(formData.get('damage_bonus_melee')) ?? 0,
     damage_bonus_ranged: toNumberOrNull(formData.get('damage_bonus_ranged')) ?? 0,
     ac_bonus: toNumberOrNull(formData.get('ac_bonus')) ?? 0,
-    is_spellcaster: formData.get('is_spellcaster') === 'on',
+    is_spellcaster: isSpellcaster,
     spell_notes: formData.get('spell_notes')?.trim() || null,
+    spellcasting: nextSpellcasting,
     ac_ability_modifiers: nextAcModifiers,
     proficiency_notes: formData.get('proficiency_notes')?.trim() || null,
     language_proficiencies: formData.get('language_proficiencies')?.trim() || null,
@@ -1139,11 +1266,11 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
           </div>
         </div>
         <div class="hp-panel-subgrid">
-          <div class="stat-chip">
+          <div class="stat-chip stat-chip--highlight">
             <span>Velocità</span>
             <strong>${data.speed ?? '-'}</strong>
           </div>
-          <div class="stat-chip">
+          <div class="stat-chip stat-chip--highlight">
             <span>Percezione passiva</span>
             <strong>${passivePerception ?? '-'}</strong>
           </div>
@@ -1480,13 +1607,198 @@ function buildAttackSection(character, items = []) {
 function buildSpellSection(character) {
   const data = character.data || {};
   const notes = data.spell_notes || '';
+  const spellcasting = data.spellcasting || {};
+  const proficiencyBonus = normalizeNumber(data.proficiency_bonus);
+  const abilityKey = spellcasting.ability;
+  const abilityScore = abilityKey ? data.abilities?.[abilityKey] : null;
+  const abilityMod = getAbilityModifier(abilityScore);
+  const spellSaveDc = abilityMod === null || proficiencyBonus === null
+    ? null
+    : 8 + abilityMod + proficiencyBonus;
+  const spellAttackBonus = abilityMod === null || proficiencyBonus === null
+    ? null
+    : abilityMod + proficiencyBonus;
+  const spellAbilityLabel = abilityKey ? abilityShortLabel[abilityKey] : null;
+  const slots = spellcasting.slots || {};
+  const recharge = spellcasting.recharge || 'long_rest';
+  const slotLevels = Array.from({ length: 9 }, (_, index) => index + 1);
+  const rechargeLabel = recharge === 'short_rest' ? 'Riposo breve' : 'Riposo lungo';
+  const slotShapeClass = recharge === 'short_rest'
+    ? 'spell-slot-indicator--short'
+    : 'spell-slot-indicator--long';
+  const spells = Array.isArray(data.spells) ? [...data.spells] : [];
+  spells.sort((a, b) => {
+    const levelDiff = Number(a.level) - Number(b.level);
+    if (levelDiff !== 0) return levelDiff;
+    return (a.name ?? '').localeCompare(b.name ?? '', 'it', { sensitivity: 'base' });
+  });
+  const chipItems = [
+    {
+      label: 'Caratteristica',
+      value: spellAbilityLabel ?? '-'
+    },
+    {
+      label: 'CD incantesimi',
+      value: spellSaveDc === null ? '-' : spellSaveDc
+    },
+    {
+      label: 'Tiro per colpire',
+      value: spellAttackBonus === null ? '-' : formatSigned(spellAttackBonus)
+    }
+  ];
   return `
     <div class="detail-section">
-      <div class="detail-card detail-card--text">
-        ${notes ? `<p>${notes}</p>` : '<p class="muted">Nessun incantesimo configurato.</p>'}
+      <div class="detail-card detail-card--text spell-summary-card">
+        <div class="spell-chip-row">
+          ${chipItems.map((item) => `
+            <div class="spell-chip">
+              <span>${item.label}</span>
+              <strong>${item.value}</strong>
+            </div>
+          `).join('')}
+        </div>
+        <div class="spell-slots">
+          <div class="spell-slots__header">
+            <span>Slot incantesimo disponibili</span>
+            <span class="spell-slots__recharge">${rechargeLabel}</span>
+          </div>
+          <div class="spell-slots__grid">
+            ${slotLevels.map((level) => {
+    const count = Math.max(0, Number(slots[level]) || 0);
+    const indicators = Array.from({ length: count }, () => `
+                <span class="spell-slot-indicator ${slotShapeClass}" aria-hidden="true"></span>
+              `).join('');
+    return `
+              <div class="spell-slot-row">
+                <span class="spell-slot-label">${level}°</span>
+                <div class="spell-slot-indicators">
+                  ${indicators || '<span class="muted">-</span>'}
+                </div>
+              </div>
+            `;
+  }).join('')}
+          </div>
+        </div>
+        ${notes ? `<p class="spell-notes">${notes}</p>` : ''}
       </div>
+      ${spells.length
+    ? `
+        <div class="spell-list">
+          ${spells.map((spell) => {
+    const levelLabel = Number(spell.level) === 0 ? 'Trucchetto' : `Livello ${spell.level}°`;
+    const metaParts = [
+      spell.cast_time ? `Lancio ${spell.cast_time}` : null,
+      spell.duration ? `Durata ${spell.duration}` : null,
+      spell.range ? `Gittata ${spell.range}` : null,
+      spell.concentration ? 'Concentrazione' : null
+    ].filter(Boolean);
+    return `
+            <div class="spell-card">
+              <div class="spell-card__header">
+                <div>
+                  <strong>${spell.name}</strong>
+                </div>
+                <span class="chip chip--small">${levelLabel}</span>
+              </div>
+              ${metaParts.length ? `<p class="spell-card__meta">${metaParts.join(' · ')}</p>` : ''}
+              ${spell.description ? `<p class="spell-card__description">${spell.description}</p>` : ''}
+            </div>
+          `;
+  }).join('')}
+        </div>
+      `
+    : '<p class="muted">Nessun incantesimo configurato.</p>'}
     </div>
   `;
+}
+
+function openSpellDrawer(character, onSave) {
+  if (!character) return;
+  const form = document.createElement('div');
+  form.className = 'drawer-form';
+  const nameField = buildInput({
+    label: 'Nome incantesimo',
+    name: 'spell_name',
+    placeholder: 'Es. Palla di fuoco'
+  });
+  const nameInput = nameField.querySelector('input');
+  if (nameInput) {
+    nameInput.required = true;
+  }
+  form.appendChild(nameField);
+  const levelField = buildInput({
+    label: 'Livello incantesimo',
+    name: 'spell_level',
+    type: 'number',
+    value: 1
+  });
+  const levelInput = levelField.querySelector('input');
+  if (levelInput) {
+    levelInput.min = '0';
+    levelInput.max = '9';
+  }
+  form.appendChild(levelField);
+  form.appendChild(buildInput({
+    label: 'Tempo di lancio',
+    name: 'spell_cast_time',
+    placeholder: 'Es. 1 azione'
+  }));
+  form.appendChild(buildInput({
+    label: 'Durata',
+    name: 'spell_duration',
+    placeholder: 'Es. 1 minuto'
+  }));
+  form.appendChild(buildInput({
+    label: 'Range',
+    name: 'spell_range',
+    placeholder: 'Es. 18 m'
+  }));
+  const concentrationField = document.createElement('label');
+  concentrationField.className = 'checkbox';
+  concentrationField.innerHTML = '<input type="checkbox" name="spell_concentration" /> <span>Concentrazione</span>';
+  form.appendChild(concentrationField);
+  form.appendChild(buildTextarea({
+    label: 'Descrizione',
+    name: 'spell_description',
+    placeholder: 'Descrizione dell\'incantesimo...'
+  }));
+
+  openFormModal({
+    title: 'Nuovo incantesimo',
+    submitLabel: 'Aggiungi',
+    content: form
+  }).then(async (formData) => {
+    if (!formData) return;
+    const name = formData.get('spell_name')?.trim();
+    if (!name) {
+      createToast('Inserisci un nome per l\'incantesimo', 'error');
+      return;
+    }
+    const toNumberOrNull = (value) => (value === '' || value === null ? null : Number(value));
+    const rawLevel = toNumberOrNull(formData.get('spell_level')) ?? 0;
+    const level = Math.min(9, Math.max(0, rawLevel));
+    const nextSpell = {
+      id: `spell-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name,
+      level,
+      cast_time: formData.get('spell_cast_time')?.trim() || null,
+      duration: formData.get('spell_duration')?.trim() || null,
+      range: formData.get('spell_range')?.trim() || null,
+      concentration: formData.has('spell_concentration'),
+      description: formData.get('spell_description')?.trim() || null
+    };
+    const nextSpells = Array.isArray(character.data?.spells)
+      ? [...character.data.spells, nextSpell]
+      : [nextSpell];
+    const nextData = {
+      ...character.data,
+      spells: nextSpells
+    };
+    await saveCharacterData(character, nextData, 'Incantesimo aggiunto');
+    if (onSave) {
+      onSave();
+    }
+  });
 }
 
 function buildHpShortcutFields(
