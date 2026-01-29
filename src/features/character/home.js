@@ -1404,7 +1404,7 @@ function buildAttackSection(character, items = []) {
               <div class="attack-card__title">
                 <strong class="attack-card__name">${weapon.name}</strong>
                 <span class="modifier-ability modifier-ability--${attackAbility}">${abilityLabel}</span>
-                <span class="attack-card__hit">TC ${formatSigned(attackTotal)}</span>
+                <span class="attack-card__hit">${formatSigned(attackTotal)}</span>
               </div>
               <div class="attack-card__meta">
                 <span class="attack-card__damage">${damageText}</span>

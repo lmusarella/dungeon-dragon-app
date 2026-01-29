@@ -452,6 +452,7 @@ button {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  margin-bottom: 4px;
 }
 
 .button-row {
@@ -489,8 +490,9 @@ button {
 .resource-list--compact li {
   padding: 0;
   gap: 12px;
+  padding: 4px 6px;
   border-bottom: none;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
 }
 
 .resource-list--compact li:last-child {
@@ -633,9 +635,9 @@ button {
 
 .resource-cta-button--label {
   width: auto;
-  min-width: 48px;
-  padding: 0 10px;
-  height: 32px;
+  min-width: 35px;
+ 
+  height: 26px;
   font-size: 0.75rem;
 }
 
@@ -649,7 +651,7 @@ button {
   background: #fff;
   color: #6f4e37;
   border-radius: 10px;
-  min-height: 30px;
+  min-height: 26px;
   font-size: 0.85rem;
   font-weight: 600;
   display: inline-flex;
@@ -658,8 +660,8 @@ button {
 }
 
 .resource-icon-button {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   padding: 0;
 }
 
@@ -723,15 +725,15 @@ button {
   border: 1px solid #6f4e37;
   border-radius: 10px;
   padding: 8px 12px;
-  min-height: 40px;
+  min-height: 26px;
 }
 
 .icon-button {
   border: 1px solid #d8c5a5;
   background: #fffaf1;
   border-radius: 999px;
-  width: 36px;
-  height: 36px;
+  width: 26px;
+  height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1979,8 +1981,7 @@ button {
 
 .modifier-card > div {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 2px;
   flex-wrap: nowrap;
   min-width: 0;
 }
@@ -2017,7 +2018,7 @@ button {
 }
 
 .attack-card__name {
-  font-size: 0.85rem;
+  font-size: 0.74rem;
 }
 
 .attack-card__hit {
