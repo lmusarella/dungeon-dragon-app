@@ -1626,8 +1626,6 @@ function buildSpellSection(character) {
     level,
     count: Math.max(0, Number(slots[level]) || 0)
   }));
-  const availableSlotEntries = slotEntries.filter((entry) => entry.count > 0);
-  const totalSlotsRemaining = slotEntries.reduce((total, entry) => total + entry.count, 0);
   const rechargeLabel = recharge === 'short_rest' ? 'Riposo breve' : 'Riposo lungo';
   const spells = Array.isArray(data.spells) ? [...data.spells] : [];
   spells.sort((a, b) => {
@@ -1636,14 +1634,9 @@ function buildSpellSection(character) {
     return (a.name ?? '').localeCompare(b.name ?? '', 'it', { sensitivity: 'base' });
   });
   const summaryChips = [
+    `Caratteristica ${spellAbilityLabel ?? '-'}`,
     `CD incantesimi ${spellSaveDc === null ? '-' : spellSaveDc}`,
     `Tiro per colpire ${spellAttackBonus === null ? '-' : formatSigned(spellAttackBonus)}`
-  ];
-  const chipItems = [
-    {
-      label: 'Caratteristica',
-      value: spellAbilityLabel ?? '-'
-    }
   ];
   const summaryChipRow = summaryChips.length
     ? `<div class="tag-row">${summaryChips.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
@@ -1652,46 +1645,19 @@ function buildSpellSection(character) {
     ${summaryChipRow}
     <div class="detail-section">
       <div class="detail-card detail-card--text spell-summary-card">
-        <div class="spell-chip-row">
-          ${chipItems.map((item) => `
-            <div class="spell-chip">
-              <span>${item.label}</span>
-              <strong>${item.value}</strong>
-            </div>
-          `).join('')}
-        </div>
         <div class="spell-slots">
-          <details class="accordion spell-slots-accordion">
-            <summary>
-              <span>Slot rimanenti</span>
-              <span class="spell-slots__total">${totalSlotsRemaining}</span>
-            </summary>
-            <div class="spell-slots__body">
-              <div class="spell-slots__header">
-                <span class="spell-slots__recharge">${rechargeLabel}</span>
+          <div class="spell-slots__header">
+            <span>Slot rimanenti</span>
+            <span class="spell-slots__recharge">${rechargeLabel}</span>
+          </div>
+          <div class="spell-slots__grid">
+            ${slotEntries.map((entry) => `
+              <div class="spell-slot-tile">
+                <span class="spell-slot-label">${entry.level}°</span>
+                <span class="spell-slot-count">${entry.count}</span>
               </div>
-              ${availableSlotEntries.length
-    ? `
-                <table class="spell-slots__table">
-                  <thead>
-                    <tr>
-                      <th>Livello Slot</th>
-                      <th>Slot rimasti</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${availableSlotEntries.map((entry) => `
-                      <tr>
-                        <td>${entry.level}°</td>
-                        <td>${entry.count}</td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-              `
-    : '<p class="muted spell-slots__empty">Nessuno slot disponibile.</p>'}
-            </div>
-          </details>
+            `).join('')}
+          </div>
         </div>
         ${notes ? `<p class="spell-notes">${notes}</p>` : ''}
       </div>
@@ -1702,21 +1668,20 @@ function buildSpellSection(character) {
     const levelLabel = Number(spell.level) === 0 ? 'Trucchetto' : `Livello ${spell.level}°`;
     const castTimeLabel = spell.cast_time?.trim() || null;
     const castTimeClass = getResourceCastTimeClass(normalizeSpellCastTime(castTimeLabel));
-    const metaParts = [
-      spell.duration ? `Durata ${spell.duration}` : null,
-      spell.range ? `Gittata ${spell.range}` : null,
-      spell.concentration ? 'Concentrazione' : null
-    ].filter(Boolean);
     return `
             <li class="modifier-card attack-card resource-card spell-card">
               ${castTimeLabel ? `<span class="resource-chip resource-chip--floating ${castTimeClass}">${castTimeLabel}</span>` : ''}
               <div class="attack-card__body resource-card__body">
                 <div class="attack-card__title resource-card__title spell-card__title">
-                  <strong class="attack-card__name">${spell.name}</strong>
-                  <span class="chip chip--small">${levelLabel}</span>
+                  <div class="spell-card__heading">
+                    <strong class="attack-card__name">${spell.name}</strong>
+                    <span class="chip chip--small">${levelLabel}</span>
+                  </div>
+                  <div class="spell-card__actions">
+                    <button class="resource-cta-button resource-cta-button--label spell-card__action" type="button" data-spell-cast="${spell.id}">Lancia</button>
+                    <button class="resource-action-button spell-card__action" type="button" data-spell-edit="${spell.id}">Modifica</button>
+                  </div>
                 </div>
-                ${metaParts.length ? `<p class="spell-card__meta">${metaParts.join(' · ')}</p>` : ''}
-                ${spell.description ? `<p class="spell-card__description">${spell.description}</p>` : ''}
               </div>
             </li>
           `;
