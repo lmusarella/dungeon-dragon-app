@@ -326,6 +326,24 @@ export async function renderHome(container) {
       }, 'Tiri salvezza contro morte aggiornati', container);
     }));
 
+  container.querySelectorAll('[data-weakness-level]')
+    .forEach((button) => button.addEventListener('click', async () => {
+      if (!activeCharacter || !canEditCharacter) return;
+      const level = Number(button.dataset.weaknessLevel);
+      if (!level) return;
+      const data = activeCharacter.data || {};
+      const hp = data.hp || {};
+      const current = Math.max(0, Math.min(6, Number(hp.weak_points) || 0));
+      const nextValue = level === current ? 0 : level;
+      await saveCharacterData(activeCharacter, {
+        ...data,
+        hp: {
+          ...hp,
+          weak_points: nextValue
+        }
+      }, 'Punti indebolimento aggiornati', container);
+    }));
+
   const avatar = container.querySelector('.character-avatar');
   if (avatar) {
     avatar.addEventListener('pointerdown', (event) => {
@@ -1001,7 +1019,16 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
   const tempTrackFlex = hasTempHp ? tempHpValue : 0;
   const hpLabel = maxHp ? `${currentHp ?? '-'}/${maxHp}` : `${currentHp ?? '-'}`;
   const tempHpLabel = tempHp ?? '-';
-  const weakPoints = normalizeNumber(hp.weak_points);
+  const weakPoints = Math.max(0, Math.min(6, Number(hp.weak_points) || 0));
+  const weaknessLevels = [
+    { value: 1, description: 'Svantaggio sulle prove di caratteristica.' },
+    { value: 2, description: 'Velocità dimezzata.' },
+    { value: 3, description: 'Svantaggio sui tiri per colpire e tiri salvezza.' },
+    { value: 4, description: 'Punti ferita massimi dimezzati.' },
+    { value: 5, description: 'Velocità ridotta a 0.' },
+    { value: 6, description: 'Morte.' }
+  ];
+  const weaknessDescription = weaknessLevels.find((level) => level.value === weakPoints)?.description || 'Nessun indebolimento.';
   const armorClass = calculateArmorClass(data, abilities, items);
   const abilityCards = [
     { key: 'str', label: abilityShortLabel.str, value: abilities.str },
@@ -1113,9 +1140,26 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
             <span>Percezione passiva</span>
             <strong>${passivePerception ?? '-'}</strong>
           </div>
-          <div class="stat-chip stat-chip--wide">
-            <span>Punti indebolimento</span>
-            <strong>${weakPoints ?? '-'}</strong>
+          <div class="weakness-track">
+            <span class="weakness-track__label">Punti indebolimento</span>
+            <div class="weakness-track__group" role="radiogroup" aria-label="Livelli indebolimento">
+              ${weaknessLevels.map((level) => {
+    const isFilled = level.value === weakPoints;
+    return `
+                <button
+                  class="death-save-dot ${isFilled ? 'is-filled' : ''}"
+                  type="button"
+                  role="radio"
+                  aria-checked="${isFilled}"
+                  data-weakness-level="${level.value}"
+                  aria-label="Livello ${level.value}: ${level.description}"
+                >
+                  <span aria-hidden="true"></span>
+                </button>
+              `;
+  }).join('')}
+            </div>
+            <span class="weakness-track__description">${weaknessDescription}</span>
           </div>
           <div class="death-saves">
             <span class="death-saves__label">TS morte</span>
