@@ -78,6 +78,11 @@ export async function renderHome(container) {
               <p class="eyebrow">Tiri salvezza</p>
               <h3></h3>
             </div>
+            <div class="actions">
+              <button class="icon-button" data-open-dice="saving-throws" aria-label="Lancia dadi tiri salvezza">
+                <span aria-hidden="true">🎲</span>
+              </button>
+            </div>
           </header>
           ${activeCharacter ? buildSavingThrowSection(activeCharacter) : '<p>Nessun personaggio selezionato.</p>'}
         </section>
@@ -85,6 +90,11 @@ export async function renderHome(container) {
           <header class="card-header">
             <div>
               <p class="eyebrow">Abilità</p>            
+            </div>
+            <div class="actions">
+              <button class="icon-button" data-open-dice="skills" aria-label="Lancia dadi abilità">
+                <span aria-hidden="true">🎲</span>
+              </button>
             </div>
           </header>
           <div class="home-scroll-body">
@@ -171,6 +181,11 @@ export async function renderHome(container) {
     });
   }
 
+  container.querySelectorAll('[data-open-dice]')
+    .forEach((button) => button.addEventListener('click', () => {
+      handleDiceAction(button.dataset.openDice);
+    }));
+
   container.querySelectorAll('[data-edit-resource]')
     .forEach((button) => button.addEventListener('click', () => {
       const resource = resources.find((entry) => entry.id === button.dataset.editResource);
@@ -226,6 +241,26 @@ export async function renderHome(container) {
       } catch (error) {
         createToast('Errore utilizzo risorsa', 'error');
       }
+    }));
+
+  container.querySelectorAll('[data-death-save]')
+    .forEach((button) => button.addEventListener('click', async () => {
+      if (!activeCharacter || !canEditCharacter) return;
+      const { deathSave: group, deathSaveIndex } = button.dataset;
+      const index = Number(deathSaveIndex);
+      if (!group || !index) return;
+      const data = activeCharacter.data || {};
+      const deathSaves = data.death_saves || {};
+      const current = Math.max(0, Math.min(3, Number(deathSaves[group]) || 0));
+      const nextValue = index === current ? current - 1 : index;
+      const nextDeathSaves = {
+        successes: Math.max(0, Math.min(3, group === 'successes' ? nextValue : Number(deathSaves.successes) || 0)),
+        failures: Math.max(0, Math.min(3, group === 'failures' ? nextValue : Number(deathSaves.failures) || 0))
+      };
+      await saveCharacterData(activeCharacter, {
+        ...data,
+        death_saves: nextDeathSaves
+      }, 'Tiri salvezza contro morte aggiornati', container);
     }));
 
   const avatar = container.querySelector('.character-avatar');
@@ -341,7 +376,11 @@ async function handleHpAction(action, container) {
   const formData = await openFormModal({
     title,
     submitLabel,
-    content: buildHpShortcutFields(activeCharacter, action === 'heal', action === 'heal')
+    content: buildHpShortcutFields(activeCharacter, {
+      allowHitDice: action === 'heal',
+      allowTempHp: action === 'heal',
+      allowMaxOverride: action === 'damage'
+    })
   });
   if (!formData) return;
   const useHitDice = formData.has('use_hit_dice');
@@ -381,6 +420,12 @@ async function handleHpAction(action, container) {
   const currentHp = Number(activeCharacter.data?.hp?.current) || 0;
   const currentTempHp = Number(activeCharacter.data?.hp?.temp) || 0;
   const maxHp = activeCharacter.data?.hp?.max;
+  const maxOverrideRaw = formData.get('hp_max_override');
+  const maxOverrideValue = maxOverrideRaw === null || maxOverrideRaw === '' ? null : Number(maxOverrideRaw);
+  if (action === 'damage' && maxOverrideValue !== null && (!Number.isFinite(maxOverrideValue) || maxOverrideValue <= 0)) {
+    createToast('Inserisci un massimo PF valido', 'error');
+    return;
+  }
   let nextCurrent = currentHp;
   let nextTemp = currentTempHp;
   if (action === 'heal' && useTempHp) {
@@ -393,8 +438,11 @@ async function handleHpAction(action, container) {
     const remainingDamage = amount - absorbed;
     nextCurrent = Math.max(currentHp - remainingDamage, 0);
   }
-  const adjusted = maxHp !== null && maxHp !== undefined
-    ? Math.min(nextCurrent, Number(maxHp))
+  const effectiveMax = maxOverrideValue !== null && maxOverrideValue !== undefined
+    ? maxOverrideValue
+    : maxHp;
+  const adjusted = effectiveMax !== null && effectiveMax !== undefined
+    ? Math.min(nextCurrent, Number(effectiveMax))
     : nextCurrent;
   const nextHitDice = action === 'heal' && useHitDice
     ? {
@@ -410,7 +458,8 @@ async function handleHpAction(action, container) {
     hp: {
       ...activeCharacter.data?.hp,
       current: adjusted,
-      temp: nextTemp
+      temp: nextTemp,
+      max: maxOverrideValue !== null && maxOverrideValue !== undefined ? maxOverrideValue : maxHp
     },
     hit_dice: nextHitDice
   }, message, container);
@@ -795,6 +844,10 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
   const currentHp = normalizeNumber(hp.current);
   const maxHp = normalizeNumber(hp.max);
   const tempHp = normalizeNumber(hp.temp);
+  const deathSaves = data.death_saves || {};
+  const deathSaveSuccesses = Math.max(0, Math.min(3, Number(deathSaves.successes) || 0));
+  const deathSaveFailures = Math.max(0, Math.min(3, Number(deathSaves.failures) || 0));
+  const hasTempHp = Number(tempHp) > 0;
   const hpPercent = maxHp ? Math.min(Math.max((Number(currentHp) / maxHp) * 100, 0), 100) : 0;
   const tempHpPercent = maxHp ? Math.min(Math.max((Number(tempHp) / maxHp) * 100, 0), 100) : 0;
   const hpLabel = maxHp ? `${currentHp ?? '-'}/${maxHp}` : `${currentHp ?? '-'}`;
@@ -863,14 +916,16 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
               <span>HP</span>
               <strong>${hpLabel}</strong>
               <span class="hp-bar-label__divider" aria-hidden="true">•</span>
-              <span class="hp-bar-label__temp">HP temporanei</span>
-              <strong>${tempHpLabel}</strong>
+              <span class="hp-bar-label__temp-group ${hasTempHp ? 'is-active' : ''}">
+                <span class="hp-bar-label__temp">HP temporanei</span>
+                <strong>${tempHpLabel}</strong>
+              </span>
             </div>
             <div class="hp-bar-track">
               <div class="hp-bar">
                 <div class="hp-bar__fill" style="width: ${hpPercent}%;"></div>
               </div>
-              <div class="hp-bar hp-bar--temp">
+              <div class="hp-bar hp-bar--temp ${hasTempHp ? 'is-active' : ''}">
                 <div class="hp-bar__fill hp-bar__fill--temp" style="width: ${tempHpPercent}%;"></div>
               </div>
             </div>
@@ -888,6 +943,33 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
           <div class="stat-chip">
             <span>Percezione passiva</span>
             <strong>${passivePerception ?? '-'}</strong>
+          </div>
+          <div class="death-saves">
+            <span class="death-saves__label">TS morte</span>
+            <div class="death-saves__group" aria-label="Successi">
+              <span class="death-saves__tag">✓</span>
+              ${Array.from({ length: 3 }, (_, index) => {
+    const value = index + 1;
+    const isFilled = value <= deathSaveSuccesses;
+    return `
+                <button class="death-save-dot ${isFilled ? 'is-filled' : ''}" type="button" data-death-save="successes" data-death-save-index="${value}" aria-label="Successi ${value}">
+                  <span aria-hidden="true"></span>
+                </button>
+              `;
+  }).join('')}
+            </div>
+            <div class="death-saves__group" aria-label="Fallimenti">
+              <span class="death-saves__tag">✗</span>
+              ${Array.from({ length: 3 }, (_, index) => {
+    const value = index + 1;
+    const isFilled = value <= deathSaveFailures;
+    return `
+                <button class="death-save-dot ${isFilled ? 'is-filled' : ''}" type="button" data-death-save="failures" data-death-save-index="${value}" aria-label="Fallimenti ${value}">
+                  <span aria-hidden="true"></span>
+                </button>
+              `;
+  }).join('')}
+            </div>
           </div>
         </div>
       </div>
@@ -1011,7 +1093,14 @@ function buildProficiencyOverview(character) {
   `;
 }
 
-function buildHpShortcutFields(character, allowHitDice = true, allowTempHp = false) {
+function buildHpShortcutFields(
+  character,
+  {
+    allowHitDice = true,
+    allowTempHp = false,
+    allowMaxOverride = false
+  } = {}
+) {
   const wrapper = document.createElement('div');
   const amountField = buildInput({ label: 'Valore', name: 'amount', type: 'number', value: '1' });
   const amountInput = amountField.querySelector('input');
@@ -1032,6 +1121,19 @@ function buildHpShortcutFields(character, allowHitDice = true, allowTempHp = fal
   }
 
   if (!allowHitDice) {
+    if (allowMaxOverride) {
+      const maxHpField = buildInput({
+        label: 'Nuovo massimo PF',
+        name: 'hp_max_override',
+        type: 'number',
+        value: ''
+      });
+      const maxInput = maxHpField.querySelector('input');
+      if (maxInput) {
+        maxInput.min = '1';
+      }
+      wrapper.appendChild(maxHpField);
+    }
     return wrapper;
   }
 
