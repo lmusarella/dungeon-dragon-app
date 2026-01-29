@@ -877,8 +877,12 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
   const deathSaveSuccesses = Math.max(0, Math.min(3, Number(deathSaves.successes) || 0));
   const deathSaveFailures = Math.max(0, Math.min(3, Number(deathSaves.failures) || 0));
   const hpPercent = maxHp ? Math.min(Math.max((Number(currentHp) / maxHp) * 100, 0), 100) : 0;
-  const tempBase = maxHp || currentHp || tempHp;
-  const tempHpPercent = tempBase ? Math.min(Math.max((Number(tempHp) / tempBase) * 100, 0), 100) : 0;
+  const tempHpValue = Math.max(0, Number(tempHp) || 0);
+  const hpPool = Math.max(0, Number(maxHp ?? currentHp ?? 0));
+  const hasTempHp = tempHpValue > 0;
+  const tempHpPercent = hasTempHp ? 100 : 0;
+  const hpTrackFlex = hasTempHp ? hpPool : 1;
+  const tempTrackFlex = hasTempHp ? tempHpValue : 0;
   const hpLabel = maxHp ? `${currentHp ?? '-'}/${maxHp}` : `${currentHp ?? '-'}`;
   const tempHpLabel = tempHp ?? '-';
   const armorClass = calculateArmorClass(data, abilities, items);
@@ -949,18 +953,20 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
               <span>HP</span>
               <strong>${hpLabel}</strong>
               <span class="hp-bar-label__divider" aria-hidden="true">•</span>
-              <span class="hp-bar-label__temp-group is-active">
+              <span class="hp-bar-label__temp-group ${hasTempHp ? 'is-active' : ''}">
                 <span class="hp-bar-label__temp">HP temporanei</span>
                 <strong>${tempHpLabel}</strong>
               </span>
             </div>
             <div class="hp-bar-track">
-              <div class="hp-bar">
+              <div class="hp-bar" style="flex: ${hpTrackFlex};">
                 <div class="hp-bar__fill" style="width: ${hpPercent}%;"></div>
               </div>
-              <div class="hp-bar hp-bar--temp is-active">
+              ${hasTempHp ? `
+              <div class="hp-bar hp-bar--temp is-active" style="flex: ${tempTrackFlex};">
                 <div class="hp-bar__fill hp-bar__fill--temp" style="width: ${tempHpPercent}%;"></div>
               </div>
+              ` : ''}
             </div>
             <div class="hp-panel-hit-dice">
               <span>Dadi vita</span>
