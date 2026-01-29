@@ -161,7 +161,7 @@ export async function renderHome(container) {
               </button>
             ` : ''}
           </header>
-          <div class="home-scroll-body">
+          <div class="home-scroll-body home-scroll-body--resources">
             ${activeCharacter
     ? buildResourceSections(resources, canManageResources)
     : '<p>Nessun personaggio selezionato.</p>'}
@@ -1595,6 +1595,32 @@ function buildHpShortcutFields(
   return wrapper;
 }
 
+const RESOURCE_CAST_TIME_ORDER = [
+  { label: 'Azione Gratuita', className: 'resource-chip--free' },
+  { label: 'Azione Bonus', className: 'resource-chip--bonus' },
+  { label: 'Reazione', className: 'resource-chip--reaction' },
+  { label: 'Azione', className: 'resource-chip--action' }
+];
+
+function getResourceCastTimeRank(castTime) {
+  if (!castTime) return RESOURCE_CAST_TIME_ORDER.length;
+  const matchIndex = RESOURCE_CAST_TIME_ORDER.findIndex((entry) => entry.label === castTime);
+  return matchIndex === -1 ? RESOURCE_CAST_TIME_ORDER.length : matchIndex;
+}
+
+function getResourceCastTimeClass(castTime) {
+  if (!castTime) return '';
+  return RESOURCE_CAST_TIME_ORDER.find((entry) => entry.label === castTime)?.className ?? '';
+}
+
+function sortResourcesByCastTime(resources) {
+  return [...resources].sort((a, b) => {
+    const rankDiff = getResourceCastTimeRank(a.cast_time) - getResourceCastTimeRank(b.cast_time);
+    if (rankDiff !== 0) return rankDiff;
+    return (a.name ?? '').localeCompare(b.name ?? '', 'it', { sensitivity: 'base' });
+  });
+}
+
 function buildResourceList(
   resources,
   canManageResources,
@@ -1609,7 +1635,7 @@ function buildResourceList(
     <ul class="resource-list resource-list--compact">
       ${resources.map((res) => `
         <li class="modifier-card attack-card resource-card" data-resource-card="${res.id}">
-          ${showCastTime && res.cast_time ? `<span class="resource-chip resource-chip--floating">${res.cast_time}</span>` : ''}
+          ${showCastTime && res.cast_time ? `<span class="resource-chip resource-chip--floating ${getResourceCastTimeClass(res.cast_time)}">${res.cast_time}</span>` : ''}
           <div class="attack-card__body resource-card__body">
             <div class="attack-card__title resource-card__title">
               <strong class="attack-card__name">${res.name}</strong>
@@ -1649,22 +1675,30 @@ function buildResourceSections(resources, canManageResources) {
   if (!resources.length) {
     return '<p>Nessuna risorsa.</p>';
   }
-  const passiveResources = resources.filter((resource) => resource.reset_on === null || resource.reset_on === 'none');
-  const activeResources = resources.filter((resource) => resource.reset_on !== null && resource.reset_on !== 'none');
+  const sortedResources = sortResourcesByCastTime(resources);
+  const passiveResources = sortedResources.filter((resource) => resource.reset_on === null || resource.reset_on === 'none');
+  const activeResources = sortedResources.filter((resource) => resource.reset_on !== null && resource.reset_on !== 'none');
   const activeSection = activeResources.length
-    ? buildResourceList(activeResources, canManageResources)
+    ? `
+      <div class="resource-section resource-section--active">
+        <div class="resource-section__body">
+          ${buildResourceList(activeResources, canManageResources)}
+        </div>
+      </div>
+    `
     : '<p class="muted">Nessuna risorsa attiva.</p>';
   const passiveSection = passiveResources.length
     ? `
       <div class="resource-section">
         <header class="card-header"><div><p class="eyebrow">Abilità Passive</p></div></header>
-        
-        ${buildResourceList(passiveResources, canManageResources, {
+        <div class="resource-section__body">
+          ${buildResourceList(passiveResources, canManageResources, {
     showCharges: false,
     showUseButton: false,
     showDescription: true,
     showCastTime: false
   })}
+        </div>
       </div>
     `
     : '';

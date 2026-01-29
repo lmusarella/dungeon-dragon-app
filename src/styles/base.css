@@ -139,6 +139,12 @@ button {
   padding-right: 6px;
 }
 
+.home-scroll-body--resources {
+  overflow: visible;
+  max-height: none;
+  padding-right: 0;
+}
+
 .home-scroll-body--compact {
   max-height: 38vh;
 }
@@ -518,6 +524,18 @@ button {
   align-items: center;
 }
 
+.resource-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resource-section__body {
+  max-height: 30vh;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
 .resource-card {
   position: relative;
   flex-direction: row;
@@ -710,6 +728,22 @@ button {
   text-transform: uppercase;
   font-size: 0.47rem;
   padding: 1px 4px;
+}
+
+.resource-chip--floating.resource-chip--free {
+  background: #1f7a6f;
+}
+
+.resource-chip--floating.resource-chip--bonus {
+  background: #7c4bd9;
+}
+
+.resource-chip--floating.resource-chip--reaction {
+  background: #c2543d;
+}
+
+.resource-chip--floating.resource-chip--action {
+  background: #b0882f;
 }
 
 .resource-form-actions {
