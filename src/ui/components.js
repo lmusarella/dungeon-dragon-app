@@ -170,7 +170,14 @@ export function openFormModal({
 
     if (titleEl) titleEl.textContent = title;
     if (submitButton) submitButton.textContent = submitLabel;
-    if (cancelButton) cancelButton.textContent = cancelLabel;
+    if (cancelButton) {
+      if (cancelLabel === null) {
+        cancelButton.hidden = true;
+      } else {
+        cancelButton.hidden = false;
+        cancelButton.textContent = cancelLabel;
+      }
+    }
     if (fieldsEl) {
       fieldsEl.innerHTML = '';
       if (typeof content === 'string') {

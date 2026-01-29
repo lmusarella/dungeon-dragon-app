@@ -181,6 +181,13 @@ export async function renderHome(container) {
     });
   }
 
+  const backgroundButton = container.querySelector('[data-show-background]');
+  if (backgroundButton) {
+    backgroundButton.addEventListener('click', () => {
+      openBackgroundModal(activeCharacter);
+    });
+  }
+
   container.querySelectorAll('[data-open-dice]')
     .forEach((button) => button.addEventListener('click', () => {
       handleDiceAction(button.dataset.openDice);
@@ -592,9 +599,9 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     value: characterData.avatar_url ?? ''
   }));
   mainSection.appendChild(buildTextarea({
-    label: 'Descrizione',
+    label: 'Descrizione background',
     name: 'description',
-    placeholder: 'Aspetto, tratti distintivi, background...',
+    placeholder: 'Dettagli sul background, origini e tratti distintivi...',
     value: characterData.description ?? ''
   }));
 
@@ -721,6 +728,14 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     placeholder: 'Es. Strumenti: kit da ladro, strumenti musicali; Lingue: comune, elfico',
     value: characterData.proficiency_notes ?? ''
   }));
+  const languageNotesSection = document.createElement('div');
+  languageNotesSection.className = 'character-edit-section';
+  languageNotesSection.appendChild(buildTextarea({
+    label: 'Lingue conosciute',
+    name: 'language_proficiencies',
+    placeholder: 'Es. comune, elfico, draconico',
+    value: characterData.language_proficiencies ?? ''
+  }));
   const talentNotesSection = document.createElement('div');
   talentNotesSection.className = 'character-edit-section';
   talentNotesSection.appendChild(buildTextarea({
@@ -738,6 +753,7 @@ export async function openCharacterDrawer(user, onSave, character = null) {
   form.appendChild(savingSection);
   form.appendChild(proficiencySection);
   form.appendChild(proficiencyNotesSection);
+  form.appendChild(languageNotesSection);
   form.appendChild(talentNotesSection);
 
   const modal = document.querySelector('[data-form-modal]');
@@ -802,6 +818,7 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     initiative: toNumberOrNull(formData.get('initiative')),
     ac_ability_modifiers: nextAcModifiers,
     proficiency_notes: formData.get('proficiency_notes')?.trim() || null,
+    language_proficiencies: formData.get('language_proficiencies')?.trim() || null,
     talents: formData.get('talents')?.trim() || null,
     abilities: {
       str: toNumberOrNull(formData.get('ability_str')),
@@ -861,6 +878,8 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
   const deathSaveFailures = Math.max(0, Math.min(3, Number(deathSaves.failures) || 0));
   const hasTempHp = Number(tempHp) > 0;
   const hpPercent = maxHp ? Math.min(Math.max((Number(currentHp) / maxHp) * 100, 0), 100) : 0;
+  const tempBase = maxHp || currentHp || tempHp;
+  const tempHpPercent = tempBase ? Math.min(Math.max((Number(tempHp) / tempBase) * 100, 0), 100) : 0;
   const hpLabel = maxHp ? `${currentHp ?? '-'}/${maxHp}` : `${currentHp ?? '-'}`;
   const tempHpLabel = tempHp ?? '-';
   const armorClass = calculateArmorClass(data, abilities, items);
@@ -894,6 +913,9 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
             <span>Bonus competenza</span>
             <strong>${formatSigned(proficiencyBonus)}</strong>
           </div>
+          <button class="ghost-button background-button" type="button" data-show-background>
+            Background
+          </button>
         </div>
       </div>
       <div class="stat-panel">     
@@ -939,7 +961,7 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
               </div>
               ${hasTempHp ? `
                 <div class="hp-bar hp-bar--temp is-active">
-                  <div class="hp-bar__fill hp-bar__fill--temp" style="width: 100%;"></div>
+                  <div class="hp-bar__fill hp-bar__fill--temp" style="width: ${tempHpPercent}%;"></div>
                 </div>
               ` : ''}
             </div>
@@ -1003,14 +1025,52 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
         </header>
         ${buildTalentOverview(character)}
       </div>
-      <details class="accordion">
-        <summary>Descrizione e storia</summary>
-        <div class="detail-card detail-card--text">
-          <p>${data.description ? data.description : 'Aggiungi una descrizione del personaggio.'}</p>
-        </div>
-      </details>
     </div>
   `;
+}
+
+function openBackgroundModal(character) {
+  if (!character) return;
+  const data = character.data || {};
+  const background = data.background || 'Background non impostato.';
+  const description = data.description || 'Aggiungi una descrizione del background.';
+  const content = document.createElement('div');
+  content.className = 'background-modal';
+
+  const backgroundCard = document.createElement('div');
+  backgroundCard.className = 'detail-card detail-card--text';
+  const backgroundBlock = document.createElement('div');
+  backgroundBlock.className = 'background-modal-block';
+  const backgroundTitle = document.createElement('strong');
+  backgroundTitle.textContent = 'Background';
+  const backgroundText = document.createElement('p');
+  backgroundText.textContent = background;
+  backgroundBlock.appendChild(backgroundTitle);
+  backgroundBlock.appendChild(backgroundText);
+  backgroundCard.appendChild(backgroundBlock);
+
+  const descriptionCard = document.createElement('div');
+  descriptionCard.className = 'detail-card detail-card--text';
+  const descriptionBlock = document.createElement('div');
+  descriptionBlock.className = 'background-modal-block';
+  const descriptionTitle = document.createElement('strong');
+  descriptionTitle.textContent = 'Descrizione';
+  const descriptionText = document.createElement('p');
+  descriptionText.textContent = description;
+  descriptionBlock.appendChild(descriptionTitle);
+  descriptionBlock.appendChild(descriptionText);
+  descriptionCard.appendChild(descriptionBlock);
+
+  content.appendChild(backgroundCard);
+  content.appendChild(descriptionCard);
+
+  openFormModal({
+    title: 'Background',
+    submitLabel: 'Chiudi',
+    cancelLabel: null,
+    content,
+    cardClass: 'modal-card--scrollable'
+  });
 }
 
 function buildSkillList(character) {
@@ -1078,7 +1138,19 @@ function buildProficiencyOverview(character) {
   const data = character.data || {};
   const proficiencies = data.proficiencies || {};
   const notes = data.proficiency_notes || '';
-  const { tools, languages } = parseProficiencyNotesSections(notes);
+  const { tools, languages: legacyLanguages } = parseProficiencyNotesSections(notes);
+  const languageNotes = data.language_proficiencies || '';
+  const explicitLanguages = parseProficiencyNotes(languageNotes);
+  const combinedLanguages = [...explicitLanguages, ...legacyLanguages];
+  const languages = combinedLanguages.reduce((acc, entry) => {
+    const cleaned = entry.trim();
+    if (!cleaned) return acc;
+    const key = cleaned.toLowerCase();
+    if (acc.seen.has(key)) return acc;
+    acc.seen.add(key);
+    acc.values.push(cleaned);
+    return acc;
+  }, { values: [], seen: new Set() }).values;
   const equipped = equipmentProficiencyList
     .filter((prof) => proficiencies[prof.key])
     .map((prof) => prof.label);
