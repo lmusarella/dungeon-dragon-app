@@ -581,6 +581,7 @@ export async function openCharacterDrawer(user, onSave, character = null) {
   mainGrid.appendChild(buildInput({ label: 'Livello', name: 'level', type: 'number', value: characterData.level ?? '' }));
   mainGrid.appendChild(buildInput({ label: 'Razza', name: 'race', value: characterData.race ?? '' }));
   mainGrid.appendChild(buildInput({ label: 'Allineamento', name: 'alignment', value: characterData.alignment ?? '' }));
+  mainGrid.appendChild(buildInput({ label: 'Background', name: 'background', value: characterData.background ?? '' }));
   mainGrid.appendChild(buildInput({ label: 'Classe', name: 'class_name', value: characterData.class_name ?? characterData.class_archetype ?? '' }));
   mainGrid.appendChild(buildInput({ label: 'Archetipo', name: 'archetype', value: characterData.archetype ?? '' }));
   mainSection.appendChild(mainGrid);
@@ -720,6 +721,14 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     placeholder: 'Es. Strumenti: kit da ladro, strumenti musicali; Lingue: comune, elfico',
     value: characterData.proficiency_notes ?? ''
   }));
+  const talentNotesSection = document.createElement('div');
+  talentNotesSection.className = 'character-edit-section';
+  talentNotesSection.appendChild(buildTextarea({
+    label: 'Talenti',
+    name: 'talents',
+    placeholder: 'Es. Maestro d\'armi, Tiratore scelto',
+    value: characterData.talents ?? ''
+  }));
 
   form.appendChild(mainSection);
   form.appendChild(statsSection);
@@ -729,6 +738,7 @@ export async function openCharacterDrawer(user, onSave, character = null) {
   form.appendChild(savingSection);
   form.appendChild(proficiencySection);
   form.appendChild(proficiencyNotesSection);
+  form.appendChild(talentNotesSection);
 
   const modal = document.querySelector('[data-form-modal]');
   const modalCard = modal?.querySelector('.modal-card');
@@ -784,6 +794,7 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     level: toNumberOrNull(formData.get('level')),
     race: formData.get('race')?.trim() || null,
     alignment: formData.get('alignment')?.trim() || null,
+    background: formData.get('background')?.trim() || null,
     class_name: formData.get('class_name')?.trim() || null,
     archetype: formData.get('archetype')?.trim() || null,
     speed: toNumberOrNull(formData.get('speed')),
@@ -791,6 +802,7 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     initiative: toNumberOrNull(formData.get('initiative')),
     ac_ability_modifiers: nextAcModifiers,
     proficiency_notes: formData.get('proficiency_notes')?.trim() || null,
+    talents: formData.get('talents')?.trim() || null,
     abilities: {
       str: toNumberOrNull(formData.get('ability_str')),
       dex: toNumberOrNull(formData.get('ability_dex')),
@@ -849,7 +861,6 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
   const deathSaveFailures = Math.max(0, Math.min(3, Number(deathSaves.failures) || 0));
   const hasTempHp = Number(tempHp) > 0;
   const hpPercent = maxHp ? Math.min(Math.max((Number(currentHp) / maxHp) * 100, 0), 100) : 0;
-  const tempHpPercent = maxHp ? Math.min(Math.max((Number(tempHp) / maxHp) * 100, 0), 100) : 0;
   const hpLabel = maxHp ? `${currentHp ?? '-'}/${maxHp}` : `${currentHp ?? '-'}`;
   const tempHpLabel = tempHp ?? '-';
   const armorClass = calculateArmorClass(data, abilities, items);
@@ -874,6 +885,7 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
               <span class="meta-tag">Classe ${data.class_name ?? data.class_archetype ?? '-'}</span>
               <span class="meta-tag">Archetipo ${data.archetype ?? '-'}</span>
               <span class="meta-tag">Allineamento ${data.alignment ?? '-'}</span>
+              <span class="meta-tag">Background ${data.background ?? '-'}</span>
             </div>
           </div>
         </div>
@@ -925,9 +937,11 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
               <div class="hp-bar">
                 <div class="hp-bar__fill" style="width: ${hpPercent}%;"></div>
               </div>
-              <div class="hp-bar hp-bar--temp ${hasTempHp ? 'is-active' : ''}">
-                <div class="hp-bar__fill hp-bar__fill--temp" style="width: ${tempHpPercent}%;"></div>
-              </div>
+              ${hasTempHp ? `
+                <div class="hp-bar hp-bar--temp is-active">
+                  <div class="hp-bar__fill hp-bar__fill--temp" style="width: 100%;"></div>
+                </div>
+              ` : ''}
             </div>
             <div class="hp-panel-hit-dice">
               <span>Dadi vita</span>
@@ -980,6 +994,14 @@ function buildCharacterOverview(character, canEditCharacter, items = []) {
           </div>
         </header>
         ${buildProficiencyOverview(character)}
+      </div>
+      <div class="home-section">
+        <header class="card-header">
+          <div>
+            <p class="eyebrow">Talenti</p>
+          </div>
+        </header>
+        ${buildTalentOverview(character)}
       </div>
       <details class="accordion">
         <summary>Descrizione e storia</summary>
@@ -1088,6 +1110,22 @@ function buildProficiencyOverview(character) {
     : '<p class="muted">Aggiungi lingue conosciute nel profilo.</p>'}
           </div>
         </details>
+      </div>
+    </div>
+  `;
+}
+
+function buildTalentOverview(character) {
+  const data = character.data || {};
+  const talentNotes = data.talents || '';
+  const talents = parseProficiencyNotes(talentNotes);
+
+  return `
+    <div class="detail-section">
+      <div class="detail-card detail-card--text">
+        ${talents.length
+    ? `<div class="tag-row">${talents.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
+    : '<p class="muted">Aggiungi talenti nel profilo.</p>'}
       </div>
     </div>
   `;

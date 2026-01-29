@@ -1232,6 +1232,36 @@ button {
   border-color: #f1bfd4;
 }
 
+.stat-card--str .stat-card__modifier {
+  background: #d64541;
+  box-shadow: 0 4px 8px rgba(214, 69, 65, 0.3);
+}
+
+.stat-card--dex .stat-card__modifier {
+  background: #3bb273;
+  box-shadow: 0 4px 8px rgba(59, 178, 115, 0.3);
+}
+
+.stat-card--con .stat-card__modifier {
+  background: #e08c3c;
+  box-shadow: 0 4px 8px rgba(224, 140, 60, 0.3);
+}
+
+.stat-card--int .stat-card__modifier {
+  background: #4a7bd9;
+  box-shadow: 0 4px 8px rgba(74, 123, 217, 0.3);
+}
+
+.stat-card--wis .stat-card__modifier {
+  background: #7d63d2;
+  box-shadow: 0 4px 8px rgba(125, 99, 210, 0.3);
+}
+
+.stat-card--cha .stat-card__modifier {
+  background: #d96aa3;
+  box-shadow: 0 4px 8px rgba(217, 106, 163, 0.3);
+}
+
 .overview-stat-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
