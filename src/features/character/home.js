@@ -1405,7 +1405,7 @@ function buildAttackSection(character, items = []) {
     return '<p class="muted">Nessuna arma equipaggiata.</p>';
   }
   const bonusChips = [];
-  if (extraAttacks > 1) bonusChips.push(`Attacco Extra (${extraAttacks})`);
+  if (extraAttacks > 0) bonusChips.push(`Attacco Extra (${extraAttacks})`);
   if (attackBonusMelee) bonusChips.push(`Mischia attacco ${formatSigned(attackBonusMelee)}`);
   if (damageBonusMelee) bonusChips.push(`Mischia danni ${formatSigned(damageBonusMelee)}`);
   if (attackBonusRanged) bonusChips.push(`Distanza attacco ${formatSigned(attackBonusRanged)}`);
