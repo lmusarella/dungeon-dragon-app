@@ -2118,7 +2118,26 @@ button {
 .character-edit-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+}
+
+.character-edit-group {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #eadfc9;
+  padding: 16px;
+  box-shadow: 0 8px 18px rgba(22, 20, 18, 0.06);
+}
+
+.character-edit-group h3 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.character-edit-group__content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .character-edit-section {
@@ -2129,8 +2148,20 @@ button {
   box-shadow: 0 8px 18px rgba(22, 20, 18, 0.06);
 }
 
+.character-edit-group .character-edit-section {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
 .character-edit-section h4 {
   margin: 0 0 12px;
+}
+
+.character-edit-group .character-edit-section h4 {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
 }
 
 .character-edit-grid {
@@ -2159,6 +2190,28 @@ button {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.character-edit-spell-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.character-edit-spell-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid #eadfc9;
+  background: #fdf7ea;
+}
+
+.character-edit-spell-row small {
+  display: block;
+  color: #665a48;
+  margin-top: 2px;
 }
 
 .character-toggle-group,
