@@ -109,7 +109,6 @@ export async function renderHome(container) {
               <p class="eyebrow">Scheda Personaggio</p>           
             </div>
             <div class="actions">
-              ${characters.length > 1 ? '<select data-character-select></select>' : ''}
               ${activeCharacter && canEditCharacter ? `
                 <button class="icon-button" data-edit-character aria-label="Modifica personaggio">
                   <span aria-hidden="true">✏️</span>
@@ -178,21 +177,6 @@ export async function renderHome(container) {
   `;
 
   bindFabHandlers();
-
-  const select = container.querySelector('[data-character-select]');
-  if (select) {
-    characters.forEach((character) => {
-      const option = document.createElement('option');
-      option.value = character.id;
-      option.textContent = character.name;
-      if (character.id === activeCharacter?.id) option.selected = true;
-      select.appendChild(option);
-    });
-    select.addEventListener('change', (event) => {
-      setActiveCharacter(event.target.value);
-      renderHome(container);
-    });
-  }
 
   const createButton = container.querySelector('[data-create-character]');
   if (createButton) {

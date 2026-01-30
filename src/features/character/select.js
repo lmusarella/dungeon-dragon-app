@@ -63,14 +63,21 @@ function buildCharacterCard(character, isActive) {
   const avatar = data.avatar_url
     ? `<img src="${data.avatar_url}" alt="Ritratto di ${character.name}" />`
     : `<span>${getInitials(character.name)}</span>`;
+  const levelLabel = data.level ? `Livello ${data.level}` : 'Livello n.d.';
+  const classLabel = data.class_name || data.class_archetype || data.archetype;
+  const primaryMeta = [levelLabel, classLabel].filter(Boolean).join(' · ');
+  const secondaryMeta = [data.race, data.background, data.alignment].filter(Boolean).join(' · ');
+  const fallbackMeta = secondaryMeta || 'Razza, background o allineamento non specificati';
   return `
     <button class="character-card ${isActive ? 'is-active' : ''}" type="button" data-character-card="${character.id}">
       <div class="character-card-avatar">
         ${avatar}
       </div>
-      <div>
+      <div class="character-card-info">
         <h3>${character.name}</h3>
         <p class="muted">${character.system || 'Sistema non specificato'}</p>
+        <p class="character-card-meta">${primaryMeta || 'Dettagli base non specificati'}</p>
+        <p class="character-card-meta muted">${fallbackMeta}</p>
       </div>
     </button>
   `;

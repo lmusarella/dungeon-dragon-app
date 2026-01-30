@@ -1830,6 +1830,17 @@ button {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
+.character-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.character-card-meta {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
 .character-card:hover {
   border-color: #6f4e37;
   box-shadow: 0 8px 20px rgba(111, 78, 55, 0.15);
