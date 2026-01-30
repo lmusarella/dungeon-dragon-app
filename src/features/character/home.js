@@ -681,8 +681,22 @@ export async function openCharacterDrawer(user, onSave, character = null) {
   const acAbilityModifiers = characterData.ac_ability_modifiers || {};
   const spellcasting = characterData.spellcasting || {};
   const spellSlots = spellcasting.slots || {};
+  const currentSpells = Array.isArray(characterData.spells) ? sortSpellsByLevel(characterData.spells) : [];
   const form = document.createElement('div');
   form.className = 'character-edit-form';
+  const buildEditGroup = (title, sections) => {
+    const group = document.createElement('section');
+    group.className = 'character-edit-group';
+    group.innerHTML = `<h3>${title}</h3>`;
+    const content = document.createElement('div');
+    content.className = 'character-edit-group__content';
+    sections.forEach((section) => {
+      section.classList.add('character-edit-subsection');
+      content.appendChild(section);
+    });
+    group.appendChild(content);
+    return group;
+  };
 
   const mainSection = document.createElement('div');
   mainSection.className = 'character-edit-section';
@@ -950,7 +964,29 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     placeholder: 'Descrivi gli incantesimi noti/preparati e gli slot principali.',
     value: characterData.spell_notes ?? ''
   }));
+  const spellListSection = document.createElement('div');
+  spellListSection.className = 'character-edit-section';
+  spellListSection.innerHTML = `
+    <h4>Gestione incantesimi</h4>
+    ${currentSpells.length
+    ? `
+      <p class="muted">Seleziona gli incantesimi da rimuovere.</p>
+      <div class="character-edit-spell-list">
+        ${currentSpells.map((spell) => `
+          <label class="character-edit-spell-row">
+            <input type="checkbox" name="remove_spell_${spell.id}" />
+            <span>
+              <strong>${spell.name}</strong>
+              <small>${getSpellTypeLabel(spell)} • Livello ${Number(spell.level) || 0}</small>
+            </span>
+          </label>
+        `).join('')}
+      </div>
+    `
+    : '<p class="muted">Nessun incantesimo configurato.</p>'}
+  `;
   combatSection.appendChild(spellcastingSection);
+  combatSection.appendChild(spellListSection);
   const abilityInputs = {
     str: abilitySection.querySelector('input[name="ability_str"]'),
     dex: abilitySection.querySelector('input[name="ability_dex"]'),
@@ -1010,17 +1046,20 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     value: characterData.talents ?? ''
   }));
 
-  form.appendChild(mainSection);
-  form.appendChild(statsSection);
-  form.appendChild(acSection);
-  form.appendChild(abilitySection);
-  form.appendChild(skillSection);
-  form.appendChild(savingSection);
-  form.appendChild(proficiencySection);
-  form.appendChild(combatSection);
-  form.appendChild(proficiencyNotesSection);
-  form.appendChild(languageNotesSection);
-  form.appendChild(talentNotesSection);
+  form.appendChild(buildEditGroup('Identità e background', [mainSection]));
+  form.appendChild(buildEditGroup('Statistiche e difese', [statsSection, acSection]));
+  form.appendChild(buildEditGroup('Caratteristiche e competenze', [
+    abilitySection,
+    skillSection,
+    savingSection,
+    proficiencySection
+  ]));
+  form.appendChild(buildEditGroup('Combattimento e magia', [combatSection]));
+  form.appendChild(buildEditGroup('Note e dettagli', [
+    proficiencyNotesSection,
+    languageNotesSection,
+    talentNotesSection
+  ]));
 
   const modal = document.querySelector('[data-form-modal]');
   const modalCard = modal?.querySelector('.modal-card');
@@ -1111,6 +1150,7 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     proficiency_notes: formData.get('proficiency_notes')?.trim() || null,
     language_proficiencies: formData.get('language_proficiencies')?.trim() || null,
     talents: formData.get('talents')?.trim() || null,
+    spells: currentSpells.filter((spell) => !formData.has(`remove_spell_${spell.id}`)),
     abilities: {
       str: toNumberOrNull(formData.get('ability_str')),
       dex: toNumberOrNull(formData.get('ability_dex')),
