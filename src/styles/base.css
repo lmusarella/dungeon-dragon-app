@@ -2398,6 +2398,23 @@ button {
   margin-top: 16px;
 }
 
+.inventory-columns {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(320px, 1.4fr) minmax(220px, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.inventory-columns .card {
+  margin: 0;
+  max-width: none;
+}
+
+.inventory-wallet .wallet-grid,
+.inventory-wallet .compact-action-grid {
+  grid-template-columns: 1fr;
+}
+
 .equipment-doll {
   background: #fff;
   border: 1px solid #eadfc9;
@@ -2760,6 +2777,10 @@ button {
   }
 
   .character-overview-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-columns {
     grid-template-columns: 1fr;
   }
 }
