@@ -468,12 +468,10 @@ async function handleRestAction(resetOn, container) {
     const refreshed = await fetchResources(activeCharacter.id);
     updateCache('resources', refreshed);
     await cacheSnapshot({ resources: refreshed });
-    if (resetOn === 'long_rest') {
-      const nextData = applyLongRestRecovery(activeCharacter.data);
-      if (nextData) {
-        await saveCharacterData(activeCharacter, nextData, null, container);
-        return;
-      }
+    const nextData = applyRestRecovery(activeCharacter.data, resetOn);
+    if (nextData) {
+      await saveCharacterData(activeCharacter, nextData, null, container);
+      return;
     }
     if (container) {
       renderHome(container);
@@ -1758,17 +1756,23 @@ async function consumeSpellSlot(character, level, container) {
   const data = character.data || {};
   const spellcasting = data.spellcasting || {};
   const slots = { ...(spellcasting.slots || {}) };
+  const slotsMax = { ...(spellcasting.slots_max || {}) };
   const current = Math.max(0, Number(slots[level]) || 0);
   if (!current) {
     createToast('Slot incantesimo esauriti', 'error');
     return false;
+  }
+  const currentMax = Number(slotsMax[level]);
+  if (!Number.isFinite(currentMax) || currentMax < current) {
+    slotsMax[level] = current;
   }
   slots[level] = Math.max(0, current - 1);
   await saveCharacterData(character, {
     ...data,
     spellcasting: {
       ...spellcasting,
-      slots
+      slots,
+      slots_max: slotsMax
     }
   }, 'Slot incantesimo consumato', container);
   return true;
@@ -2609,6 +2613,54 @@ function applyLongRestRecovery(data) {
     changed = true;
   }
   return changed ? next : null;
+}
+
+function applyRestRecovery(data, resetOn) {
+  if (!data) return null;
+  let next = data;
+  if (resetOn === 'long_rest') {
+    next = applyLongRestRecovery(data) || data;
+  }
+  const spellSlotRecovery = applySpellSlotRecovery(next, resetOn);
+  if (spellSlotRecovery) {
+    next = spellSlotRecovery;
+  }
+  return next === data ? null : next;
+}
+
+function applySpellSlotRecovery(data, resetOn) {
+  if (!data) return null;
+  const spellcasting = data.spellcasting || {};
+  if (!spellcasting || !spellcasting.slots) return null;
+  const recharge = spellcasting.recharge || 'long_rest';
+  const shouldRecover = resetOn === 'long_rest' || recharge === 'short_rest';
+  if (!shouldRecover) return null;
+  const slotLevels = Array.from({ length: 9 }, (_, index) => index + 1);
+  const slots = { ...(spellcasting.slots || {}) };
+  const slotsMax = { ...(spellcasting.slots_max || {}) };
+  let changed = false;
+  slotLevels.forEach((level) => {
+    const current = Math.max(0, Number(slots[level]) || 0);
+    const maxValue = Number(slotsMax[level]);
+    const nextMax = Number.isFinite(maxValue) && maxValue > 0 ? maxValue : current;
+    if (nextMax !== maxValue) {
+      slotsMax[level] = nextMax;
+      changed = true;
+    }
+    if (nextMax > 0 && current !== nextMax) {
+      slots[level] = nextMax;
+      changed = true;
+    }
+  });
+  if (!changed) return null;
+  return {
+    ...data,
+    spellcasting: {
+      ...spellcasting,
+      slots,
+      slots_max: slotsMax
+    }
+  };
 }
 
 function formatSigned(value) {
