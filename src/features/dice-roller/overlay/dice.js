@@ -1,14 +1,7 @@
-import { hideAttackOverlayUnderDice } from './attack.js';
-import { hideVersusOverlay } from './versus.js';
-
 let overlayEl = null;
 
-function buildMarkup() {
+function buildDiceMarkup() {
   return `
-  <div class="diceov-backdrop" data-close></div>
-  <div class="diceov-stage" role="dialog" aria-modal="true" aria-label="Lancio dadi">
-    <button class="diceov-close" data-close aria-label="Chiudi" hidden>×</button>
-
     <div id="diceRoller"></div>
     <main id="diceRollerUI">
       <div class="top_field" hidden>
@@ -32,8 +25,23 @@ function buildMarkup() {
       </div>
       <div class="bottom_field" hidden><span id="result"></span></div>
     </main>
+  `;
+}
 
+function buildOverlayMarkup() {
+  return `
+  <div class="diceov-backdrop" data-close></div>
+  <div class="diceov-stage" role="dialog" aria-modal="true" aria-label="Lancio dadi">
+    <button class="diceov-close" data-close aria-label="Chiudi" hidden>×</button>
+    ${buildDiceMarkup()}
   </div>`;
+}
+
+export function createDiceRollerEmbed() {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'dice-roller-embed';
+  wrapper.innerHTML = buildDiceMarkup();
+  return wrapper;
 }
 
 function parseLastInt(text) {
@@ -45,7 +53,7 @@ export function openDiceOverlay({ sides = 20, keepOpen = false } = {}) {
   if (!overlayEl) {
     overlayEl = document.createElement('div');
     overlayEl.id = 'dice-overlay';
-    overlayEl.innerHTML = buildMarkup();
+    overlayEl.innerHTML = buildOverlayMarkup();
     document.body.appendChild(overlayEl);
 
     if (window.main && typeof window.main.init === 'function') {
@@ -67,8 +75,6 @@ export function openDiceOverlay({ sides = 20, keepOpen = false } = {}) {
     const lim = overlayEl.querySelector('#diceLimit');
     if (lim) lim.style.display = 'none';
   } catch { }
-
-  try { hideAttackOverlayUnderDice(); } catch { }
 
   overlayEl.removeAttribute('hidden');
 
@@ -106,9 +112,6 @@ export function openDiceOverlay({ sides = 20, keepOpen = false } = {}) {
     if (overlayEl) overlayEl.setAttribute('hidden', '');
 
     if (last == null) rejectFn?.(new Error('Dice overlay closed'));
-
-    try { hideAttackOverlayUnderDice(); } catch { }
-    try { hideVersusOverlay(); } catch { }
 
     closeDiceOverlay = closeRef;
   };

@@ -206,7 +206,17 @@ header {
 #diceRollerUI .bottom_field { padding: 6px 8px; }
 
 /* === OVERRIDES SCOPED PER IL POPUP DEI DADI ============================== */
-#dice-overlay #diceRollerUI {
+.dice-roller-modal {
+  position: relative;
+  min-height: 320px;
+}
+
+.dice-roller-modal .dice-roller-embed {
+  position: relative;
+}
+
+#dice-overlay #diceRollerUI,
+.dice-roller-modal #diceRollerUI {
   width: 100%;
   height: auto;              /* ← non a viewport */
   max-height: none;
@@ -215,7 +225,8 @@ header {
   flex-direction: column;
 }
 
-#dice-overlay #diceRoller {
+#dice-overlay #diceRoller,
+.dice-roller-modal #diceRoller {
   position: relative;        /* ← non absolute */
   top: auto;
   margin-top: 0;
@@ -226,12 +237,14 @@ header {
 }
 
 /* il canvas si adatta all’altezza del box sopra */
-#dice-overlay #canvas {
+#dice-overlay #canvas,
+.dice-roller-modal #canvas {
   width: 100%;
   height: 100%;
 }
 
-#dice-overlay .center_field {
+#dice-overlay .center_field,
+.dice-roller-modal .center_field {
   position: relative;
   flex: 1;                   /* ← cresce in verticale nel popup */
   height: auto;              /* ← niente 80% fisso */
@@ -239,21 +252,25 @@ header {
   z-index: 0;
 }
 
-#dice-overlay .bottom_field {
+#dice-overlay .bottom_field,
+.dice-roller-modal .bottom_field {
   position: static;          /* ← NON assoluto nel popup */
   width: 100%;
   min-height: 2.5rem;
   margin-top: 8px;
 }
 
-#dice-overlay .top_field {
+#dice-overlay .top_field,
+.dice-roller-modal .top_field {
   width: 100%;
 }
 
 /* opzionale: l’input meno “full-width” se vuoi */
-#dice-overlay #textInput {
+#dice-overlay #textInput,
+.dice-roller-modal #textInput {
   max-width: 100%;
 }
+
 .diceov-stage {
   padding: 10px 10px 12px;
   width: min(460px, 96vw);

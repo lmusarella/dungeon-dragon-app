@@ -19,6 +19,7 @@ import {
   openFormModal
 } from '../../ui/components.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
+import { createDiceRollerEmbed } from '../dice-roller/overlay/dice.js';
 
 let fabHandlersBound = false;
 let lastHomeContainer = null;
@@ -587,10 +588,18 @@ function openResourceDetail(resource) {
 function openDiceRollerModal(title) {
   const content = document.createElement('div');
   content.className = 'dice-roller-modal';
+  content.appendChild(createDiceRollerEmbed());
   openFormModal({
     title,
     submitLabel: 'Chiudi',
+    cancelLabel: null,
     content
+  });
+  requestAnimationFrame(() => {
+    if (window.main && typeof window.main.init === 'function') {
+      window.main.init();
+      window.main.setInput?.();
+    }
   });
 }
 

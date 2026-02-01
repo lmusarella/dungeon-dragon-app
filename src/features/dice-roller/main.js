@@ -42,7 +42,7 @@ window.onkeydown = function(e) {
         $t.bind(elem.textInput, 'input', function(ev) { 
             let size = elem.textInput.value.length;
             elem.textInput.size = size > 0 ? size : 1;
-            box.setDice(textInput.value);
+            box.setDice(elem.textInput.value);
         });
         $t.bind(elem.textInput, 'focus', function(ev) {
             elem.diceLimit.style.display = 'none';
@@ -65,7 +65,7 @@ window.onkeydown = function(e) {
             ev.preventDefault();
         });
 
-        box.setDice(textInput.value);
+        box.setDice(elem.textInput.value);
         //box.start_throw(); //start by throwing all the dice on the table
 
         show_instructions(true);
