@@ -492,7 +492,6 @@ header {
   margin-top: 6px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
@@ -502,10 +501,15 @@ header {
   display: grid;
   grid-template-columns: minmax(160px, 1fr) 48px minmax(110px, 1fr);
   gap: 6px;
+  padding: 6px 0;
   font-size: 0.75rem;
   align-items: center;
   color: rgba(255,255,255,0.8);
   white-space: nowrap;
+}
+
+.diceov-history-row + .diceov-history-row {
+  border-top: 1px solid #2b2b2b;
 }
 
 .diceov-history-type {

@@ -58,9 +58,10 @@ function buildOverlayMarkup() {
             <label class="diceov-label" for="dice-buff">Buff/Debuff</label>
             <select id="dice-buff" name="dice-buff">
               <option value="none" selected>Nessuno</option>
-              <option value="bless">Benedizione</option>
-              <option value="bane">Anatema</option>
-              <option value="bardic">Ispirazione bardica</option>
+              <option value="plus-d4">+d4</option>
+              <option value="plus-d6">+d6</option>
+              <option value="minus-d4">-d4</option>
+              <option value="minus-d6">-d6</option>
             </select>
           </div>
            <div class="diceov-control" data-dice-control="d20">
@@ -355,13 +356,9 @@ export function openDiceOverlay({
     if (!buffSelect || buffWrapper?.hasAttribute('hidden')) return null;
     const choice = buffSelect.value;
     if (choice === 'none') return null;
-    const sides = choice === 'bardic' ? 6 : 4;
-    const isPositive = choice === 'bless' || choice === 'bardic';
-    const label = choice === 'bless'
-      ? 'Benedizione'
-      : choice === 'bardic'
-        ? 'Ispirazione bardica'
-        : 'Anatema';
+    const sides = choice.endsWith('d6') ? 6 : 4;
+    const isPositive = choice.startsWith('plus');
+    const label = `${isPositive ? '+' : '-'}d${sides}`;
     return { choice, sides, label, sign: isPositive ? 1 : -1 };
   }
 
