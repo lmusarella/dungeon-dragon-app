@@ -170,6 +170,7 @@ button {
   padding: 16px;
   border-bottom: 1px solid #e6dcc8;
   background: #fdf7ea;
+  color: #1c1b1a;
   position: sticky;
   top: 0;
   z-index: 30;
@@ -197,6 +198,7 @@ button {
 .app-header h1 {
   margin: 0;
   font-size: 1.25rem;
+  color: #1c1b1a;
 }
 
 .app-subtitle {
@@ -231,6 +233,10 @@ button {
   display: flex;
   flex-direction: column;
   font-size: 0.8rem;
+}
+
+.header-meta-text strong {
+  color: #1c1b1a;
 }
 
 .header-meta-label {

@@ -539,6 +539,7 @@ function handleDiceAction(type) {
   const { activeCharacter, canEditCharacter } = getHomeContext();
   const items = getState().cache.items || [];
   const allowInspiration = Boolean(activeCharacter?.data?.inspiration) && canEditCharacter;
+  const weakPoints = Number(activeCharacter?.data?.hp?.weak_points) || 0;
   const onConsumeInspiration = allowInspiration && activeCharacter
     ? async () => {
       const currentData = activeCharacter.data || {};
@@ -577,7 +578,8 @@ function handleDiceAction(type) {
   openDiceRollerModal({
     ...config,
     allowInspiration,
-    onConsumeInspiration
+    onConsumeInspiration,
+    weakPoints
   });
 }
 
@@ -731,7 +733,8 @@ function openDiceRollerModal({
   selection = null,
   allowInspiration = false,
   onConsumeInspiration = null,
-  rollType = null
+  rollType = null,
+  weakPoints = 0
 }) {
   openDiceOverlay({
     keepOpen: true,
@@ -740,7 +743,8 @@ function openDiceRollerModal({
     selection,
     allowInspiration,
     onConsumeInspiration,
-    rollType
+    rollType,
+    weakPoints
   });
 }
 

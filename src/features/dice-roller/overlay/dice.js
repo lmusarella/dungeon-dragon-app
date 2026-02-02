@@ -76,6 +76,7 @@ function buildOverlayMarkup() {
          <p class="diceov-warning" data-inspiration-warning hidden>
               Attenzione: userai il punto ispirazione su questo tiro.
             </p>
+         <p class="diceov-warning" data-weakness-warning hidden></p>
         </div>
        
         <div class="diceov-control" data-dice-control="generic">       
@@ -226,7 +227,8 @@ export function openDiceOverlay({
   selection = null,
   allowInspiration = false,
   onConsumeInspiration = null,
-  rollType = null
+  rollType = null,
+  weakPoints = 0
 } = {}) {
   if (!overlayEl) {
     overlayEl = document.createElement('div');
@@ -264,6 +266,7 @@ export function openDiceOverlay({
   const inspirationInput = overlayEl.querySelector('input[name="dice-inspiration"]');
   const inspirationField = overlayEl.querySelector('[data-dice-inspiration]');
   const inspirationWarning = overlayEl.querySelector('[data-inspiration-warning]');
+  const weaknessWarning = overlayEl.querySelector('[data-weakness-warning]');
   const rollModeInput = overlayEl.querySelector('select[name="dice-roll-mode"]');
   const modifierInput = overlayEl.querySelector('input[name="dice-modifier"]');
   const modifierField = modifierInput?.closest('.diceov-field--modifier');
@@ -290,6 +293,17 @@ export function openDiceOverlay({
     selectionOptions: Array.isArray(selection?.options) ? selection.options : [],
     history: loadHistory()
   };
+
+  const normalizedWeakPoints = Math.max(0, Number(weakPoints) || 0);
+  const weaknessReason = (() => {
+    if (rollType === 'TA' && normalizedWeakPoints >= 1) {
+      return 'Svantaggio: punti indebolimento (prove di caratteristica).';
+    }
+    if ((rollType === 'TS' || rollType === 'TC') && normalizedWeakPoints >= 3) {
+      return 'Svantaggio: punti indebolimento (tiri salvezza/colpire).';
+    }
+    return null;
+  })();
 
   function getActiveModifierInput() {
     return mode === 'generic' ? (genericModifierInput || modifierInput) : modifierInput;
@@ -340,6 +354,7 @@ export function openDiceOverlay({
     if (inspired) rollModeInput.value = 'advantage';
     rollModeInput.disabled = inspired;
     if (inspirationWarning) inspirationWarning.toggleAttribute('hidden', !inspired);
+    updateWeaknessWarning();
   }
 
   function setInspirationAvailability(available) {
@@ -375,6 +390,19 @@ export function openDiceOverlay({
     if (selected && modifierInput) {
       modifierInput.value = Number(selected.modifier) || 0;
     }
+  }
+
+  function updateWeaknessWarning() {
+    if (!weaknessWarning) return;
+    const shouldShow = Boolean(weaknessReason) && getRollMode(overlayEl) === 'disadvantage';
+    weaknessWarning.textContent = weaknessReason ?? '';
+    weaknessWarning.toggleAttribute('hidden', !shouldShow);
+  }
+
+  function applyDefaultRollMode() {
+    if (!rollModeInput) return;
+    rollModeInput.value = weaknessReason ? 'disadvantage' : 'normal';
+    updateWeaknessWarning();
   }
 
   function setBuffVisibility() {
@@ -552,7 +580,12 @@ export function openDiceOverlay({
       updateNotationFromMode();
     };
   }
-  if (rollModeInput) rollModeInput.onchange = () => updateNotationFromMode();
+  if (rollModeInput) {
+    rollModeInput.onchange = () => {
+      updateWeaknessWarning();
+      updateNotationFromMode();
+    };
+  }
   if (modifierInput) modifierInput.oninput = updateModifier;
   if (genericModifierInput) genericModifierInput.oninput = updateModifier;
   if (notationInput) notationInput.oninput = updateNotationFromGeneric;
@@ -582,15 +615,16 @@ export function openDiceOverlay({
     };
   }
   if (historyToggle) {
-    historyToggle.addEventListener('click', () => {
+    historyToggle.onclick = () => {
       const shouldOpen = !historyAccordion?.classList.contains('is-open');
       setHistoryOpen(shouldOpen);
-    });
+    };
   }
 
   setSelectionOptions();
   setBuffVisibility();
   setInspirationAvailability(state.inspirationAvailable);
+  applyDefaultRollMode();
   updateInspiration();
   setModifierVisibility();
   renderHistory();
