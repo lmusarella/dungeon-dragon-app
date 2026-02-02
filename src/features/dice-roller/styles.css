@@ -372,6 +372,14 @@ header {
   width: 100%;
 }
 
+.diceov-generic-row .diceov-field--modifier {
+  flex: 0 0 84px;
+}
+
+.diceov-generic-row .diceov-field--modifier input[type="number"] {
+  width: 100%;
+}
+
 .diceov-control input[type="number"],
 .diceov-control input[type="text"],
 .diceov-control select {

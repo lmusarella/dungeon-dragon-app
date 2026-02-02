@@ -95,6 +95,7 @@ function buildOverlayMarkup() {
               <option value="d100">d100</option>
             </select>
             <input id="dice-notation" class="diceov-generic-notation" type="text" name="dice-notation" value="1d20" spellcheck="false" />
+            <div class="diceov-field diceov-field--modifier" data-modifier-slot></div>
           </div>
           <p class="diceov-hint">Puoi combinare dadi diversi (es. 2d6+1d4).</p>
         </div>
@@ -249,13 +250,17 @@ export function openDiceOverlay({
   }
 
   overlayEl.querySelector('[data-dice-title]')?.replaceChildren(document.createTextNode(title));
-  setOverlayMode(overlayEl, mode === 'generic' ? 'generic' : 'd20');
+  const overlayMode = mode === 'generic' ? 'generic' : 'd20';
+  setOverlayMode(overlayEl, overlayMode);
 
   const inspirationInput = overlayEl.querySelector('input[name="dice-inspiration"]');
   const inspirationField = overlayEl.querySelector('[data-dice-inspiration]');
   const inspirationWarning = overlayEl.querySelector('[data-inspiration-warning]');
   const rollModeInput = overlayEl.querySelector('select[name="dice-roll-mode"]');
   const modifierInput = overlayEl.querySelector('input[name="dice-modifier"]');
+  const modifierField = modifierInput?.closest('.diceov-field--modifier');
+  const modifierSlot = overlayEl.querySelector('[data-modifier-slot]');
+  const modifierHome = modifierField?.parentElement ?? null;
   const notationInput = overlayEl.querySelector('input[name="dice-notation"]');
   const selectWrapper = overlayEl.querySelector('[data-dice-select]');
   const selectLabel = overlayEl.querySelector('[data-dice-select-label]');
@@ -278,6 +283,19 @@ export function openDiceOverlay({
     selectionOptions: Array.isArray(selection?.options) ? selection.options : [],
     history: loadHistory()
   };
+
+  function placeModifierField(isGeneric) {
+    if (!modifierField) return;
+    if (isGeneric && modifierSlot) {
+      if (!modifierSlot.contains(modifierField)) {
+        modifierSlot.appendChild(modifierField);
+      }
+      return;
+    }
+    if (!isGeneric && modifierHome && !modifierHome.contains(modifierField)) {
+      modifierHome.appendChild(modifierField);
+    }
+  }
 
   function resetResult(label = '—', detail = 'Lancia i dadi per vedere il totale.') {
     if (resultValue) resultValue.textContent = label;
@@ -569,6 +587,7 @@ export function openDiceOverlay({
   setBuffVisibility();
   setInspirationAvailability(state.inspirationAvailable);
   updateInspiration();
+  placeModifierField(overlayMode === 'generic');
   renderHistory();
   setHistoryOpen(false);
 

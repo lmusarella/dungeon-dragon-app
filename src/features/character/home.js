@@ -261,6 +261,7 @@ export async function renderHome(container) {
           return;
         }
         openDiceOverlay({
+          keepOpen: true,
           title: overlayConfig.title,
           mode: 'generic',
           notation: overlayConfig.notation,
@@ -277,6 +278,7 @@ export async function renderHome(container) {
         return;
       }
       openDiceOverlay({
+        keepOpen: true,
         title: overlayConfig.title,
         mode: 'generic',
         notation: overlayConfig.notation,
