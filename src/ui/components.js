@@ -185,6 +185,7 @@ export function openFormModal({
       } else if (content) {
         fieldsEl.appendChild(content);
       }
+      fieldsEl.querySelectorAll('p').forEach((paragraph) => paragraph.classList.add('eyebrow'));
     }
 
     modal.hidden = false;

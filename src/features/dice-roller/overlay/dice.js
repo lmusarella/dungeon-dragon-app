@@ -351,7 +351,11 @@ export function openDiceOverlay({
   function updateInspiration() {
     if (!rollModeInput) return;
     const inspired = Boolean(inspirationInput?.checked);
-    if (inspired) rollModeInput.value = 'advantage';
+    if (inspired) {
+      rollModeInput.value = weaknessReason ? 'normal' : 'advantage';
+    } else {
+      applyDefaultRollMode();
+    }
     rollModeInput.disabled = inspired;
     if (inspirationWarning) inspirationWarning.toggleAttribute('hidden', !inspired);
     updateWeaknessWarning();

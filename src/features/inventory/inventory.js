@@ -96,6 +96,7 @@ export async function renderInventory(container) {
 
   let items = state.cache.items;
   let wallet = state.cache.wallet;
+  let transactions = [];
   if (!state.offline) {
     try {
       items = await fetchItems(activeCharacter.id);
@@ -111,6 +112,11 @@ export async function renderInventory(container) {
     } catch (error) {
       createToast('Errore caricamento wallet', 'error');
     }
+    try {
+      transactions = await fetchTransactions(activeCharacter.id);
+    } catch (error) {
+      createToast('Errore caricamento transazioni', 'error');
+    }
   }
 
   const totalWeight = calcTotalWeight(items);
@@ -119,18 +125,16 @@ export async function renderInventory(container) {
   const equippedItems = items.filter((item) => getEquipSlots(item).length);
   const attunedCount = items.filter((item) => item.attunement_active).length;
   container.innerHTML = `
-    <div class="inventory-columns">
-      <section class="card">
+    <div class="inventory-layout">
+      <section class="card inventory-wallet-wide">
         <header class="card-header">
-          <h2>Equipaggiamento</h2>
-          <span class="pill">Slot Sintonia Attivi: ${attunedCount}</span>
+          <h2 class="eyebrow">Monete</h2>
         </header>
-        ${buildEquippedList(equippedItems)}
-        ${!equippedItems.length ? '<p class="muted">Nessun oggetto equipaggiato.</p>' : ''}
+        ${renderWalletSummary(wallet)}
       </section>
-      <section class="card">
+      <section class="card inventory-main">
         <header class="card-header">
-          <h2>Inventario</h2>
+          <h2 class="eyebrow">Inventario</h2>
           <div class="button-row">
             <button class="primary" type="button" data-add-loot>Loot rapido</button>
             <button class="primary" data-add-item>Nuovo oggetto</button>
@@ -147,17 +151,28 @@ export async function renderInventory(container) {
         </div>
         <div data-inventory-list></div>
       </section>
-      <section class="card compact-card inventory-wallet">
-        <header class="compact-header">
-          <h3>Monete</h3>
-        </header>
-        ${renderWalletSummary(wallet)}       
-        <div class="compact-action-grid">
-          <button class="primary" type="button" data-money-action="pay">Paga</button>
-          <button class="primary" type="button" data-money-action="receive">Ricevi</button>
-          <button type="button" data-view-transactions>Transazioni</button>
-        </div>
-      </section>
+      <div class="inventory-side">
+        <section class="card">
+          <header class="card-header">
+            <h2 class="eyebrow">Equipaggiamento</h2>
+            <span class="pill">Slot Sintonia Attivi: ${attunedCount}</span>
+          </header>
+          ${buildEquippedList(equippedItems)}
+          ${!equippedItems.length ? '<p class="muted">Nessun oggetto equipaggiato.</p>' : ''}
+        </section>
+        <section class="card">
+          <header class="card-header">
+            <h2 class="eyebrow">Transazioni</h2>
+          </header>
+          <div class="button-row">
+            <button class="primary" type="button" data-money-action="pay">Paga</button>
+            <button class="primary" type="button" data-money-action="receive">Ricevi</button>
+          </div>
+          <div class="inventory-transactions">
+            ${state.offline ? '<p class="muted">Transazioni disponibili solo online.</p>' : buildTransactionList(transactions).outerHTML}
+          </div>
+        </section>
+      </div>
     </div>
   `;
 
@@ -315,28 +330,6 @@ export async function renderInventory(container) {
       }
     }));
 
-  const transactionsButton = container.querySelector('[data-view-transactions]');
-  if (transactionsButton) {
-    transactionsButton.addEventListener('click', async () => {
-      if (state.offline) {
-        createToast('Transazioni disponibili solo online', 'error');
-        return;
-      }
-      try {
-        const transactions = await fetchTransactions(activeCharacter.id);
-        await openFormModal({
-          title: 'Transazioni',
-          submitLabel: 'Chiudi',
-          cancelLabel: 'Chiudi',
-          content: buildTransactionList(transactions),
-          cardClass: 'modal-card--scrollable'
-        });
-      } catch (error) {
-        createToast('Errore caricamento transazioni', 'error');
-      }
-    });
-  }
-
   const lootButton = container.querySelector('[data-add-loot]');
   if (lootButton) {
     lootButton.addEventListener('click', async () => {
@@ -440,7 +433,7 @@ function buildInventoryTree(items) {
     const children = items.filter((item) => item.container_item_id === container.id);
     return `
       <div class="inventory-group">
-        <h4>${container.name}</h4>
+        <p class="eyebrow">${container.name}</p>
         ${buildItemList(children)}
       </div>
     `;
@@ -449,7 +442,7 @@ function buildInventoryTree(items) {
   return `
     ${containerSections}
     <div class="inventory-group">
-      <h4>Oggetti</h4>
+      <p class="eyebrow">Oggetti</p>
       ${buildItemList(topLevel)}
     </div>
   `;
@@ -457,30 +450,32 @@ function buildInventoryTree(items) {
 
 function buildItemList(items) {
   if (!items.length) {
-    return '<p class="muted">Nessun oggetto.</p>';
+    return '<p class="muted eyebrow">Nessun oggetto.</p>';
   }
   return `
-    <ul class="inventory-list">
+    <ul class="inventory-list resource-list resource-list--compact">
       ${items.map((item) => `
-        <li>
-          <div class="item-info">
-            ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
-            <div>
-              <strong>${item.name}</strong>
-            <p class="muted">
-              ${getCategoryLabel(item.category)} · ${item.qty}x · ${item.weight ?? 0} lb
-            </p>
-            <div class="tag-row">
-              ${item.equipable ? `<span class="chip">equipaggiabile${getEquipSlots(item).length ? ` · ${getBodyPartLabels(getEquipSlots(item))}` : ''}</span>` : ''}
-              ${item.sovrapponibile ? '<span class="chip">sovrapponibile</span>' : ''}
-              ${item.attunement_active ? '<span class="chip">attuned</span>' : ''}
-            </div>
+        <li class="modifier-card attack-card resource-card inventory-item-card">
+          <div class="attack-card__body resource-card__body">
+            <div class="resource-card__title item-info">
+              ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
+              <div>
+                <strong class="attack-card__name">${item.name}</strong>
+                <p class="muted resource-card__description">
+                  ${getCategoryLabel(item.category)} · ${item.qty}x · ${item.weight ?? 0} lb
+                </p>
+                <div class="tag-row resource-card__meta">
+                  ${item.equipable ? `<span class="chip">equipaggiabile${getEquipSlots(item).length ? ` · ${getBodyPartLabels(getEquipSlots(item))}` : ''}</span>` : ''}
+                  ${item.sovrapponibile ? '<span class="chip">sovrapponibile</span>' : ''}
+                  ${item.attunement_active ? '<span class="chip">attuned</span>' : ''}
+                </div>
+              </div>
             </div>
           </div>
-          <div class="actions">
-            ${item.category === 'consumable' ? `<button data-use="${item.id}">Usa</button>` : ''}
-            <button data-edit="${item.id}">Modifica</button>
-            <button data-delete="${item.id}">Elimina</button>
+          <div class="resource-card-actions">
+            ${item.category === 'consumable' ? `<button class="resource-action-button" data-use="${item.id}">Usa</button>` : ''}
+            <button class="resource-action-button" data-edit="${item.id}">Modifica</button>
+            <button class="resource-action-button" data-delete="${item.id}">Elimina</button>
           </div>
         </li>
       `).join('')}
@@ -491,22 +486,26 @@ function buildItemList(items) {
 function buildEquippedList(items) {
   if (!items.length) return '';
   return `
-    <ul class="inventory-list">
+    <ul class="inventory-list resource-list resource-list--compact">
       ${items.map((item) => `
-        <li>
-          <div class="item-info">
-            ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
-            <div>
-              <strong>${item.name}</strong>
-              <p class="muted">${getCategoryLabel(item.category)} · ${getBodyPartLabels(getEquipSlots(item))}</p>
-              <div class="tag-row">
-                ${item.attunement_active ? '<span class="chip">attuned</span>' : ''}
+        <li class="modifier-card attack-card resource-card inventory-item-card">
+          <div class="attack-card__body resource-card__body">
+            <div class="resource-card__title item-info">
+              ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
+              <div>
+                <strong class="attack-card__name">${item.name}</strong>
+                <p class="muted resource-card__description">
+                  ${getCategoryLabel(item.category)} · ${getBodyPartLabels(getEquipSlots(item))}
+                </p>
+                <div class="tag-row resource-card__meta">
+                  ${item.attunement_active ? '<span class="chip">attuned</span>' : ''}
+                </div>
               </div>
             </div>
           </div>
-          <div class="actions">
-            <button data-unequip="${item.id}">Rimuovi</button>
-            <button data-attune="${item.id}">
+          <div class="resource-card-actions">
+            <button class="resource-action-button" data-unequip="${item.id}">Rimuovi</button>
+            <button class="resource-action-button" data-attune="${item.id}">
               ${item.attunement_active ? 'Disattiva attune' : 'Attiva attune'}
             </button>
           </div>

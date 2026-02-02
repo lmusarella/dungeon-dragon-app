@@ -12,6 +12,7 @@ export function renderWalletSummary(wallet) {
       <div class="wallet-grid">
         ${coins.map((coin) => `
           <div class="stat-card">
+            <span class="coin-avatar coin-avatar--${coin.key}" aria-hidden="true"></span>
             <span>${coin.label}</span>
             <strong>${wallet?.[coin.key] ?? 0}</strong>
           </div>

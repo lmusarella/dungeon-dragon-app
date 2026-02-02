@@ -1184,20 +1184,119 @@ export async function openCharacterDrawer(user, onSave, character = null) {
     value: characterData.talents ?? ''
   }));
 
-  form.appendChild(buildEditGroup('Identità e background', [mainSection]));
-  form.appendChild(buildEditGroup('Statistiche e difese', [statsSection, acSection]));
-  form.appendChild(buildEditGroup('Caratteristiche e competenze', [
-    abilitySection,
-    skillSection,
-    savingSection,
-    proficiencySection
-  ]));
-  form.appendChild(buildEditGroup('Combattimento e magia', [combatSection]));
-  form.appendChild(buildEditGroup('Note e dettagli', [
-    proficiencyNotesSection,
-    languageNotesSection,
-    talentNotesSection
-  ]));
+  const steps = [
+    {
+      title: 'Identità e background',
+      content: buildEditGroup('Identità e background', [mainSection])
+    },
+    {
+      title: 'Statistiche e difese',
+      content: buildEditGroup('Statistiche e difese', [statsSection, acSection])
+    },
+    {
+      title: 'Caratteristiche e competenze',
+      content: buildEditGroup('Caratteristiche e competenze', [
+        abilitySection,
+        skillSection,
+        savingSection,
+        proficiencySection
+      ])
+    },
+    {
+      title: 'Combattimento e magia',
+      content: buildEditGroup('Combattimento e magia', [combatSection])
+    },
+    {
+      title: 'Note e dettagli',
+      content: buildEditGroup('Note e dettagli', [
+        proficiencyNotesSection,
+        languageNotesSection,
+        talentNotesSection
+      ])
+    }
+  ];
+
+  const stepper = document.createElement('div');
+  stepper.className = 'character-edit-stepper';
+  const stepperNav = document.createElement('ol');
+  stepperNav.className = 'character-edit-stepper-nav';
+  const stepperContent = document.createElement('div');
+  stepperContent.className = 'character-edit-stepper-content';
+  const stepperActions = document.createElement('div');
+  stepperActions.className = 'character-edit-stepper-actions';
+  const backButton = document.createElement('button');
+  backButton.type = 'button';
+  backButton.className = 'secondary';
+  backButton.textContent = 'Indietro';
+  const nextButton = document.createElement('button');
+  nextButton.type = 'button';
+  nextButton.className = 'primary';
+  nextButton.textContent = 'Avanti';
+  stepperActions.append(backButton, nextButton);
+
+  const stepButtons = [];
+  const stepPanels = [];
+  steps.forEach((step, index) => {
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'character-edit-stepper-button';
+    button.innerHTML = `<span class="step-index">${index + 1}</span><span>${step.title}</span>`;
+    item.appendChild(button);
+    stepperNav.appendChild(item);
+    stepButtons.push(button);
+
+    const panel = document.createElement('div');
+    panel.className = 'character-edit-step';
+    panel.dataset.step = String(index);
+    panel.appendChild(step.content);
+    stepperContent.appendChild(panel);
+    stepPanels.push(panel);
+  });
+
+  const getStepFields = (panel) => Array.from(panel.querySelectorAll('input, select, textarea'));
+  const isStepComplete = (panel) => {
+    const fields = getStepFields(panel);
+    if (!fields.length) return true;
+    return fields
+      .filter((field) => field.required)
+      .every((field) => field.checkValidity());
+  };
+
+  let activeStepIndex = 0;
+  const updateStepperState = () => {
+    const completion = stepPanels.map((panel) => isStepComplete(panel));
+    const firstIncomplete = completion.findIndex((done) => !done);
+    const maxAllowed = firstIncomplete === -1 ? stepPanels.length - 1 : firstIncomplete;
+    stepPanels.forEach((panel, index) => {
+      panel.classList.toggle('is-active', index === activeStepIndex);
+    });
+    stepButtons.forEach((button, index) => {
+      button.classList.toggle('is-active', index === activeStepIndex);
+      button.classList.toggle('is-complete', completion[index]);
+      button.disabled = index > maxAllowed;
+    });
+    backButton.disabled = activeStepIndex === 0;
+    nextButton.disabled = !completion[activeStepIndex] || activeStepIndex >= stepPanels.length - 1;
+  };
+
+  const setActiveStep = (index) => {
+    activeStepIndex = Math.min(Math.max(index, 0), stepPanels.length - 1);
+    updateStepperState();
+    stepPanels[activeStepIndex]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  stepButtons.forEach((button, index) => {
+    button.addEventListener('click', () => setActiveStep(index));
+  });
+  backButton.addEventListener('click', () => setActiveStep(activeStepIndex - 1));
+  nextButton.addEventListener('click', () => setActiveStep(activeStepIndex + 1));
+  form.addEventListener('input', updateStepperState);
+  form.addEventListener('change', updateStepperState);
+
+  stepper.append(stepperNav, stepperContent, stepperActions);
+  form.appendChild(stepper);
+  updateStepperState();
 
   const modal = document.querySelector('[data-form-modal]');
   const modalCard = modal?.querySelector('.modal-card');
