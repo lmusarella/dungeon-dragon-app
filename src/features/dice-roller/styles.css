@@ -371,14 +371,12 @@ header {
 }
 
 .diceov-results {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 8px;
+  display: block;
   margin-top: 12px;
 }
 
 .diceov-result,
-.diceov-history {
+.diceov-history-panel {
   padding: 8px 10px;
   border-radius: 10px;
   background: #0f0f0f;
@@ -394,7 +392,7 @@ header {
 }
 
 .diceov-result-value {
-  margin: 4px 0;
+  margin: 0;
   font-size: 1.4rem;
   font-weight: 700;
 }
@@ -403,6 +401,91 @@ header {
   margin: 0;
   font-size: 0.85rem;
   color: rgba(255,255,255,0.7);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.diceov-result--full {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+
+.diceov-result--full .diceov-result-label {
+  margin: 0;
+}
+
+.diceov-result--full .diceov-result-value {
+  text-align: right;
+}
+
+.diceov-result--full .diceov-result-detail {
+  flex: 1 1 240px;
+  text-align: right;
+}
+
+.diceov-history-accordion {
+  margin-top: 12px;
+  border-radius: 12px;
+  border: 1px solid #2b2b2b;
+  background: #0f0f0f;
+  overflow: hidden;
+}
+
+.diceov-history-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  color: #eee;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.diceov-history-toggle-icon {
+  transition: transform 0.2s ease;
+}
+
+.diceov-history-accordion.is-open .diceov-history-toggle-icon {
+  transform: rotate(180deg);
+}
+
+.diceov-history-panel {
+  padding: 10px 12px;
+}
+
+.diceov-history-accordion.is-open {
+  position: absolute;
+  inset: var(--diceov-history-offset, 64px) 0 0;
+  z-index: 20;
+  border-radius: 14px;
+  background: #111;
+  display: flex;
+  flex-direction: column;
+}
+
+.diceov-history-accordion.is-open .diceov-history-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.diceov-history-accordion.is-open .diceov-history-list {
+  max-height: 100%;
+}
+
+.diceov-stage--history-open {
+  overflow: hidden;
 }
 
 .diceov-history-list {
@@ -410,25 +493,65 @@ header {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .diceov-history-row {
   display: grid;
-  grid-template-columns: 34px 40px 48px minmax(90px, 1fr);
+  grid-template-columns: minmax(160px, 1fr) 48px minmax(110px, 1fr);
   gap: 6px;
   font-size: 0.75rem;
   align-items: center;
   color: rgba(255,255,255,0.8);
+  white-space: nowrap;
 }
 
 .diceov-history-type {
-  font-weight: 600;
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  align-items: center;
+}
+
+.diceov-history-type-code {
   color: #ffdc7a;
 }
 
-.diceov-history-value,
+.diceov-history-type--ts .diceov-history-type-code {
+  color: #5cd1ff;
+}
+
+.diceov-history-type--ta .diceov-history-type-code {
+  color: #b08cff;
+}
+
+.diceov-history-type--tc .diceov-history-type-code {
+  color: #7dff9a;
+}
+
+.diceov-history-subtype {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  text-transform: none;
+}
+
+.diceov-history-flag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #ffdc7a;
+  text-transform: uppercase;
+}
+
 .diceov-history-total {
   font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
 }
 
 .diceov-history-date {

@@ -446,6 +446,7 @@ function buildSkillRollOptions(character) {
     return {
       value: skill.key,
       label: `${skill.label} (${formatSigned(total)})`,
+      shortLabel: skill.label,
       modifier: modifierValue
     };
   });
@@ -463,6 +464,7 @@ function buildSavingThrowRollOptions(character) {
     return {
       value: save.key,
       label: `${save.label} (${formatSigned(total)})`,
+      shortLabel: abilityShortLabel[save.key] || save.label,
       modifier: modifierValue
     };
   });
@@ -490,6 +492,7 @@ function buildAttackRollOptions(character, items = []) {
     return {
       value: `weapon:${weapon.id ?? weapon.name}`,
       label: `${weapon.name} (${formatSigned(attackTotal)})`,
+      shortLabel: weapon.name,
       modifier: attackTotal
     };
   });
@@ -511,6 +514,7 @@ function buildAttackRollOptions(character, items = []) {
       options.push({
         value: `spell:${spell.id}`,
         label: `${spell.name} (${formatSigned(spellAttackBonus)})`,
+        shortLabel: spell.name,
         modifier: spellAttackBonus
       });
     });
