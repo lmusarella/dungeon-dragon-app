@@ -39,14 +39,18 @@ window.addEventListener('online', () => setState({ offline: false }));
 window.addEventListener('offline', () => setState({ offline: true }));
 setState({ offline: !navigator.onLine });
 
-await initSession();
-const { user } = getState();
-if (user) {
-  await ensureProfile(user);
-}
-updateHeaderInfo();
+const bootstrapApp = async () => {
+  await initSession();
+  const { user } = getState();
+  if (user) {
+    await ensureProfile(user);
+  }
+  updateHeaderInfo();
 
-await loadCachedData();
-initRouter();
+  await loadCachedData();
+  initRouter();
+};
 
 registerSW({ immediate: true });
+
+bootstrapApp();
