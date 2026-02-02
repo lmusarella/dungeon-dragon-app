@@ -8,10 +8,7 @@ function buildDiceMarkup() {
         <input type="text" id="textInput" spellcheck="false" inputmode="none" virtualkeyboardpolicy="manual"
                value="1d20"/>
       </div>
-      <div id="diceLimit" style="display:none">Wow that's a lot of dice! <br>[Limit: 20]</div>
-      <div id="center_div" class="center_field">
-        <div id="instructions" style="display: none"><p>Swipe to roll dice</p></div>
-      </div>
+      <div id="diceLimit" style="display:none">Wow that's a lot of dice! <br>[Limit: 20]</div>    
       <div id="numPad" class="center_field" style="display:none">
         <table class="numPad">
           <tr><td onclick="main.input('del')" colspan="2">del</td><td onclick="main.input('bksp')" colspan="2">bksp</td></tr>
@@ -35,41 +32,41 @@ function buildOverlayMarkup() {
     <button class="diceov-close" data-close aria-label="Chiudi" hidden>×</button>
     <section class="diceov-panel">
       <header class="diceov-header">
-        <div>
-          <p class="diceov-eyebrow">Lancio dadi</p>
-          <h3 data-dice-title>Lancia dadi</h3>
+        <div>      
+          <p class="diceov-eyebrow" data-dice-title>Lancia dadi</h3>
         </div>
       </header>
-      <div class="diceov-controls">
-        <div class="diceov-control" data-dice-control="d20">
-          <label class="diceov-label" for="dice-roll-mode">Tipo di tiro</label>
+      <div class="diceov-controls">   
+        <div class="diceov-control diceov-control--row">
+         <div class="diceov-control" data-dice-control="d20">
+          <label class="diceov-label" for="dice-roll-mode">Modalità</label>
           <select id="dice-roll-mode" name="dice-roll-mode">
             <option value="normal" selected>Normale</option>
             <option value="advantage">Vantaggio</option>
             <option value="disadvantage">Svantaggio</option>
           </select>
         </div>
-        <div class="diceov-control diceov-control--row">
-          <div class="diceov-field" data-dice-select hidden>
+          <div class="diceov-control" data-dice-select hidden>
             <label class="diceov-label" for="dice-roll-select" data-dice-select-label>Seleziona</label>
             <select id="dice-roll-select" name="dice-roll-select"></select>
           </div>
           <div class="diceov-field diceov-field--modifier">
-            <label class="diceov-label" for="dice-modifier">Modificatore</label>
+            <label class="diceov-label" for="dice-modifier">Mod</label>
             <input id="dice-modifier" type="number" name="dice-modifier" value="0" step="1" />
           </div>
-        </div>
-        <div class="diceov-control" data-dice-control="d20">
+           <div class="diceov-control" data-dice-control="d20">
           <div class="diceov-inspiration" data-dice-inspiration>
-            <label class="diceov-checkbox">
-              <input type="checkbox" name="dice-inspiration" />
-              Ispirazione (imposta vantaggio)
+            <label class="diceov-label">           
+              Ispirazione
             </label>
-            <p class="diceov-warning" data-inspiration-warning hidden>
-              Attenzione: userai il punto ispirazione su questo tiro.
-            </p>
+            <input type="checkbox" name="dice-inspiration" />
           </div>
         </div>
+         <p class="diceov-warning" data-inspiration-warning hidden>
+              Attenzione: userai il punto ispirazione su questo tiro.
+            </p>
+        </div>
+       
         <div class="diceov-control" data-dice-control="generic">
           <span class="diceov-label">Dadi</span>
           <div class="diceov-generic-row">

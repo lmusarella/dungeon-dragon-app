@@ -204,8 +204,8 @@ header {
   background: #161616;
   border-radius: 12px;
   border: 1px solid #242424;
-  padding: 12px;
-  margin-bottom: 12px;
+  padding: 0px 12px 12px 12px;
+  margin-bottom: 2px;
 }
 
 .diceov-header h3 {
@@ -215,7 +215,7 @@ header {
 
 .diceov-eyebrow {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 1.35rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(255,255,255,0.6);
@@ -414,7 +414,7 @@ header {
 
 .diceov-stage {
   padding: 10px 10px 12px;
-  width: min(520px, 96vw);
+  width: min(650px, 96vw);
 }
 /* Il contenitore del popup crea un nuovo stacking context */
 .diceov-stage {

@@ -854,7 +854,7 @@ const DICE = (function() {
         if (soundVolume === 0) return;
         const audio = document.createElement('audio');
         outerContainer.appendChild(audio);
-        audio.src = 'assets/sounds/diceroll.mp3'; //todo: make this configurable
+        audio.src = 'public/icons/diceroll.mp3'; //todo: make this configurable
         audio.volume = soundVolume;
         audio.play();
         audio.onended = () => {

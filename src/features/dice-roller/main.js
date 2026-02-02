@@ -36,9 +36,7 @@ window.onkeydown = function(e) {
         box = new DICE.dice_box(elem.container);
         box.bind_swipe(elem.container, before_roll, after_roll);
 
-        $t.bind(elem.textInput, 'change', function(ev) { //shows instructions
-            show_instructions(); 
-        }); 
+      
         $t.bind(elem.textInput, 'input', function(ev) { 
             let size = elem.textInput.value.length;
             elem.textInput.size = size > 0 ? size : 1;
@@ -48,7 +46,7 @@ window.onkeydown = function(e) {
             elem.diceLimit.style.display = 'none';
             //ev.preventDefault();
             if(!vars.numpadShowing) {
-                show_instructions(false);
+             
                 show_numPad(true);
             } else if(vars.userTyping) {
                 _handleInput();
@@ -68,7 +66,7 @@ window.onkeydown = function(e) {
         box.setDice(elem.textInput.value);
         //box.start_throw(); //start by throwing all the dice on the table
 
-        show_instructions(true);
+       
     }
 
     that.setInput = function() {
@@ -102,7 +100,7 @@ window.onkeydown = function(e) {
         } else {
             box.setDice(inputVal);
             show_numPad(false);
-            show_instructions(true);
+         
         }
     }
 
@@ -160,17 +158,6 @@ window.onkeydown = function(e) {
             }, 1);
         }
     }
-
-    // show 'Roll Dice' swipe instructions
-    // param show = bool
-    function show_instructions(show) {
-        if(show) {
-            elem.instructions.style.display = 'inline-block';
-        } else {
-            elem.instructions.style.display = 'none';
-        }
-    }
-
     // show input options
     // param show = bool
     function show_numPad(show) {
@@ -190,7 +177,6 @@ window.onkeydown = function(e) {
     // @return null for random result || array of desired results
     function before_roll(notation) {
         //console.log('before_roll notation: ' + JSON.stringify(notation));
-        show_instructions(false);
         elem.result.innerHTML = '';       
         return null;
     }
