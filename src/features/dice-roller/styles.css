@@ -200,6 +200,108 @@ header {
   cursor: pointer;
 }
 
+.diceov-panel {
+  background: #161616;
+  border-radius: 12px;
+  border: 1px solid #242424;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.diceov-header h3 {
+  margin: 4px 0 0;
+  font-size: 1.1rem;
+}
+
+.diceov-eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.6);
+}
+
+.diceov-controls {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.diceov-control[hidden] {
+  display: none;
+}
+
+.diceov-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.diceov-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.diceov-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.diceov-generic-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.diceov-control input[type="number"],
+.diceov-control input[type="text"],
+.diceov-control select {
+  background: #0e0e0e;
+  border: 1px solid #2f2f2f;
+  border-radius: 8px;
+  color: #f1f1f1;
+  padding: 6px 8px;
+}
+
+.diceov-hint {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.6);
+}
+
+.diceov-result {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #0f0f0f;
+  border: 1px solid #2b2b2b;
+}
+
+.diceov-result-label {
+  margin: 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.6);
+}
+
+.diceov-result-value {
+  margin: 4px 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.diceov-result-detail {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.7);
+}
+
 /* opzionale: spaziatura dentro UI originale */
 #diceRollerUI .top_field,
 #diceRollerUI .center_field,

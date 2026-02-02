@@ -194,6 +194,7 @@ window.onkeydown = function(e) {
         } else {
             elem.result.innerHTML = notation.resultString;
         }
+        window.dispatchEvent(new CustomEvent('diceRoll', { detail: notation }));
     }
 
     return that;

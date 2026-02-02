@@ -127,7 +127,7 @@ export async function renderHome(container) {
               <p class="eyebrow">Attacchi</p>
             </div>
             <div class="actions">
-              <button class="icon-button icon-button--dice" data-open-dice="roller" aria-label="Lancia dadi attacchi">
+              <button class="icon-button icon-button--dice" data-open-dice="attack-roll" aria-label="Lancia dadi attacchi">
                 <span aria-hidden="true">🎲</span>
               </button>
             </div>
@@ -433,12 +433,13 @@ function getHomeContext() {
 }
 
 function handleDiceAction(type) {
-  const titles = {
-    'saving-throws': 'Tiri salvezza',
-    skills: 'Abilità',
-    roller: 'Lancia dadi'
+  const configs = {
+    'saving-throws': { title: 'Tiro Salvezza', mode: 'd20' },
+    skills: { title: 'Tiro Abilità', mode: 'd20' },
+    'attack-roll': { title: 'Tiro per Colpire', mode: 'd20' },
+    roller: { title: 'Lancia Dadi generico', mode: 'generic' }
   };
-  openDiceRollerModal(titles[type] ?? 'Lancia dadi');
+  openDiceRollerModal(configs[type] ?? { title: 'Lancia dadi', mode: 'generic' });
 }
 
 async function handleRestAction(resetOn, container) {
@@ -585,8 +586,8 @@ function openResourceDetail(resource) {
   });
 }
 
-function openDiceRollerModal() {
-  openDiceOverlay({ keepOpen: true });
+function openDiceRollerModal({ title, mode }) {
+  openDiceOverlay({ keepOpen: true, title, mode });
 }
 
 async function saveCharacterData(character, data, message, container) {
