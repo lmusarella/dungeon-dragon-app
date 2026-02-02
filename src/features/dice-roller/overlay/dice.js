@@ -37,7 +37,7 @@ function buildOverlayMarkup() {
         </div>
       </header>
       <div class="diceov-controls">   
-        <div class="diceov-control diceov-control--row">
+        <div class="diceov-control diceov-control--row" data-modifier-home>
          <div class="diceov-control" data-dice-control="d20">
           <label class="diceov-label" for="dice-roll-mode">Modalità</label>
           <select id="dice-roll-mode" name="dice-roll-mode">
@@ -260,7 +260,7 @@ export function openDiceOverlay({
   const modifierInput = overlayEl.querySelector('input[name="dice-modifier"]');
   const modifierField = modifierInput?.closest('.diceov-field--modifier');
   const modifierSlot = overlayEl.querySelector('[data-modifier-slot]');
-  const modifierHome = modifierField?.parentElement ?? null;
+  const modifierHome = overlayEl.querySelector('[data-modifier-home]') ?? modifierField?.parentElement ?? null;
   const notationInput = overlayEl.querySelector('input[name="dice-notation"]');
   const selectWrapper = overlayEl.querySelector('[data-dice-select]');
   const selectLabel = overlayEl.querySelector('[data-dice-select-label]');
