@@ -54,6 +54,14 @@ function buildOverlayMarkup() {
             <label class="diceov-label" for="dice-modifier">Mod</label>
             <input id="dice-modifier" type="number" name="dice-modifier" value="0" step="1" />
           </div>
+          <div class="diceov-control" data-dice-buff hidden>
+            <label class="diceov-label" for="dice-buff">Buff/Debuff</label>
+            <select id="dice-buff" name="dice-buff">
+              <option value="none" selected>Nessuno</option>
+              <option value="bless">Benedizione</option>
+              <option value="bane">Anatema</option>
+            </select>
+          </div>
            <div class="diceov-control" data-dice-control="d20">
           <div class="diceov-inspiration" data-dice-inspiration>
             <span class="diceov-label">Ispirazione</span>
@@ -239,6 +247,8 @@ export function openDiceOverlay({
   const selectInput = overlayEl.querySelector('select[name="dice-roll-select"]');
   const resultValue = overlayEl.querySelector('[data-dice-result]');
   const resultDetail = overlayEl.querySelector('[data-dice-detail]');
+  const buffWrapper = overlayEl.querySelector('[data-dice-buff]');
+  const buffSelect = overlayEl.querySelector('select[name="dice-buff"]');
   const stage = overlayEl.querySelector('.diceov-stage');
   const historyAccordion = overlayEl.querySelector('[data-history-accordion]');
   const historyToggle = overlayEl.querySelector('[data-history-toggle]');
@@ -247,6 +257,7 @@ export function openDiceOverlay({
 
   const state = {
     lastRoll: null,
+    lastBuff: null,
     inspirationAvailable: Boolean(allowInspiration),
     inspirationConsumed: false,
     selectionOptions: Array.isArray(selection?.options) ? selection.options : [],
@@ -329,6 +340,26 @@ export function openDiceOverlay({
     }
   }
 
+  function setBuffVisibility() {
+    if (!buffWrapper || !buffSelect) return;
+    const supported = ['TS', 'TA', 'TC'].includes(rollType);
+    buffWrapper.toggleAttribute('hidden', !supported);
+    if (!supported) {
+      buffSelect.value = 'none';
+      state.lastBuff = null;
+    }
+  }
+
+  function rollBuff() {
+    if (!buffSelect || buffWrapper?.hasAttribute('hidden')) return null;
+    const choice = buffSelect.value;
+    if (choice === 'none') return null;
+    const roll = Math.floor(Math.random() * 4) + 1;
+    const delta = choice === 'bless' ? roll : -roll;
+    const label = choice === 'bless' ? 'Benedizione' : 'Anatema';
+    return { choice, roll, delta, label };
+  }
+
   function setHistoryOpen(open) {
     if (!historyAccordion || !historyToggle || !historyPanel) return;
     historyAccordion.classList.toggle('is-open', open);
@@ -387,6 +418,7 @@ export function openDiceOverlay({
 
   function renderRollResult(notation) {
     const modifier = Number(modifierInput?.value) || 0;
+    const buffDelta = state.lastBuff?.delta || 0;
     if (mode !== 'generic') {
       const rolls = notation.result || [];
       if (!rolls.length) {
@@ -399,7 +431,7 @@ export function openDiceOverlay({
         : rollMode === 'disadvantage'
           ? Math.min(...rolls)
           : rolls[0];
-      const total = picked + modifier;
+      const total = picked + modifier + buffDelta;
       const rollLabel = rollMode === 'advantage'
         ? 'Vantaggio'
         : rollMode === 'disadvantage'
@@ -409,7 +441,11 @@ export function openDiceOverlay({
       if (resultValue) resultValue.textContent = `${total}`;
       if (resultDetail) {
         const selection = rolls.length > 1 ? ` (selezionato ${picked})` : '';
-        resultDetail.textContent = `${rollLabel}: ${rollsLabel}${selection} · Mod ${formatModifier(modifier)}`;
+        const pieces = [`${rollLabel}: ${rollsLabel}${selection}`, `Mod ${formatModifier(modifier)}`];
+        if (state.lastBuff) {
+          pieces.push(`${state.lastBuff.label} ${formatModifier(state.lastBuff.delta)} (d4: ${state.lastBuff.roll})`);
+        }
+        resultDetail.textContent = pieces.join(' · ');
       }
       return;
     }
@@ -417,19 +453,23 @@ export function openDiceOverlay({
     const rolls = notation.result || [];
     const diceTotal = rolls.reduce((sum, value) => sum + value, 0);
     const constant = Number(notation.constant) || 0;
-    const total = diceTotal + constant + modifier;
+    const total = diceTotal + constant + modifier + buffDelta;
     const rollDetail = rolls.length ? `Dadi: ${rolls.join(', ')}` : 'Dadi: —';
     if (resultValue) resultValue.textContent = `${total}`;
     if (resultDetail) {
       const pieces = [rollDetail];
       if (constant) pieces.push(`Costante ${formatModifier(constant)}`);
       if (modifier) pieces.push(`Mod ${formatModifier(modifier)}`);
+      if (state.lastBuff) {
+        pieces.push(`${state.lastBuff.label} ${formatModifier(state.lastBuff.delta)} (d4: ${state.lastBuff.roll})`);
+      }
       resultDetail.textContent = pieces.join(' · ');
     }
   }
 
   function summarizeRoll(notation) {
     const modifier = Number(modifierInput?.value) || 0;
+    const buffDelta = state.lastBuff?.delta || 0;
     if (mode !== 'generic') {
       const rolls = notation.result || [];
       if (!rolls.length) return null;
@@ -439,13 +479,13 @@ export function openDiceOverlay({
         : rollMode === 'disadvantage'
           ? Math.min(...rolls)
           : rolls[0];
-      return { value: picked, total: picked + modifier };
+      return { value: picked, total: picked + modifier + buffDelta };
     }
     const rolls = notation.result || [];
     const diceTotal = rolls.reduce((sum, value) => sum + value, 0);
     const constant = Number(notation.constant) || 0;
     const value = diceTotal + constant;
-    return { value, total: value + modifier };
+    return { value, total: value + modifier + buffDelta };
   }
 
   if (inspirationInput) {
@@ -476,6 +516,12 @@ export function openDiceOverlay({
     if (notationInput) notationInput.value = notation;
     updateNotationFromGeneric();
   };
+  if (buffSelect) {
+    buffSelect.onchange = () => {
+      state.lastBuff = null;
+      updateModifier();
+    };
+  }
   if (historyToggle) {
     historyToggle.addEventListener('click', () => {
       const shouldOpen = !historyAccordion?.classList.contains('is-open');
@@ -484,6 +530,7 @@ export function openDiceOverlay({
   }
 
   setSelectionOptions();
+  setBuffVisibility();
   setInspirationAvailability(state.inspirationAvailable);
   updateInspiration();
   renderHistory();
@@ -527,14 +574,18 @@ export function openDiceOverlay({
   const onRoll = (event) => {
     if (!overlayEl || overlayEl.hasAttribute('hidden')) return;
     state.lastRoll = event.detail || null;
-    if (state.lastRoll) renderRollResult(state.lastRoll);
+    if (state.lastRoll) {
+      state.lastBuff = rollBuff();
+      void consumeInspiration();
+      renderRollResult(state.lastRoll);
+    }
     if (state.lastRoll) {
       const summary = summarizeRoll(state.lastRoll);
       if (summary) {
         addHistoryEntry({
           type: rollType || 'GEN',
           subtype: getSelectionLabel(),
-          inspired: Boolean(inspirationInput?.checked),
+          inspired: state.inspirationConsumed,
           value: summary.value,
           total: summary.total,
           timestamp: new Date().toISOString()

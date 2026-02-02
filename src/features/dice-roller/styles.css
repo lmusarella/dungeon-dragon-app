@@ -403,6 +403,8 @@ header {
   color: rgba(255,255,255,0.7);
   display: block;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .diceov-result--full {
@@ -410,7 +412,7 @@ header {
   align-items: center;
   gap: 12px;
   justify-content: space-between;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .diceov-result--full .diceov-result-label {
@@ -498,20 +500,22 @@ header {
 
 .diceov-history-row {
   display: grid;
-  grid-template-columns: minmax(64px, 1fr) 48px minmax(90px, 1fr);
+  grid-template-columns: minmax(160px, 1fr) 48px minmax(110px, 1fr);
   gap: 6px;
   font-size: 0.75rem;
   align-items: center;
   color: rgba(255,255,255,0.8);
+  white-space: nowrap;
 }
 
 .diceov-history-type {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  gap: 6px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  align-items: center;
 }
 
 .diceov-history-type-code {
@@ -534,6 +538,7 @@ header {
   font-size: 0.7rem;
   font-weight: 600;
   color: rgba(255,255,255,0.7);
+  text-transform: none;
 }
 
 .diceov-history-flag {
