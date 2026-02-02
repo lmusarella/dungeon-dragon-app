@@ -295,6 +295,12 @@ export function openDiceOverlay({
     return mode === 'generic' ? (genericModifierInput || modifierInput) : modifierInput;
   }
 
+  function setModifierVisibility() {
+    if (!modifierField) return;
+    const hidePrimaryModifier = mode === 'generic';
+    modifierField.toggleAttribute('hidden', hidePrimaryModifier);
+  }
+
   function resetResult(label = '—', detail = 'Lancia i dadi per vedere il totale.') {
     if (resultValue) resultValue.textContent = label;
     if (resultDetail) resultDetail.textContent = detail;
@@ -586,6 +592,7 @@ export function openDiceOverlay({
   setBuffVisibility();
   setInspirationAvailability(state.inspirationAvailable);
   updateInspiration();
+  setModifierVisibility();
   renderHistory();
   setHistoryOpen(false);
 
