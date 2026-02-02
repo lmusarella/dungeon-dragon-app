@@ -3,7 +3,7 @@ import { navigate } from '../../app/router.js';
 import { getState, setActiveCharacter, setState } from '../../app/state.js';
 import { createToast } from '../../ui/components.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
-import { openCharacterDrawer } from './home.js';
+import { openCharacterDrawer } from './home/characterDrawer.js';
 
 export async function renderCharacterSelect(container) {
   container.innerHTML = `<section class="card"><p>Caricamento...</p></section>`;

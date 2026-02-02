@@ -1,0 +1,455 @@
+import { createResource, deleteResource, updateResource } from '../characterApi.js';
+import { getState } from '../../../app/state.js';
+import {
+  buildInput,
+  buildSelect,
+  buildTextarea,
+  createToast,
+  openConfirmModal,
+  openFormModal
+} from '../../../ui/components.js';
+import { consumeSpellSlot, saveCharacterData } from './data.js';
+import { formatResourceRecovery, formatSigned, getSpellTypeLabel, sortSpellsByLevel } from './utils.js';
+
+export function openBackgroundModal(character) {
+  if (!character) return;
+  const data = character.data || {};
+  const background = data.background || 'Background non impostato.';
+  const description = data.description || 'Aggiungi una descrizione del background.';
+  const content = document.createElement('div');
+  content.className = 'background-modal';
+
+  const backgroundCard = document.createElement('div');
+  backgroundCard.className = 'detail-card detail-card--text';
+  const backgroundBlock = document.createElement('div');
+  backgroundBlock.className = 'background-modal-block';
+  const backgroundTitle = document.createElement('strong');
+  backgroundTitle.textContent = 'Background';
+  const backgroundText = document.createElement('p');
+  backgroundText.textContent = background;
+  backgroundBlock.appendChild(backgroundTitle);
+  backgroundBlock.appendChild(backgroundText);
+  backgroundCard.appendChild(backgroundBlock);
+
+  const descriptionCard = document.createElement('div');
+  descriptionCard.className = 'detail-card detail-card--text';
+  const descriptionBlock = document.createElement('div');
+  descriptionBlock.className = 'background-modal-block';
+  const descriptionTitle = document.createElement('strong');
+  descriptionTitle.textContent = 'Descrizione';
+  const descriptionText = document.createElement('p');
+  descriptionText.textContent = description;
+  descriptionBlock.appendChild(descriptionTitle);
+  descriptionBlock.appendChild(descriptionText);
+  descriptionCard.appendChild(descriptionBlock);
+
+  content.appendChild(backgroundCard);
+  content.appendChild(descriptionCard);
+
+  openFormModal({
+    title: 'Background',
+    submitLabel: 'Chiudi',
+    cancelLabel: null,
+    content,
+    cardClass: 'modal-card--scrollable'
+  });
+}
+
+export function openResourceDetail(resource) {
+  const detail = document.createElement('div');
+  detail.className = 'resource-detail';
+  const maxUses = Number(resource.max_uses) || 0;
+  const usageLabel = maxUses ? `${resource.used}/${resource.max_uses}` : 'Passiva';
+  detail.innerHTML = `
+    <div class="detail-card detail-card--text">
+      ${resource.image_url ? `<img class="resource-detail-image" src="${resource.image_url}" alt="Foto di ${resource.name}" />` : ''}
+      <h4>${resource.name}</h4>
+      ${resource.cast_time ? `<p class="resource-chip">${resource.cast_time}</p>` : ''}
+      <p class="muted">${formatResourceRecovery(resource)}</p>
+      <p>Cariche: ${usageLabel}</p>
+      ${resource.description ? `<p>${resource.description}</p>` : ''}
+    </div>
+  `;
+  openFormModal({
+    title: 'Dettaglio risorsa',
+    submitLabel: 'Chiudi',
+    content: detail
+  });
+}
+
+export function openSpellListModal(character, onRender) {
+  if (!character) return;
+  const data = character.data || {};
+  const spells = Array.isArray(data.spells) ? sortSpellsByLevel(data.spells) : [];
+  const content = document.createElement('div');
+  content.className = 'spell-list-modal';
+  if (!spells.length) {
+    content.innerHTML = '<p class="muted">Nessun incantesimo configurato.</p>';
+  } else {
+    const grouped = spells.reduce((acc, spell) => {
+      const level = Number(spell.level) || 0;
+      acc[level] = acc[level] || [];
+      acc[level].push(spell);
+      return acc;
+    }, {});
+    const levels = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+    content.innerHTML = levels.map((level) => {
+      const title = level === 0 ? 'Trucchetti' : `Incantesimi di livello ${level}°`;
+      return `
+        <section class="spell-list-modal__section">
+          <h4>${title}</h4>
+          <div class="spell-list-modal__items">
+            ${grouped[level].map((spell) => {
+    const typeLabel = getSpellTypeLabel(spell);
+    const damageModifier = Number(spell.damage_modifier) || 0;
+    const damageText = spell.damage_die
+      ? `${spell.damage_die}${damageModifier ? ` ${formatSigned(damageModifier)}` : ''}`
+      : null;
+    const attackLabel = spell.attack_roll ? 'Tiro per colpire' : null;
+    return `
+              <div class="spell-list-modal__item">
+                <div class="spell-list-modal__item-info">
+                  <div class="spell-list-modal__item-title">
+                    <strong>${spell.name}</strong>
+                    <span class="chip chip--small">${typeLabel}</span>
+                  </div>
+                  <div class="spell-list-modal__item-meta">
+                    ${attackLabel ? `<span>${attackLabel}</span>` : ''}
+                    ${damageText ? `<span>Danni ${damageText}</span>` : ''}
+                  </div>
+                </div>
+                ${level > 0
+    ? `<button class="resource-cta-button resource-cta-button--label" type="button" data-spell-cast="${spell.id}">Lancia</button>`
+    : ''}
+              </div>
+            `;
+  }).join('')}
+          </div>
+        </section>
+      `;
+    }).join('');
+  }
+
+  openFormModal({
+    title: 'Lista incantesimi',
+    submitLabel: 'Chiudi',
+    cancelLabel: null,
+    content,
+    cardClass: 'spell-list-modal-card'
+  });
+
+  const modal = document.querySelector('[data-form-modal]');
+  const closeModal = () => {
+    modal?.querySelector('[data-form-submit]')?.click();
+  };
+
+  content.querySelectorAll('[data-spell-cast]')
+    .forEach((button) => button.addEventListener('click', async () => {
+      const spell = spells.find((entry) => entry.id === button.dataset.spellCast);
+      if (!spell) return;
+      const level = Number(spell.level) || 0;
+      if (level < 1) return;
+      const consumed = await consumeSpellSlot(character, level, onRender);
+      if (consumed) {
+        closeModal();
+      }
+    }));
+}
+
+export function openSpellDrawer(character, onSave) {
+  if (!character) return;
+  const form = document.createElement('div');
+  form.className = 'drawer-form';
+  const spellKindField = document.createElement('label');
+  spellKindField.className = 'field';
+  spellKindField.innerHTML = '<span>Tipo incantesimo</span>';
+  const spellKindSelect = buildSelect([
+    { value: 'cantrip', label: 'Trucchetto' },
+    { value: 'spell', label: 'Incantesimo' }
+  ], 'spell');
+  spellKindSelect.name = 'spell_kind';
+  spellKindField.appendChild(spellKindSelect);
+  form.appendChild(spellKindField);
+  const nameField = buildInput({
+    label: 'Nome incantesimo',
+    name: 'spell_name',
+    placeholder: 'Es. Palla di fuoco'
+  });
+  const nameInput = nameField.querySelector('input');
+  if (nameInput) {
+    nameInput.required = true;
+  }
+  form.appendChild(nameField);
+  const levelField = buildInput({
+    label: 'Livello incantesimo',
+    name: 'spell_level',
+    type: 'number',
+    value: 1
+  });
+  const levelInput = levelField.querySelector('input');
+  if (levelInput) {
+    levelInput.min = '1';
+    levelInput.max = '9';
+  }
+  form.appendChild(levelField);
+  form.appendChild(buildInput({
+    label: 'Tempo di lancio',
+    name: 'spell_cast_time',
+    placeholder: 'Es. 1 azione'
+  }));
+  form.appendChild(buildInput({
+    label: 'Durata',
+    name: 'spell_duration',
+    placeholder: 'Es. 1 minuto'
+  }));
+  form.appendChild(buildInput({
+    label: 'Range',
+    name: 'spell_range',
+    placeholder: 'Es. 18 m'
+  }));
+  const concentrationField = document.createElement('label');
+  concentrationField.className = 'checkbox';
+  concentrationField.innerHTML = '<input type="checkbox" name="spell_concentration" /> <span>Concentrazione</span>';
+  form.appendChild(concentrationField);
+  const attackRollField = document.createElement('label');
+  attackRollField.className = 'checkbox';
+  attackRollField.innerHTML = '<input type="checkbox" name="spell_attack_roll" /> <span>Tiro per colpire (targhet)</span>';
+  form.appendChild(attackRollField);
+  form.appendChild(buildInput({
+    label: 'Dado danno',
+    name: 'spell_damage_die',
+    placeholder: 'Es. 1d10'
+  }));
+  form.appendChild(buildInput({
+    label: 'Modificatore danni',
+    name: 'spell_damage_modifier',
+    type: 'number',
+    value: ''
+  }));
+  form.appendChild(buildTextarea({
+    label: 'Descrizione',
+    name: 'spell_description',
+    placeholder: 'Descrizione dell\'incantesimo...'
+  }));
+
+  const syncSpellKind = () => {
+    if (!levelInput) return;
+    if (spellKindSelect.value === 'cantrip') {
+      levelInput.value = '0';
+      levelInput.min = '0';
+      levelInput.max = '0';
+      levelInput.readOnly = true;
+      levelInput.disabled = true;
+    } else {
+      if (Number(levelInput.value) === 0) {
+        levelInput.value = '1';
+      }
+      levelInput.min = '1';
+      levelInput.max = '9';
+      levelInput.readOnly = false;
+      levelInput.disabled = false;
+    }
+  };
+  spellKindSelect.addEventListener('change', syncSpellKind);
+  syncSpellKind();
+
+  openFormModal({
+    title: 'Nuovo incantesimo',
+    submitLabel: 'Aggiungi',
+    content: form
+  }).then(async (formData) => {
+    if (!formData) return;
+    const name = formData.get('spell_name')?.trim();
+    if (!name) {
+      createToast('Inserisci un nome per l\'incantesimo', 'error');
+      return;
+    }
+    const toNumberOrNull = (value) => (value === '' || value === null ? null : Number(value));
+    const selectedKind = formData.get('spell_kind') || null;
+    const rawLevel = toNumberOrNull(formData.get('spell_level')) ?? 0;
+    const level = selectedKind === 'cantrip'
+      ? 0
+      : Math.min(9, Math.max(1, rawLevel || 1));
+    const damageModifier = toNumberOrNull(formData.get('spell_damage_modifier'));
+    const nextSpell = {
+      id: `spell-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name,
+      level,
+      kind: selectedKind || (level === 0 ? 'cantrip' : 'spell'),
+      cast_time: formData.get('spell_cast_time')?.trim() || null,
+      duration: formData.get('spell_duration')?.trim() || null,
+      range: formData.get('spell_range')?.trim() || null,
+      concentration: formData.has('spell_concentration'),
+      attack_roll: formData.has('spell_attack_roll'),
+      damage_die: formData.get('spell_damage_die')?.trim() || null,
+      damage_modifier: damageModifier,
+      description: formData.get('spell_description')?.trim() || null
+    };
+    const nextSpells = Array.isArray(character.data?.spells)
+      ? [...character.data.spells, nextSpell]
+      : [nextSpell];
+    const nextData = {
+      ...character.data,
+      spells: nextSpells
+    };
+    await saveCharacterData(character, nextData, 'Incantesimo aggiunto', onSave);
+  });
+}
+
+export function openResourceDrawer(character, onSave, resource = null) {
+  if (!character) return;
+  const form = document.createElement('div');
+  form.className = 'drawer-form';
+  form.appendChild(buildInput({ label: 'Nome abilità', name: 'name', placeholder: 'Es. Ispirazione', value: resource?.name ?? '' }));
+  form.appendChild(buildInput({
+    label: 'Foto (URL)',
+    name: 'image_url',
+    placeholder: 'https://.../risorsa.png',
+    value: resource?.image_url ?? ''
+  }));
+  form.appendChild(buildTextarea({
+    label: 'Descrizione',
+    name: 'description',
+    placeholder: 'Inserisci una descrizione...',
+    value: resource?.description ?? ''
+  }));
+  const passiveField = document.createElement('label');
+  passiveField.className = 'checkbox';
+  passiveField.innerHTML = '<input type="checkbox" name="is_passive" /> <span>Passiva (senza cariche)</span>';
+  form.appendChild(passiveField);
+  const castTimeField = document.createElement('label');
+  castTimeField.className = 'field';
+  castTimeField.innerHTML = '<span>Tipo di lancio</span>';
+  const castTimeSelect = buildSelect([
+    { value: 'Azione', label: 'Azione' },
+    { value: 'Reazione', label: 'Reazione' },
+    { value: 'Azione Bonus', label: 'Azione Bonus' },
+    { value: 'Azione Gratuita', label: 'Azione Gratuita' }
+  ], resource?.cast_time ?? 'Azione');
+  castTimeSelect.name = 'cast_time';
+  castTimeField.appendChild(castTimeSelect);
+  form.appendChild(castTimeField);
+  form.appendChild(buildInput({ label: 'Cariche massime', name: 'max_uses', type: 'number', value: resource?.max_uses ?? 1 }));
+  form.appendChild(buildInput({ label: 'Cariche consumate', name: 'used', type: 'number', value: resource?.used ?? 0 }));
+
+  const recoveryGrid = document.createElement('div');
+  recoveryGrid.className = 'compact-field-grid';
+  recoveryGrid.appendChild(buildInput({
+    label: 'Recupero riposo breve',
+    name: 'recovery_short',
+    type: 'number',
+    value: resource?.recovery_short ?? ''
+  }));
+  recoveryGrid.appendChild(buildInput({
+    label: 'Recupero riposo lungo',
+    name: 'recovery_long',
+    type: 'number',
+    value: resource?.recovery_long ?? ''
+  }));
+  form.appendChild(recoveryGrid);
+
+  const resetField = document.createElement('label');
+  resetField.className = 'field';
+  resetField.innerHTML = '<span>Tipo ricarica</span>';
+  const resetSelect = buildSelect([
+    { value: 'short_rest', label: 'Riposo breve' },
+    { value: 'long_rest', label: 'Riposo lungo' }
+  ], resource?.reset_on ?? 'long_rest');
+  resetSelect.name = 'reset_on';
+  resetField.appendChild(resetSelect);
+  form.appendChild(resetField);
+
+  const maxUsesInput = form.querySelector('input[name="max_uses"]');
+  const usedInput = form.querySelector('input[name="used"]');
+  const recoveryShortInput = form.querySelector('input[name="recovery_short"]');
+  const recoveryLongInput = form.querySelector('input[name="recovery_long"]');
+  const passiveInput = form.querySelector('input[name="is_passive"]');
+  if (passiveInput) {
+    passiveInput.checked = Number(resource?.max_uses) === 0 || resource?.reset_on === null || resource?.reset_on === 'none';
+  }
+  const syncPassiveState = () => {
+    const isPassive = passiveInput?.checked;
+    if (isPassive) {
+      if (maxUsesInput) maxUsesInput.value = '0';
+      if (usedInput) usedInput.value = '0';
+      if (recoveryShortInput) recoveryShortInput.value = '0';
+      if (recoveryLongInput) recoveryLongInput.value = '0';
+    }
+    if (maxUsesInput) maxUsesInput.disabled = isPassive;
+    if (usedInput) usedInput.disabled = isPassive;
+    if (recoveryShortInput) recoveryShortInput.disabled = isPassive;
+    if (recoveryLongInput) recoveryLongInput.disabled = isPassive;
+    resetSelect.disabled = isPassive;
+  };
+  passiveInput?.addEventListener('change', syncPassiveState);
+  syncPassiveState();
+
+  if (resource) {
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'resource-action-button resource-delete-button';
+    deleteButton.textContent = 'Elimina';
+    deleteButton.addEventListener('click', async () => {
+      const shouldDelete = await openConfirmModal({ message: 'Eliminare risorsa?' });
+      if (!shouldDelete) return;
+      try {
+        await deleteResource(resource.id);
+        createToast('Risorsa eliminata');
+        onSave();
+        const modal = document.querySelector('[data-form-modal]');
+        const cancelButton = modal?.querySelector('[data-form-cancel]');
+        cancelButton?.click();
+      } catch (error) {
+        createToast('Errore eliminazione risorsa', 'error');
+      }
+    });
+    const deleteWrapper = document.createElement('div');
+    deleteWrapper.className = 'resource-form-actions';
+    deleteWrapper.appendChild(deleteButton);
+    form.appendChild(deleteWrapper);
+  }
+
+  openFormModal({
+    title: resource ? 'Modifica abilità' : 'Nuova abilità',
+    submitLabel: resource ? 'Salva' : 'Crea',
+    content: form
+  }).then(async (formData) => {
+    if (!formData) return;
+    const name = formData.get('name')?.trim();
+    if (!name) {
+      createToast('Inserisci un nome per la risorsa', 'error');
+      return;
+    }
+    const currentUser = getState().user;
+    const toNumberOrNull = (value) => (value === '' || value === null ? null : Number(value));
+    const maxUses = Number(formData.get('max_uses')) || 0;
+    const used = Math.min(Number(formData.get('used')) || 0, maxUses || 0);
+    const isPassive = formData.get('is_passive') === 'on';
+    const payload = {
+      user_id: currentUser?.id ?? character.user_id,
+      character_id: character.id,
+      name,
+      image_url: formData.get('image_url')?.trim() || null,
+      description: formData.get('description')?.trim() || null,
+      cast_time: formData.get('cast_time') || null,
+      max_uses: maxUses,
+      used,
+      reset_on: isPassive ? null : formData.get('reset_on'),
+      recovery_short: toNumberOrNull(formData.get('recovery_short')),
+      recovery_long: toNumberOrNull(formData.get('recovery_long'))
+    };
+
+    try {
+      if (resource) {
+        await updateResource(resource.id, payload);
+        createToast('Risorsa aggiornata');
+      } else {
+        await createResource(payload);
+        createToast('Risorsa creata');
+      }
+      onSave();
+    } catch (error) {
+      createToast('Errore salvataggio risorsa', 'error');
+    }
+  });
+}
