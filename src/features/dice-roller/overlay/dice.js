@@ -45,13 +45,22 @@ function buildOverlayMarkup() {
           <span class="diceov-label">Tipo di tiro</span>
           <div class="diceov-radio-group">
             <label><input type="radio" name="dice-roll-mode" value="normal" checked /> Normale</label>
-            <label><input type="radio" name="dice-roll-mode" value="advantage" disabled /> Vantaggio</label>
+            <label><input type="radio" name="dice-roll-mode" value="advantage" /> Vantaggio</label>
             <label><input type="radio" name="dice-roll-mode" value="disadvantage" /> Svantaggio</label>
           </div>
-          <label class="diceov-checkbox">
-            <input type="checkbox" name="dice-inspiration" />
-            Ispirazione (sblocca vantaggio)
-          </label>
+          <div class="diceov-inspiration" data-dice-inspiration>
+            <label class="diceov-checkbox">
+              <input type="checkbox" name="dice-inspiration" />
+              Ispirazione (imposta vantaggio)
+            </label>
+            <p class="diceov-warning" data-inspiration-warning hidden>
+              Attenzione: userai il punto ispirazione su questo tiro.
+            </p>
+          </div>
+        </div>
+        <div class="diceov-control" data-dice-control="d20" data-dice-select hidden>
+          <label class="diceov-label" for="dice-roll-select" data-dice-select-label>Seleziona</label>
+          <select id="dice-roll-select" name="dice-roll-select"></select>
         </div>
         <div class="diceov-control">
           <label class="diceov-label" for="dice-modifier">Modificatore</label>
@@ -136,7 +145,10 @@ export function openDiceOverlay({
   sides = 20,
   keepOpen = false,
   title = 'Lancia dadi',
-  mode = 'generic'
+  mode = 'generic',
+  selection = null,
+  allowInspiration = false,
+  onConsumeInspiration = null
 } = {}) {
   if (!overlayEl) {
     overlayEl = document.createElement('div');
@@ -168,14 +180,22 @@ export function openDiceOverlay({
   setOverlayMode(overlayEl, mode === 'generic' ? 'generic' : 'd20');
 
   const inspirationInput = overlayEl.querySelector('input[name="dice-inspiration"]');
+  const inspirationField = overlayEl.querySelector('[data-dice-inspiration]');
+  const inspirationWarning = overlayEl.querySelector('[data-inspiration-warning]');
   const advantageInput = overlayEl.querySelector('input[value="advantage"]');
   const modifierInput = overlayEl.querySelector('input[name="dice-modifier"]');
   const notationInput = overlayEl.querySelector('input[name="dice-notation"]');
+  const selectWrapper = overlayEl.querySelector('[data-dice-select]');
+  const selectLabel = overlayEl.querySelector('[data-dice-select-label]');
+  const selectInput = overlayEl.querySelector('select[name="dice-roll-select"]');
   const resultValue = overlayEl.querySelector('[data-dice-result]');
   const resultDetail = overlayEl.querySelector('[data-dice-detail]');
 
   const state = {
-    lastRoll: null
+    lastRoll: null,
+    inspirationAvailable: Boolean(allowInspiration),
+    inspirationConsumed: false,
+    selectionOptions: Array.isArray(selection?.options) ? selection.options : []
   };
 
   function resetResult(label = '—', detail = 'Lancia i dadi per vedere il totale.') {
@@ -187,10 +207,39 @@ export function openDiceOverlay({
   function updateInspiration() {
     if (!advantageInput) return;
     const inspired = Boolean(inspirationInput?.checked);
-    advantageInput.disabled = !inspired;
-    if (!inspired && advantageInput.checked) {
-      const normalInput = overlayEl.querySelector('input[value="normal"]');
-      if (normalInput) normalInput.checked = true;
+    if (inspired) advantageInput.checked = true;
+    if (inspirationWarning) inspirationWarning.toggleAttribute('hidden', !inspired);
+  }
+
+  function setInspirationAvailability(available) {
+    state.inspirationAvailable = Boolean(available);
+    if (inspirationField) inspirationField.toggleAttribute('hidden', !state.inspirationAvailable);
+    if (inspirationInput) {
+      inspirationInput.disabled = !state.inspirationAvailable;
+      if (!state.inspirationAvailable) inspirationInput.checked = false;
+    }
+    if (!state.inspirationAvailable && inspirationWarning) {
+      inspirationWarning.setAttribute('hidden', '');
+    }
+  }
+
+  function setSelectionOptions() {
+    if (!selectWrapper || !selectInput) return;
+    if (!state.selectionOptions.length) {
+      selectWrapper.setAttribute('hidden', '');
+      selectInput.innerHTML = '';
+      return;
+    }
+    selectWrapper.removeAttribute('hidden');
+    if (selectLabel) selectLabel.textContent = selection?.label || 'Seleziona';
+    selectInput.innerHTML = state.selectionOptions
+      .map((option) => `<option value="${option.value}">${option.label}</option>`)
+      .join('');
+    const desiredValue = selection?.value ?? state.selectionOptions[0]?.value;
+    if (desiredValue !== undefined) selectInput.value = desiredValue;
+    const selected = state.selectionOptions.find((option) => option.value === selectInput.value);
+    if (selected && modifierInput) {
+      modifierInput.value = Number(selected.modifier) || 0;
     }
   }
 
@@ -212,6 +261,16 @@ export function openDiceOverlay({
 
   function updateModifier() {
     if (state.lastRoll) renderRollResult(state.lastRoll);
+  }
+
+  async function consumeInspiration() {
+    if (!state.inspirationAvailable || state.inspirationConsumed) return;
+    if (!inspirationInput?.checked) return;
+    state.inspirationConsumed = true;
+    setInspirationAvailability(false);
+    if (typeof onConsumeInspiration === 'function') {
+      await onConsumeInspiration();
+    }
   }
 
   function renderRollResult(notation) {
@@ -270,6 +329,13 @@ export function openDiceOverlay({
   }
   if (modifierInput) modifierInput.oninput = updateModifier;
   if (notationInput) notationInput.oninput = updateNotationFromGeneric;
+  if (selectInput) {
+    selectInput.onchange = () => {
+      const selected = state.selectionOptions.find((option) => option.value === selectInput.value);
+      if (selected && modifierInput) modifierInput.value = Number(selected.modifier) || 0;
+      updateModifier();
+    };
+  }
   const diceCountInput = overlayEl.querySelector('[name="dice-count"]');
   if (diceCountInput) diceCountInput.oninput = () => {
     const notation = buildGenericNotation(overlayEl);
@@ -283,6 +349,8 @@ export function openDiceOverlay({
     updateNotationFromGeneric();
   };
 
+  setSelectionOptions();
+  setInspirationAvailability(state.inspirationAvailable);
   updateInspiration();
 
   overlayEl.removeAttribute('hidden');
@@ -306,6 +374,7 @@ export function openDiceOverlay({
     const n = parseLastInt(resultEl?.textContent || '');
     if (n != null) {
       last = n;
+      void consumeInspiration();
       if (!keepOpen) closeDiceOverlay();
       cleanup();
       resolveFn(n);

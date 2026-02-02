@@ -223,8 +223,8 @@ header {
 
 .diceov-controls {
   display: grid;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .diceov-control[hidden] {
@@ -234,28 +234,34 @@ header {
 .diceov-label {
   display: block;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .diceov-radio-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .diceov-checkbox {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  font-size: 0.9rem;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+
+.diceov-warning {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: #ff6b6b;
 }
 
 .diceov-generic-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 .diceov-control input[type="number"],
@@ -265,7 +271,20 @@ header {
   border: 1px solid #2f2f2f;
   border-radius: 8px;
   color: #f1f1f1;
-  padding: 6px 8px;
+  padding: 4px 6px;
+  font-size: 0.9rem;
+}
+
+.diceov-control select {
+  width: 100%;
+}
+
+.diceov-control input[type="number"] {
+  width: 84px;
+}
+
+.diceov-control select {
+  min-width: 72px;
 }
 
 .diceov-hint {
@@ -375,7 +394,7 @@ header {
 
 .diceov-stage {
   padding: 10px 10px 12px;
-  width: min(460px, 96vw);
+  width: min(520px, 96vw);
 }
 /* Il contenitore del popup crea un nuovo stacking context */
 .diceov-stage {

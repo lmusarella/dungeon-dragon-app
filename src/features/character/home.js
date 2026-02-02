@@ -432,14 +432,134 @@ function getHomeContext() {
   };
 }
 
+function buildSkillRollOptions(character) {
+  const data = character.data || {};
+  const abilities = data.abilities || {};
+  const proficiencyBonus = normalizeNumber(data.proficiency_bonus);
+  const skillStates = data.skills || {};
+  const skillMasteryStates = data.skill_mastery || {};
+  return skillList.map((skill) => {
+    const proficient = Boolean(skillStates[skill.key]);
+    const mastery = Boolean(skillMasteryStates[skill.key]);
+    const total = calculateSkillModifier(abilities[skill.ability], proficiencyBonus, proficient ? (mastery ? 2 : 1) : 0);
+    const modifierValue = total ?? 0;
+    return {
+      value: skill.key,
+      label: `${skill.label} (${formatSigned(total)})`,
+      modifier: modifierValue
+    };
+  });
+}
+
+function buildSavingThrowRollOptions(character) {
+  const data = character.data || {};
+  const abilities = data.abilities || {};
+  const proficiencyBonus = normalizeNumber(data.proficiency_bonus);
+  const savingStates = data.saving_throws || {};
+  return savingThrowList.map((save) => {
+    const proficient = Boolean(savingStates[save.key]);
+    const total = calculateSkillModifier(abilities[save.key], proficiencyBonus, proficient ? 1 : 0);
+    const modifierValue = total ?? 0;
+    return {
+      value: save.key,
+      label: `${save.label} (${formatSigned(total)})`,
+      modifier: modifierValue
+    };
+  });
+}
+
+function buildAttackRollOptions(character, items = []) {
+  const data = character.data || {};
+  const attackBonusMelee = Number(data.attack_bonus_melee ?? data.attack_bonus) || 0;
+  const attackBonusRanged = Number(data.attack_bonus_ranged ?? data.attack_bonus) || 0;
+  const equippedWeapons = (items || []).filter((item) => item.category === 'weapon' && item.equipable && getEquipSlots(item).length);
+  const proficiencyBonus = normalizeNumber(data.proficiency_bonus) ?? 0;
+  const proficiencies = data.proficiencies || {};
+  const options = equippedWeapons.map((weapon) => {
+    const weaponRange = weapon.weapon_range || (weapon.range_normal ? 'ranged' : 'melee');
+    const attackAbility = weapon.attack_ability || (weaponRange === 'ranged' ? 'dex' : 'str');
+    const abilityMod = getAbilityModifier(data.abilities?.[attackAbility]) ?? 0;
+    const proficient = weapon.weapon_type === 'simple'
+      ? Boolean(proficiencies.weapon_simple)
+      : weapon.weapon_type === 'martial'
+        ? Boolean(proficiencies.weapon_martial)
+        : false;
+    const weaponProficiencyBonus = proficient ? proficiencyBonus : 0;
+    const attackBonus = weaponRange === 'ranged' ? attackBonusRanged : attackBonusMelee;
+    const attackTotal = abilityMod + weaponProficiencyBonus + (Number(weapon.attack_modifier) || 0) + attackBonus;
+    return {
+      value: `weapon:${weapon.id ?? weapon.name}`,
+      label: `${weapon.name} (${formatSigned(attackTotal)})`,
+      modifier: attackTotal
+    };
+  });
+
+  const spellcasting = data.spellcasting || {};
+  const spellAbilityKey = spellcasting.ability;
+  const spellAbilityScore = spellAbilityKey ? data.abilities?.[spellAbilityKey] : null;
+  const spellAbilityMod = getAbilityModifier(spellAbilityScore);
+  const spellAttackBonus = spellAbilityMod === null || proficiencyBonus === null
+    ? null
+    : spellAbilityMod + proficiencyBonus;
+  const spells = Array.isArray(data.spells) ? data.spells : [];
+  const cantripAttacks = spells.filter((spell) => {
+    const isCantrip = spell.kind === 'cantrip' || Number(spell.level) === 0;
+    return isCantrip && spell.attack_roll && spell.damage_die;
+  });
+  if (spellAbilityKey && spellAttackBonus !== null) {
+    cantripAttacks.forEach((spell) => {
+      options.push({
+        value: `spell:${spell.id}`,
+        label: `${spell.name} (${formatSigned(spellAttackBonus)})`,
+        modifier: spellAttackBonus
+      });
+    });
+  }
+
+  return options;
+}
+
 function handleDiceAction(type) {
+  const { activeCharacter, canEditCharacter } = getHomeContext();
+  const items = getState().cache.items || [];
+  const allowInspiration = Boolean(activeCharacter?.data?.inspiration) && canEditCharacter;
+  const onConsumeInspiration = allowInspiration && activeCharacter
+    ? async () => {
+      const currentData = activeCharacter.data || {};
+      if (!currentData.inspiration) return;
+      await saveCharacterData(activeCharacter, { ...currentData, inspiration: false }, 'Ispirazione consumata', lastHomeContainer);
+    }
+    : null;
   const configs = {
-    'saving-throws': { title: 'Tiro Salvezza', mode: 'd20' },
-    skills: { title: 'Tiro Abilità', mode: 'd20' },
-    'attack-roll': { title: 'Tiro per Colpire', mode: 'd20' },
+    'saving-throws': {
+      title: 'Tiro Salvezza',
+      mode: 'd20',
+      selection: activeCharacter
+        ? { label: 'Tiro salvezza', options: buildSavingThrowRollOptions(activeCharacter) }
+        : null
+    },
+    skills: {
+      title: 'Tiro Abilità',
+      mode: 'd20',
+      selection: activeCharacter
+        ? { label: 'Abilità', options: buildSkillRollOptions(activeCharacter) }
+        : null
+    },
+    'attack-roll': {
+      title: 'Tiro per Colpire',
+      mode: 'd20',
+      selection: activeCharacter
+        ? { label: 'Attacco', options: buildAttackRollOptions(activeCharacter, items) }
+        : null
+    },
     roller: { title: 'Lancia Dadi generico', mode: 'generic' }
   };
-  openDiceRollerModal(configs[type] ?? { title: 'Lancia dadi', mode: 'generic' });
+  const config = configs[type] ?? { title: 'Lancia dadi', mode: 'generic' };
+  openDiceRollerModal({
+    ...config,
+    allowInspiration,
+    onConsumeInspiration
+  });
 }
 
 async function handleRestAction(resetOn, container) {
@@ -586,8 +706,21 @@ function openResourceDetail(resource) {
   });
 }
 
-function openDiceRollerModal({ title, mode }) {
-  openDiceOverlay({ keepOpen: true, title, mode });
+function openDiceRollerModal({
+  title,
+  mode,
+  selection = null,
+  allowInspiration = false,
+  onConsumeInspiration = null
+}) {
+  openDiceOverlay({
+    keepOpen: true,
+    title,
+    mode,
+    selection,
+    allowInspiration,
+    onConsumeInspiration
+  });
 }
 
 async function saveCharacterData(character, data, message, container) {
