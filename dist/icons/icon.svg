@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Dungeon Dragon icon">
+  <rect width="512" height="512" rx="64" fill="#6f4e37" />
+  <rect x="96" y="96" width="320" height="320" rx="48" fill="none" stroke="#f6f1e7" stroke-width="24" />
+  <path d="M176 328c32-64 64-96 112-96 48 0 72 24 96 72" fill="none" stroke="#f6f1e7" stroke-width="20" stroke-linecap="round" />
+  <circle cx="208" cy="208" r="18" fill="#f6f1e7" />
+  <circle cx="304" cy="208" r="18" fill="#f6f1e7" />
+</svg>
