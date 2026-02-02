@@ -2,6 +2,7 @@ import { fetchItems, updateItem } from '../inventory/inventoryApi.js';
 import { getState, updateCache } from '../../app/state.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 import { createToast } from '../../ui/components.js';
+import { getEquipSlots } from '../../lib/items.js';
 
 const bodyParts = [
   { value: 'head', label: 'Testa' },
@@ -215,21 +216,4 @@ function buildUnassignedSection(items) {
       </ul>
     </div>
   `;
-}
-
-function getEquipSlots(item) {
-  if (!item) return [];
-  if (Array.isArray(item.equip_slots)) {
-    return item.equip_slots.filter(Boolean);
-  }
-  if (typeof item.equip_slots === 'string' && item.equip_slots.trim()) {
-    try {
-      const parsed = JSON.parse(item.equip_slots);
-      if (Array.isArray(parsed)) return parsed.filter(Boolean);
-    } catch (error) {
-      return [item.equip_slots];
-    }
-  }
-  if (item.equip_slot) return [item.equip_slot];
-  return [];
 }

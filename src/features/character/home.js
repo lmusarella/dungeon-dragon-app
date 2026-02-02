@@ -20,6 +20,7 @@ import {
 } from '../../ui/components.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 import { openDiceOverlay } from '../dice-roller/overlay/dice.js';
+import { getEquipSlots } from '../../lib/items.js';
 
 let fabHandlersBound = false;
 let lastHomeContainer = null;
@@ -3029,22 +3030,6 @@ function calculateArmorClass(data, abilities, items) {
   return base + shieldBonus + acBonus;
 }
 
-function getEquipSlots(item) {
-  if (!item) return [];
-  if (Array.isArray(item.equip_slots)) {
-    return item.equip_slots.filter(Boolean);
-  }
-  if (typeof item.equip_slots === 'string' && item.equip_slots.trim()) {
-    try {
-      const parsed = JSON.parse(item.equip_slots);
-      if (Array.isArray(parsed)) return parsed.filter(Boolean);
-    } catch (error) {
-      return [item.equip_slots];
-    }
-  }
-  if (item.equip_slot) return [item.equip_slot];
-  return [];
-}
 
 function formatResourceRecovery(resource) {
   const maxUses = Number(resource.max_uses) || 0;

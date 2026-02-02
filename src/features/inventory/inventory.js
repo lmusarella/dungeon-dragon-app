@@ -3,6 +3,7 @@ import { getState, updateCache } from '../../app/state.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 import { applyMoneyDelta, calcTotalWeight } from '../../lib/calc.js';
 import { formatCoin, formatWeight } from '../../lib/format.js';
+import { getEquipSlots } from '../../lib/items.js';
 import { buildInput, buildTextarea, createToast, buildSelect, openConfirmModal, openFormModal } from '../../ui/components.js';
 import { fetchWallet, upsertWallet, createTransaction, fetchTransactions } from '../wallet/walletApi.js';
 import { renderWalletSummary } from '../wallet/wallet.js';
@@ -210,7 +211,7 @@ export async function renderInventory(container) {
       return matchesTerm && matchesCategory && matchesEquipable;
     });
 
-    listEl.innerHTML = buildInventoryTree(filtered);
+    listEl.innerHTML = buildInventoryTree(filtered, weightUnit);
     listEl.querySelectorAll('[data-edit]')
       .forEach((btn) => btn.addEventListener('click', () => {
         const item = items.find((entry) => entry.id === btn.dataset.edit);
@@ -425,7 +426,7 @@ function formatTransactionDate(value) {
   });
 }
 
-function buildInventoryTree(items) {
+function buildInventoryTree(items, weightUnit) {
   const containers = items.filter((item) => item.category === 'container');
   const topLevel = items.filter((item) => !item.container_item_id && item.category !== 'container');
 
@@ -434,7 +435,7 @@ function buildInventoryTree(items) {
     return `
       <div class="inventory-group">
         <p class="eyebrow">${container.name}</p>
-        ${buildItemList(children)}
+        ${buildItemList(children, weightUnit)}
       </div>
     `;
   }).join('');
@@ -443,12 +444,12 @@ function buildInventoryTree(items) {
     ${containerSections}
     <div class="inventory-group">
       <p class="eyebrow">Oggetti</p>
-      ${buildItemList(topLevel)}
+      ${buildItemList(topLevel, weightUnit)}
     </div>
   `;
 }
 
-function buildItemList(items) {
+function buildItemList(items, weightUnit) {
   if (!items.length) {
     return '<p class="muted eyebrow">Nessun oggetto.</p>';
   }
@@ -462,7 +463,7 @@ function buildItemList(items) {
               <div>
                 <strong class="attack-card__name">${item.name}</strong>
                 <p class="muted resource-card__description">
-                  ${getCategoryLabel(item.category)} · ${item.qty}x · ${item.weight ?? 0} lb
+                  ${getCategoryLabel(item.category)} · ${item.qty}x · ${formatWeight(item.weight ?? 0, weightUnit)}
                 </p>
                 <div class="tag-row resource-card__meta">
                   ${item.equipable ? `<span class="chip">equipaggiabile${getEquipSlots(item).length ? ` · ${getBodyPartLabels(getEquipSlots(item))}` : ''}</span>` : ''}
@@ -578,23 +579,6 @@ function getBodyPartLabels(parts) {
   return parts.map((part) => getBodyPartLabel(part)).join(', ');
 }
 
-function getEquipSlots(item) {
-  if (!item) return [];
-  if (Array.isArray(item.equip_slots)) {
-    return item.equip_slots.filter(Boolean);
-  }
-  if (typeof item.equip_slots === 'string' && item.equip_slots.trim()) {
-    try {
-      const parsed = JSON.parse(item.equip_slots);
-      if (Array.isArray(parsed)) return parsed.filter(Boolean);
-    } catch (error) {
-      return [item.equip_slots];
-    }
-  }
-  if (item.equip_slot) return [item.equip_slot];
-  return [];
-}
-
 async function openItemModal(character, item, items, onSave) {
   const fields = document.createElement('div');
   fields.className = 'drawer-form';
@@ -627,10 +611,12 @@ async function openItemModal(character, item, items, onSave) {
   fields.appendChild(categoryField);
 
   const containerOptions = [{ value: '', label: 'Nessuno' }].concat(
-    items.filter((entry) => entry.category === 'container').map((entry) => ({
-      value: entry.id,
-      label: entry.name
-    }))
+    items
+      .filter((entry) => entry.category === 'container' && entry.id !== item?.id)
+      .map((entry) => ({
+        value: entry.id,
+        label: entry.name
+      }))
   );
   const containerSelect = buildSelect(containerOptions, item?.container_item_id ?? '');
   containerSelect.name = 'container_item_id';
