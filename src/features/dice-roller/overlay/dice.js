@@ -271,6 +271,7 @@ export function openDiceOverlay({
           <div class="diceov-history-type diceov-history-type--${String(entry.type || 'gen').toLowerCase()}">
             <span class="diceov-history-type-code">${entry.type || '—'}</span>
             ${entry.subtype ? `<span class="diceov-history-subtype">${entry.subtype}</span>` : ''}
+            ${entry.inspired ? '<span class="diceov-history-flag">Isp.</span>' : ''}
           </div>
           <span class="diceov-history-total">${entry.total ?? '—'}</span>
           <span class="diceov-history-date">${formatHistoryDate(entry.timestamp)}</span>
@@ -334,6 +335,16 @@ export function openDiceOverlay({
     historyToggle.setAttribute('aria-expanded', String(open));
     historyPanel.toggleAttribute('hidden', !open);
     stage?.classList.toggle('diceov-stage--history-open', open);
+    if (open) {
+      const header = overlayEl.querySelector('.diceov-header');
+      if (header && stage) {
+        const offset = Math.max(
+          header.getBoundingClientRect().bottom - stage.getBoundingClientRect().top,
+          0
+        );
+        historyAccordion.style.setProperty('--diceov-history-offset', `${offset}px`);
+      }
+    }
   }
 
   function getSelectionLabel() {
@@ -523,6 +534,7 @@ export function openDiceOverlay({
         addHistoryEntry({
           type: rollType || 'GEN',
           subtype: getSelectionLabel(),
+          inspired: Boolean(inspirationInput?.checked),
           value: summary.value,
           total: summary.total,
           timestamp: new Date().toISOString()

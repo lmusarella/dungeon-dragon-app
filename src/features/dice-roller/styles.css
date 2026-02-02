@@ -401,7 +401,8 @@ header {
   margin: 0;
   font-size: 0.85rem;
   color: rgba(255,255,255,0.7);
-  display: none;
+  display: block;
+  white-space: nowrap;
 }
 
 .diceov-result--full {
@@ -409,6 +410,7 @@ header {
   align-items: center;
   gap: 12px;
   justify-content: space-between;
+  flex-wrap: wrap;
 }
 
 .diceov-result--full .diceov-result-label {
@@ -416,6 +418,11 @@ header {
 }
 
 .diceov-result--full .diceov-result-value {
+  text-align: right;
+}
+
+.diceov-result--full .diceov-result-detail {
+  flex: 1 1 240px;
   text-align: right;
 }
 
@@ -457,7 +464,7 @@ header {
 
 .diceov-history-accordion.is-open {
   position: absolute;
-  inset: 0;
+  inset: var(--diceov-history-offset, 64px) 0 0;
   z-index: 20;
   border-radius: 14px;
   background: #111;
@@ -527,6 +534,13 @@ header {
   font-size: 0.7rem;
   font-weight: 600;
   color: rgba(255,255,255,0.7);
+}
+
+.diceov-history-flag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #ffdc7a;
+  text-transform: uppercase;
 }
 
 .diceov-history-total {
