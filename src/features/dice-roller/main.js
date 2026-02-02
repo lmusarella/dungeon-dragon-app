@@ -110,6 +110,16 @@ window.onkeydown = function(e) {
         elem.textInput.value = '';
     }
 
+    that.clearDice = function() {
+        if (!box) {
+            return;
+        }
+        box.clear();
+        if (elem.result) {
+            elem.result.innerHTML = '';
+        }
+    }
+
     //called from numPad onclicks
     that.input = function(value) {
         vars.lastVal = value;

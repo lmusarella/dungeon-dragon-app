@@ -42,12 +42,24 @@ function buildOverlayMarkup() {
       </header>
       <div class="diceov-controls">
         <div class="diceov-control" data-dice-control="d20">
-          <span class="diceov-label">Tipo di tiro</span>
-          <div class="diceov-radio-group">
-            <label><input type="radio" name="dice-roll-mode" value="normal" checked /> Normale</label>
-            <label><input type="radio" name="dice-roll-mode" value="advantage" /> Vantaggio</label>
-            <label><input type="radio" name="dice-roll-mode" value="disadvantage" /> Svantaggio</label>
+          <label class="diceov-label" for="dice-roll-mode">Tipo di tiro</label>
+          <select id="dice-roll-mode" name="dice-roll-mode">
+            <option value="normal" selected>Normale</option>
+            <option value="advantage">Vantaggio</option>
+            <option value="disadvantage">Svantaggio</option>
+          </select>
+        </div>
+        <div class="diceov-control diceov-control--row">
+          <div class="diceov-field" data-dice-select hidden>
+            <label class="diceov-label" for="dice-roll-select" data-dice-select-label>Seleziona</label>
+            <select id="dice-roll-select" name="dice-roll-select"></select>
           </div>
+          <div class="diceov-field diceov-field--modifier">
+            <label class="diceov-label" for="dice-modifier">Modificatore</label>
+            <input id="dice-modifier" type="number" name="dice-modifier" value="0" step="1" />
+          </div>
+        </div>
+        <div class="diceov-control" data-dice-control="d20">
           <div class="diceov-inspiration" data-dice-inspiration>
             <label class="diceov-checkbox">
               <input type="checkbox" name="dice-inspiration" />
@@ -57,14 +69,6 @@ function buildOverlayMarkup() {
               Attenzione: userai il punto ispirazione su questo tiro.
             </p>
           </div>
-        </div>
-        <div class="diceov-control" data-dice-control="d20" data-dice-select hidden>
-          <label class="diceov-label" for="dice-roll-select" data-dice-select-label>Seleziona</label>
-          <select id="dice-roll-select" name="dice-roll-select"></select>
-        </div>
-        <div class="diceov-control">
-          <label class="diceov-label" for="dice-modifier">Modificatore</label>
-          <input id="dice-modifier" type="number" name="dice-modifier" value="0" step="1" />
         </div>
         <div class="diceov-control" data-dice-control="generic">
           <span class="diceov-label">Dadi</span>
@@ -113,7 +117,7 @@ function formatModifier(value) {
 }
 
 function getRollMode(overlay) {
-  const selected = overlay.querySelector('input[name="dice-roll-mode"]:checked');
+  const selected = overlay.querySelector('select[name="dice-roll-mode"]');
   return selected?.value ?? 'normal';
 }
 
@@ -162,7 +166,6 @@ export function openDiceOverlay({
     if (window.main && typeof window.main.setInput === 'function') {
       window.main.setInput();
     }
-
     overlayEl.addEventListener('click', (e) => {
       if (e.target.closest('[data-close]')) closeDiceOverlay();
     });
@@ -176,13 +179,17 @@ export function openDiceOverlay({
     if (lim) lim.style.display = 'none';
   } catch { }
 
+  if (window.main && typeof window.main.clearDice === 'function') {
+    window.main.clearDice();
+  }
+
   overlayEl.querySelector('[data-dice-title]')?.replaceChildren(document.createTextNode(title));
   setOverlayMode(overlayEl, mode === 'generic' ? 'generic' : 'd20');
 
   const inspirationInput = overlayEl.querySelector('input[name="dice-inspiration"]');
   const inspirationField = overlayEl.querySelector('[data-dice-inspiration]');
   const inspirationWarning = overlayEl.querySelector('[data-inspiration-warning]');
-  const advantageInput = overlayEl.querySelector('input[value="advantage"]');
+  const rollModeInput = overlayEl.querySelector('select[name="dice-roll-mode"]');
   const modifierInput = overlayEl.querySelector('input[name="dice-modifier"]');
   const notationInput = overlayEl.querySelector('input[name="dice-notation"]');
   const selectWrapper = overlayEl.querySelector('[data-dice-select]');
@@ -205,9 +212,10 @@ export function openDiceOverlay({
   }
 
   function updateInspiration() {
-    if (!advantageInput) return;
+    if (!rollModeInput) return;
     const inspired = Boolean(inspirationInput?.checked);
-    if (inspired) advantageInput.checked = true;
+    if (inspired) rollModeInput.value = 'advantage';
+    rollModeInput.disabled = inspired;
     if (inspirationWarning) inspirationWarning.toggleAttribute('hidden', !inspired);
   }
 
@@ -217,6 +225,9 @@ export function openDiceOverlay({
     if (inspirationInput) {
       inspirationInput.disabled = !state.inspirationAvailable;
       if (!state.inspirationAvailable) inspirationInput.checked = false;
+    }
+    if (!state.inspirationAvailable && rollModeInput) {
+      rollModeInput.disabled = false;
     }
     if (!state.inspirationAvailable && inspirationWarning) {
       inspirationWarning.setAttribute('hidden', '');
@@ -322,11 +333,7 @@ export function openDiceOverlay({
       updateNotationFromMode();
     };
   }
-  if (overlayEl) {
-    overlayEl.querySelectorAll('input[name="dice-roll-mode"]').forEach((input) => {
-      input.onchange = () => updateNotationFromMode();
-    });
-  }
+  if (rollModeInput) rollModeInput.onchange = () => updateNotationFromMode();
   if (modifierInput) modifierInput.oninput = updateModifier;
   if (notationInput) notationInput.oninput = updateNotationFromGeneric;
   if (selectInput) {

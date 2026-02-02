@@ -243,6 +243,26 @@ header {
   gap: 8px;
 }
 
+.diceov-control--row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.diceov-field {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.diceov-field--modifier {
+  flex: 0 0 auto;
+}
+
+.diceov-field--modifier input[type="number"] {
+  width: 84px;
+}
+
 .diceov-checkbox {
   display: flex;
   align-items: center;
