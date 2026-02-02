@@ -79,10 +79,13 @@ function buildOverlayMarkup() {
         </div>
        
         <div class="diceov-control" data-dice-control="generic">
-          <span class="diceov-label">Dadi</span>
+          <div class="diceov-generic-header">
+            <span class="diceov-label">Dadi</span>
+            <label class="diceov-label diceov-label--inline" for="dice-notation">Notazione dadi</label>
+          </div>
           <div class="diceov-generic-row">
-            <input type="number" name="dice-count" min="1" value="1" />
-            <select name="dice-type">
+            <input type="number" name="dice-count" min="1" value="1" aria-label="Numero dadi" />
+            <select name="dice-type" aria-label="Tipo dado">
               <option value="d4">d4</option>
               <option value="d6">d6</option>
               <option value="d8">d8</option>
@@ -91,9 +94,8 @@ function buildOverlayMarkup() {
               <option value="d20" selected>d20</option>
               <option value="d100">d100</option>
             </select>
+            <input id="dice-notation" class="diceov-generic-notation" type="text" name="dice-notation" value="1d20" spellcheck="false" />
           </div>
-          <label class="diceov-label" for="dice-notation">Notazione dadi</label>
-          <input id="dice-notation" type="text" name="dice-notation" value="1d20" spellcheck="false" />
           <p class="diceov-hint">Puoi combinare dadi diversi (es. 2d6+1d4).</p>
         </div>
       </div>
@@ -188,6 +190,15 @@ function buildGenericNotation(overlay) {
   return `${count}${type}`;
 }
 
+function syncGenericInputsFromNotation(overlay, value) {
+  const match = String(value || '').trim().match(/^(\d+)\s*d\s*(\d+)$/i);
+  if (!match) return;
+  const countInput = overlay.querySelector('[name="dice-count"]');
+  const typeInput = overlay.querySelector('[name="dice-type"]');
+  if (countInput) countInput.value = match[1];
+  if (typeInput) typeInput.value = `d${match[2]}`;
+}
+
 function setOverlayMode(overlay, mode) {
   overlay.dataset.diceMode = mode;
   overlay.querySelectorAll('[data-dice-control]').forEach((section) => {
@@ -201,6 +212,8 @@ export function openDiceOverlay({
   keepOpen = false,
   title = 'Lancia dadi',
   mode = 'generic',
+  notation = null,
+  modifier = null,
   selection = null,
   allowInspiration = false,
   onConsumeInspiration = null,
@@ -561,7 +574,15 @@ export function openDiceOverlay({
 
   overlayEl.removeAttribute('hidden');
 
+  if (modifierInput && Number.isFinite(Number(modifier))) {
+    modifierInput.value = Number(modifier);
+  }
+
   if (mode === 'generic') {
+    if (notationInput && notation) {
+      notationInput.value = String(notation).trim();
+      syncGenericInputsFromNotation(overlayEl, notationInput.value);
+    }
     if (notationInput && !notationInput.value) notationInput.value = buildGenericNotation(overlayEl);
     updateNotationFromGeneric();
   } else {

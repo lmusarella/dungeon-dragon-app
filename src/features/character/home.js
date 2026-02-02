@@ -255,24 +255,34 @@ export async function renderHome(container) {
         const spells = Array.isArray(activeCharacter.data?.spells) ? activeCharacter.data.spells : [];
         const spell = spells.find((entry) => entry.id === spellId);
         if (!spell) return;
-        const roll = calculateSpellDamageRoll(spell);
-        if (!roll) {
+        const overlayConfig = buildSpellDamageOverlayConfig(spell);
+        if (!overlayConfig) {
           createToast('Danno non calcolabile per questo trucchetto.', 'error');
           return;
         }
-        const { label, total } = roll;
-        createToast(`Danni ${label}: ${total}`);
+        openDiceOverlay({
+          title: overlayConfig.title,
+          mode: 'generic',
+          notation: overlayConfig.notation,
+          modifier: overlayConfig.modifier,
+          rollType: 'DMG'
+        });
         return;
       }
       const weapon = items?.find((entry) => String(entry.id) === rollKey || entry.name === rollKey);
       if (!weapon) return;
-      const roll = calculateWeaponDamageRoll(activeCharacter, weapon);
-      if (!roll) {
+      const overlayConfig = buildWeaponDamageOverlayConfig(activeCharacter, weapon);
+      if (!overlayConfig) {
         createToast('Danno non calcolabile per questa arma.', 'error');
         return;
       }
-      const { label, total } = roll;
-      createToast(`Danni ${label}: ${total}`);
+      openDiceOverlay({
+        title: overlayConfig.title,
+        mode: 'generic',
+        notation: overlayConfig.notation,
+        modifier: overlayConfig.modifier,
+        rollType: 'DMG'
+      });
     }));
 
   const longPressDelay = 500;
@@ -2697,6 +2707,38 @@ function parseDamageDice(damageDie) {
   const sides = Number(match[2]);
   if (!Number.isFinite(count) || !Number.isFinite(sides) || !count || !sides) return null;
   return { count, sides };
+}
+
+function buildWeaponDamageOverlayConfig(character, weapon) {
+  if (!character || !weapon) return null;
+  const data = character.data || {};
+  const weaponRange = weapon.weapon_range || (weapon.range_normal ? 'ranged' : 'melee');
+  const attackAbility = weapon.attack_ability
+    || (weaponRange === 'ranged' ? 'dex' : 'str');
+  const abilityMod = getAbilityModifier(data.abilities?.[attackAbility]) ?? 0;
+  const damageBonusMelee = Number(data.damage_bonus_melee ?? data.damage_bonus) || 0;
+  const damageBonusRanged = Number(data.damage_bonus_ranged ?? data.damage_bonus) || 0;
+  const damageBonus = weaponRange === 'ranged' ? damageBonusRanged : damageBonusMelee;
+  const damageTotal = abilityMod + (Number(weapon.damage_modifier) || 0) + damageBonus;
+  const dice = parseDamageDice(weapon.damage_die);
+  if (!dice) return null;
+  return {
+    title: `Danni ${weapon.name}`,
+    notation: `${dice.count}d${dice.sides}`,
+    modifier: damageTotal
+  };
+}
+
+function buildSpellDamageOverlayConfig(spell) {
+  if (!spell) return null;
+  const dice = parseDamageDice(spell.damage_die);
+  if (!dice) return null;
+  const damageModifier = Number(spell.damage_modifier) || 0;
+  return {
+    title: `Danni ${spell.name}`,
+    notation: `${dice.count}d${dice.sides}`,
+    modifier: damageModifier
+  };
 }
 
 function calculateWeaponDamageRoll(character, weapon) {
