@@ -292,7 +292,12 @@ export function openDiceOverlay({
       }
       return;
     }
-    if (!isGeneric && modifierHome && !modifierHome.contains(modifierField)) {
+    if (!isGeneric && modifierHome) {
+      const anchor = buffWrapper && modifierHome.contains(buffWrapper) ? buffWrapper : null;
+      if (anchor) {
+        modifierHome.insertBefore(modifierField, anchor);
+        return;
+      }
       modifierHome.appendChild(modifierField);
     }
   }
@@ -593,7 +598,8 @@ export function openDiceOverlay({
 
   overlayEl.removeAttribute('hidden');
 
-  if (modifierInput && Number.isFinite(Number(modifier))) {
+  const hasExplicitModifier = modifier !== null && modifier !== undefined && modifier !== '';
+  if (modifierInput && hasExplicitModifier && Number.isFinite(Number(modifier))) {
     modifierInput.value = Number(modifier);
   }
 
