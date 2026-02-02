@@ -88,18 +88,23 @@ function buildOverlayMarkup() {
         </div>
       </div>
       <div class="diceov-results">
-        <div class="diceov-result">
+        <div class="diceov-result diceov-result--full">
           <p class="diceov-result-label">Risultato</p>
           <p class="diceov-result-value" data-dice-result>—</p>
           <p class="diceov-result-detail" data-dice-detail>Lancia i dadi per vedere il totale.</p>
         </div>
-        <div class="diceov-history">
-          <p class="diceov-result-label">Storico</p>
-          <div class="diceov-history-list" data-dice-history></div>
-        </div>
       </div>
     </section>
     ${buildDiceMarkup()}
+    <section class="diceov-history-accordion" data-history-accordion>
+      <button class="diceov-history-toggle" type="button" data-history-toggle aria-expanded="false">
+        <span>Storico tiri</span>
+        <span class="diceov-history-toggle-icon" aria-hidden="true">▾</span>
+      </button>
+      <div class="diceov-history-panel" data-dice-history-panel hidden>
+        <div class="diceov-history-list" data-dice-history></div>
+      </div>
+    </section>
   </div>`;
 }
 
@@ -234,8 +239,10 @@ export function openDiceOverlay({
   const selectInput = overlayEl.querySelector('select[name="dice-roll-select"]');
   const resultValue = overlayEl.querySelector('[data-dice-result]');
   const resultDetail = overlayEl.querySelector('[data-dice-detail]');
-  const resultPanel = overlayEl.querySelector('.diceov-result');
-  const historyPanel = overlayEl.querySelector('.diceov-history');
+  const stage = overlayEl.querySelector('.diceov-stage');
+  const historyAccordion = overlayEl.querySelector('[data-history-accordion]');
+  const historyToggle = overlayEl.querySelector('[data-history-toggle]');
+  const historyPanel = overlayEl.querySelector('[data-dice-history-panel]');
   const historyList = overlayEl.querySelector('[data-dice-history]');
 
   const state = {
@@ -250,14 +257,6 @@ export function openDiceOverlay({
     if (resultValue) resultValue.textContent = label;
     if (resultDetail) resultDetail.textContent = detail;
     state.lastRoll = null;
-  }
-
-  function syncHistoryHeight() {
-    if (!resultPanel || !historyPanel) return;
-    const height = resultPanel.getBoundingClientRect().height;
-    if (!height) return;
-    historyPanel.style.minHeight = `${height}px`;
-    historyPanel.style.maxHeight = `${height}px`;
   }
 
   function renderHistory() {
@@ -327,6 +326,14 @@ export function openDiceOverlay({
     if (selected && modifierInput) {
       modifierInput.value = Number(selected.modifier) || 0;
     }
+  }
+
+  function setHistoryOpen(open) {
+    if (!historyAccordion || !historyToggle || !historyPanel) return;
+    historyAccordion.classList.toggle('is-open', open);
+    historyToggle.setAttribute('aria-expanded', String(open));
+    historyPanel.toggleAttribute('hidden', !open);
+    stage?.classList.toggle('diceov-stage--history-open', open);
   }
 
   function getSelectionLabel() {
@@ -458,12 +465,18 @@ export function openDiceOverlay({
     if (notationInput) notationInput.value = notation;
     updateNotationFromGeneric();
   };
+  if (historyToggle) {
+    historyToggle.addEventListener('click', () => {
+      const shouldOpen = !historyAccordion?.classList.contains('is-open');
+      setHistoryOpen(shouldOpen);
+    });
+  }
 
   setSelectionOptions();
   setInspirationAvailability(state.inspirationAvailable);
   updateInspiration();
   renderHistory();
-  requestAnimationFrame(syncHistoryHeight);
+  setHistoryOpen(false);
 
   overlayEl.removeAttribute('hidden');
 
@@ -473,7 +486,6 @@ export function openDiceOverlay({
   } else {
     updateNotationFromMode();
   }
-  requestAnimationFrame(syncHistoryHeight);
 
   const resultEl = overlayEl.querySelector('#result');
   let last = null;
