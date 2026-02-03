@@ -7,10 +7,10 @@
   font-weight: 400;
   color: #1c1b1a;
   background-color: #f6f1e7;
-  --coin-pp-image: url('/dungeon-dragon-app/icons/moneta_platino.png');
-  --coin-gp-image: url('/dungeon-dragon-app/icons/moneta_oro.png');
-  --coin-sp-image: url('/dungeon-dragon-app/icons/moneta_argento.png');
-  --coin-cp-image: url('/dungeon-dragon-app/icons/moneta_rame.png');
+  --coin-pp-image: url('/icons/moneta_platino.png');
+  --coin-gp-image: url('/icons/moneta_oro.png');
+  --coin-sp-image: url('/icons/moneta_argento.png');
+  --coin-cp-image: url('/icons/moneta_rame.png');
 }
 
 * {
