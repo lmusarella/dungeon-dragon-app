@@ -6,10 +6,10 @@ export function renderLayout(container) {
     <div class="app-shell">
       <header class="app-header">
         <div class="app-header-left">
-          <div class="app-logo" aria-hidden="true">DD</div>
+          <div class="app-logo" aria-hidden="true">D&D</div>
           <div>
-            <h1>Dungeon Dragon</h1>
-            <p class="app-subtitle">Gestione personaggi D&D</p>
+            <h1>Dungeons & Dragons</h1>
+            <p class="app-subtitle">Gestione personaggi</p>
           </div>
         </div>
         <div class="app-header-right">
