@@ -27,7 +27,7 @@ function renderRoute() {
   const appHeader = document.querySelector('[data-app-header]');
   const offlineBanner = document.querySelector('[data-offline-banner]');
   const hideShell = route === 'login' || route === 'characters';
-  const hideHeader = route === 'login';
+  const hideHeader = route === 'login' || route === 'characters';
   const showFab = route === 'home' || route === 'inventory';
   const applyShellVisibility = (shouldHide, shouldShowFab) => {
     const { offline } = getState();
