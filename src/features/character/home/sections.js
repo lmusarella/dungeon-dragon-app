@@ -374,9 +374,11 @@ export function buildProficiencyOverview(character, items = [], canEditCharacter
       </div>
       <div class="detail-card detail-card--text">
         <header class="card-header">
-          <p class="eyebrow">Equip</p>
-          <div class="equip-actions">
+          <div>
+            <p class="eyebrow">Equip</p>
             <span class="pill">Oggetti in sintonia: ${attunedCount}</span>
+          </div>
+          <div class="actions">
             ${canEditCharacter ? `
               <button class="icon-button icon-button--add" type="button" data-add-equip aria-label="Equipaggia oggetto">
                 <span aria-hidden="true">+</span>
@@ -386,7 +388,7 @@ export function buildProficiencyOverview(character, items = [], canEditCharacter
         </header>
         ${equippedItems.length
     ? `
-            <ul class="inventory-list resource-list resource-list--compact resource-list--centered">
+            <ul class="inventory-list resource-list resource-list--compact">
               ${equippedItems.map((item) => `
                 <li class="modifier-card attack-card resource-card inventory-item-card">
                   <div class="attack-card__body resource-card__body">

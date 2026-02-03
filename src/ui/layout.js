@@ -75,8 +75,12 @@ export function renderLayout(container) {
           <p class="eyebrow" data-confirm-title>Conferma</p>
           <p class="eyebrow" data-confirm-message></p>
           <div class="modal-actions">
-            <button class="ghost-button" data-confirm-cancel>Annulla</button>
-            <button class="primary" data-confirm-ok>Conferma</button>
+            <div class="modal-actions__left">
+              <button class="ghost-button" data-confirm-cancel>Annulla</button>
+            </div>
+            <div class="modal-actions__right">
+              <button class="primary" data-confirm-ok>Conferma</button>
+            </div>
           </div>
         </div>
       </div>
@@ -87,8 +91,12 @@ export function renderLayout(container) {
           <form data-form-body>
             <div data-form-fields></div>
             <div class="modal-actions">
-              <button class="ghost-button" type="button" data-form-cancel>Annulla</button>
-              <button class="primary" type="submit" data-form-submit>Conferma</button>
+              <div class="modal-actions__left">
+                <button class="ghost-button" type="button" data-form-cancel>Annulla</button>
+              </div>
+              <div class="modal-actions__right">
+                <button class="primary" type="submit" data-form-submit>Conferma</button>
+              </div>
             </div>
           </form>
         </div>

@@ -1931,9 +1931,42 @@ button {
 
 .modal-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
   margin-top: 16px;
+}
+
+.modal-actions__left,
+.modal-actions__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-form-row {
+  display: grid;
+  gap: 12px;
+}
+
+.modal-form-row--compact {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.modal-form-row--balanced {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.modal-card--form {
+  width: min(720px, 94%);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .toast-container {

@@ -340,24 +340,24 @@ export function openAvatarModal(character) {
 export function openResourceDrawer(character, onSave, resource = null) {
   if (!character) return;
   const form = document.createElement('div');
-  form.className = 'drawer-form';
-  form.appendChild(buildInput({ label: 'Nome abilità', name: 'name', placeholder: 'Es. Ispirazione', value: resource?.name ?? '' }));
-  form.appendChild(buildInput({
+  form.className = 'drawer-form modal-form-grid';
+  const buildRow = (elements, variant = 'balanced') => {
+    const row = document.createElement('div');
+    row.className = `modal-form-row modal-form-row--${variant}`;
+    elements.filter(Boolean).forEach((element) => row.appendChild(element));
+    return row;
+  };
+  const nameField = buildInput({ label: 'Nome abilità', name: 'name', placeholder: 'Es. Ispirazione', value: resource?.name ?? '' });
+  const imageField = buildInput({
     label: 'Foto (URL)',
     name: 'image_url',
     placeholder: 'https://.../risorsa.png',
     value: resource?.image_url ?? ''
-  }));
-  form.appendChild(buildTextarea({
-    label: 'Descrizione',
-    name: 'description',
-    placeholder: 'Inserisci una descrizione...',
-    value: resource?.description ?? ''
-  }));
+  });
+  form.appendChild(buildRow([nameField, imageField], 'balanced'));
   const passiveField = document.createElement('label');
   passiveField.className = 'checkbox';
   passiveField.innerHTML = '<input type="checkbox" name="is_passive" /> <span>Passiva (senza cariche)</span>';
-  form.appendChild(passiveField);
   const castTimeField = document.createElement('label');
   castTimeField.className = 'field';
   castTimeField.innerHTML = '<span>Tipo di lancio</span>';
@@ -369,9 +369,9 @@ export function openResourceDrawer(character, onSave, resource = null) {
   ], resource?.cast_time ?? 'Azione');
   castTimeSelect.name = 'cast_time';
   castTimeField.appendChild(castTimeSelect);
-  form.appendChild(castTimeField);
-  form.appendChild(buildInput({ label: 'Cariche massime', name: 'max_uses', type: 'number', value: resource?.max_uses ?? 1 }));
-  form.appendChild(buildInput({ label: 'Cariche consumate', name: 'used', type: 'number', value: resource?.used ?? 0 }));
+  const maxUsesField = buildInput({ label: 'Cariche massime', name: 'max_uses', type: 'number', value: resource?.max_uses ?? 1 });
+  const usedField = buildInput({ label: 'Cariche consumate', name: 'used', type: 'number', value: resource?.used ?? 0 });
+  form.appendChild(buildRow([castTimeField, maxUsesField, usedField], 'compact'));
 
   const recoveryGrid = document.createElement('div');
   recoveryGrid.className = 'compact-field-grid';
@@ -387,7 +387,6 @@ export function openResourceDrawer(character, onSave, resource = null) {
     type: 'number',
     value: resource?.recovery_long ?? ''
   }));
-  form.appendChild(recoveryGrid);
 
   const resetField = document.createElement('label');
   resetField.className = 'field';
@@ -398,7 +397,14 @@ export function openResourceDrawer(character, onSave, resource = null) {
   ], resource?.reset_on ?? 'long_rest');
   resetSelect.name = 'reset_on';
   resetField.appendChild(resetSelect);
-  form.appendChild(resetField);
+  form.appendChild(buildRow([passiveField, resetField], 'balanced'));
+  form.appendChild(recoveryGrid);
+  form.appendChild(buildTextarea({
+    label: 'Descrizione',
+    name: 'description',
+    placeholder: 'Inserisci una descrizione...',
+    value: resource?.description ?? ''
+  }));
 
   const maxUsesInput = form.querySelector('input[name="max_uses"]');
   const usedInput = form.querySelector('input[name="used"]');
@@ -428,7 +434,8 @@ export function openResourceDrawer(character, onSave, resource = null) {
   openFormModal({
     title: resource ? 'Modifica abilità' : 'Nuova abilità',
     submitLabel: resource ? 'Salva' : 'Crea',
-    content: form
+    content: form,
+    cardClass: 'modal-card--form'
   }).then(async (formData) => {
     if (!formData) return;
     const name = formData.get('name')?.trim();

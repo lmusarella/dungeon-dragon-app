@@ -5,15 +5,22 @@ import { getEquipSlots, getWeightUnit, hasProficiencyForItem } from './utils.js'
 
 export async function openItemModal(character, item, items, onSave) {
   const fields = document.createElement('div');
-  fields.className = 'drawer-form';
-  fields.appendChild(buildInput({ label: 'Nome', name: 'name', value: item?.name ?? '' }));
-  fields.appendChild(buildInput({
+  fields.className = 'drawer-form modal-form-grid';
+  const buildRow = (elements, variant = 'balanced') => {
+    const row = document.createElement('div');
+    row.className = `modal-form-row modal-form-row--${variant}`;
+    elements.filter(Boolean).forEach((element) => row.appendChild(element));
+    return row;
+  };
+  const nameField = buildInput({ label: 'Nome', name: 'name', value: item?.name ?? '' });
+  const imageField = buildInput({
     label: 'Foto (URL)',
     name: 'image_url',
     placeholder: 'https://.../oggetto.png',
     value: item?.image_url ?? ''
-  }));
-  fields.appendChild(buildInput({ label: 'Quantità', name: 'qty', type: 'number', value: item?.qty ?? 1 }));
+  });
+  fields.appendChild(buildRow([nameField, imageField], 'balanced'));
+  const qtyField = buildInput({ label: 'Quantità', name: 'qty', type: 'number', value: item?.qty ?? 1 });
   const weightField = buildInput({ label: 'Peso', name: 'weight', type: 'number', value: item?.weight ?? 0 });
   const weightInput = weightField.querySelector('input');
   if (weightInput) {
@@ -21,9 +28,9 @@ export async function openItemModal(character, item, items, onSave) {
     weightInput.min = '0';
     weightInput.step = unit === 'kg' ? '0.1' : '1';
   }
-  fields.appendChild(weightField);
-  fields.appendChild(buildInput({ label: 'Volume', name: 'volume', type: 'number', value: item?.volume ?? 0 }));
-  fields.appendChild(buildInput({ label: 'Valore (cp)', name: 'value_cp', type: 'number', value: item?.value_cp ?? 0 }));
+  const volumeField = buildInput({ label: 'Volume', name: 'volume', type: 'number', value: item?.volume ?? 0 });
+  const valueField = buildInput({ label: 'Valore (cp)', name: 'value_cp', type: 'number', value: item?.value_cp ?? 0 });
+  fields.appendChild(buildRow([qtyField, weightField, volumeField, valueField], 'compact'));
   const categorySelect = buildSelect(
     [{ value: '', label: 'Seleziona' }, ...itemCategories],
     item?.category ?? ''
@@ -33,7 +40,6 @@ export async function openItemModal(character, item, items, onSave) {
   categoryField.className = 'field';
   categoryField.innerHTML = '<span>Categoria</span>';
   categoryField.appendChild(categorySelect);
-  fields.appendChild(categoryField);
 
   const containerOptions = [{ value: '', label: 'Nessuno' }].concat(
     items.filter((entry) => entry.category === 'container').map((entry) => ({
@@ -47,7 +53,6 @@ export async function openItemModal(character, item, items, onSave) {
   containerField.className = 'field';
   containerField.innerHTML = '<span>Contenitore</span>';
   containerField.appendChild(containerSelect);
-  fields.appendChild(containerField);
   const maxVolumeField = buildInput({
     label: 'Volume massimo contenitore',
     name: 'max_volume',
@@ -55,7 +60,7 @@ export async function openItemModal(character, item, items, onSave) {
     value: item?.max_volume ?? ''
   });
   const maxVolumeInput = maxVolumeField.querySelector('input');
-  fields.appendChild(maxVolumeField);
+  fields.appendChild(buildRow([categoryField, containerField, maxVolumeField], 'balanced'));
 
   const equipableWrapper = document.createElement('div');
   equipableWrapper.className = 'compact-field-grid';
@@ -87,19 +92,17 @@ export async function openItemModal(character, item, items, onSave) {
   equipSlotsField.appendChild(equipSlotList);
   equipableWrapper.appendChild(equipableField);
   equipableWrapper.appendChild(overlayableField);
-  fields.appendChild(equipableWrapper);
-  fields.appendChild(equipSlotsField);
-
   const attunement = document.createElement('label');
   attunement.className = 'checkbox';
   attunement.innerHTML = '<input type="checkbox" name="attunement_active" /> <span>Sintonia attiva</span>';
   const attunementInput = attunement.querySelector('input');
-  fields.appendChild(attunement);
+  fields.appendChild(buildRow([equipableWrapper, attunement], 'balanced'));
+  fields.appendChild(equipSlotsField);
 
   fields.appendChild(buildTextarea({ label: 'Note', name: 'notes', value: item?.notes ?? '' }));
 
   const proficiencySection = document.createElement('div');
-  proficiencySection.className = 'drawer-form';
+  proficiencySection.className = 'drawer-form modal-form-grid';
   const weaponTypeField = document.createElement('label');
   weaponTypeField.className = 'field';
   weaponTypeField.innerHTML = '<span>Tipo arma</span>';
@@ -198,19 +201,12 @@ export async function openItemModal(character, item, items, onSave) {
   });
   const shieldBonusInput = shieldBonusField.querySelector('input');
 
-  proficiencySection.appendChild(weaponTypeField);
-  proficiencySection.appendChild(weaponRangeField);
-  proficiencySection.appendChild(weaponAbilityField);
-  proficiencySection.appendChild(damageDieField);
-  proficiencySection.appendChild(attackModifierField);
-  proficiencySection.appendChild(damageModifierField);
-  proficiencySection.appendChild(thrownField);
+  proficiencySection.appendChild(buildRow([weaponTypeField, weaponRangeField, weaponAbilityField], 'balanced'));
+  proficiencySection.appendChild(buildRow([damageDieField, attackModifierField, damageModifierField], 'compact'));
+  proficiencySection.appendChild(buildRow([thrownField], 'compact'));
   proficiencySection.appendChild(rangeGrid);
-  proficiencySection.appendChild(armorTypeField);
-  proficiencySection.appendChild(shieldField);
-  proficiencySection.appendChild(armorClassField);
-  proficiencySection.appendChild(armorBonusField);
-  proficiencySection.appendChild(shieldBonusField);
+  proficiencySection.appendChild(buildRow([armorTypeField, shieldField, armorClassField], 'balanced'));
+  proficiencySection.appendChild(buildRow([armorBonusField, shieldBonusField], 'compact'));
   fields.appendChild(proficiencySection);
 
   if (attunementInput) {
