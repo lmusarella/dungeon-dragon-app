@@ -372,7 +372,7 @@ export function buildProficiencyOverview(character, items = [], canEditCharacter
     : '<p class="muted">Aggiungi talenti nel profilo.</p>'}
         </div>
       </div>
-      <div class="detail-card detail-card--text">
+      <section class="card home-card home-section home-scroll-panel">
         <header class="card-header">
           <div>
             <p class="eyebrow">Equip</p>
@@ -414,7 +414,7 @@ export function buildProficiencyOverview(character, items = [], canEditCharacter
             </ul>
           `
     : '<p class="muted">Nessun oggetto equipaggiato.</p>'}
-      </div>
+      </section>
     </div>
   `;
 }
