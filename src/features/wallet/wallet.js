@@ -1,9 +1,10 @@
 export function renderWalletSummary(wallet) {
+  const baseUrl = import.meta.env.BASE_URL;
   const coins = [
-    { key: 'pp', label: 'Platino', icon: '/icons/moneta_platino.png' },
-    { key: 'gp', label: 'Oro', icon: '/icons/moneta_oro.png' },
-    { key: 'sp', label: 'Argento', icon: '/icons/moneta_argento.png' },
-    { key: 'cp', label: 'Rame', icon: '/icons/moneta_rame.png' }
+    { key: 'pp', label: 'Platino', icon: `${baseUrl}icons/moneta_platino.png` },
+    { key: 'gp', label: 'Oro', icon: `${baseUrl}icons/moneta_oro.png` },
+    { key: 'sp', label: 'Argento', icon: `${baseUrl}icons/moneta_argento.png` },
+    { key: 'cp', label: 'Rame', icon: `${baseUrl}icons/moneta_rame.png` }
   ];
   return `
     <div class="wallet-summary">     

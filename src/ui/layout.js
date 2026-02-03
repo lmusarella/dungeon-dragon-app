@@ -2,12 +2,13 @@ import { closeDrawer, openDrawer } from './components.js';
 import { getState } from '../app/state.js';
 
 export function renderLayout(container) {
+  const baseUrl = import.meta.env.BASE_URL;
   container.innerHTML = `
     <div class="app-shell">
       <header class="app-header">
         <div class="app-header-left">
           <div class="app-logo">
-            <img src="public/icons/logo_dd.png" alt="Dungeons & Dragons" class="app-logo-image" />
+            <img src="${baseUrl}icons/logo_dd.png" alt="Dungeons & Dragons" class="app-logo-image" />
           </div>
           <div>
             <h1>Dungeons & Dragons</h1>
