@@ -21,6 +21,7 @@ document.addEventListener('click', async (event) => {
   if (target) {
     event.preventDefault();
     await signOut();
+    window.location.hash = '#/login';
   }
 });
 

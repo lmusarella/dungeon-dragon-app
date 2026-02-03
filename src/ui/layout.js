@@ -46,6 +46,8 @@ export function renderLayout(container) {
       <div class="actions-fab" data-actions-fab>
         <div class="actions-fab-menu" data-actions-menu>
           <button class="actions-fab-item" type="button" data-add-loot>Loot rapido</button>
+          <button class="actions-fab-item" type="button" data-money-action="pay" data-fab-scope="inventory">Paga</button>
+          <button class="actions-fab-item" type="button" data-money-action="receive" data-fab-scope="inventory">Ricevi</button>
           <button class="actions-fab-item" type="button" data-hp-action="heal">Cura</button>
           <button class="actions-fab-item" type="button" data-hp-action="damage">Danno</button>
           <button class="actions-fab-item" type="button" data-rest="short_rest">Riposo Breve</button>

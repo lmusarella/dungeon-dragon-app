@@ -56,17 +56,13 @@ export async function renderInventory(container) {
   const weightStep = weightUnit === 'kg' ? '0.1' : '1';
   container.innerHTML = `
     <div class="inventory-layout">
-      <section class="card inventory-wallet-wide">
-        <header class="card-header">
-          <p class="eyebrow">Monete</p>
-        </header>
-        ${renderWalletSummary(wallet)}
-      </section>
       <section class="card inventory-main">
         <header class="card-header">
           <p class="eyebrow">Inventario</p>
           <div class="button-row">
-            <button class="primary" data-add-item>Nuovo oggetto</button>
+            <button class="icon-button icon-button--add" type="button" data-add-item aria-label="Nuovo oggetto">
+              <span aria-hidden="true">+</span>
+            </button>
           </div>
         </header>
         <div class="filters">
@@ -81,13 +77,19 @@ export async function renderInventory(container) {
         <div data-inventory-list></div>
       </section>
       <div class="inventory-side">
+        <section class="card inventory-wallet">
+          <header class="card-header">
+            <p class="eyebrow">Monete</p>
+          </header>
+          ${renderWalletSummary(wallet)}
+        </section>
         <section class="card">
           <header class="card-header">
             <p class="eyebrow">Transazioni</p>
           </header>
           <div class="button-row">
-            <button class="primary" type="button" data-money-action="pay">Paga</button>
-            <button class="primary" type="button" data-money-action="receive">Ricevi</button>
+            <button class="money-action-button money-action-button--pay" type="button" data-money-action="pay">Paga</button>
+            <button class="money-action-button money-action-button--receive" type="button" data-money-action="receive">Ricevi</button>
           </div>
           <div class="inventory-transactions">
             ${state.offline ? '<p class="muted">Transazioni disponibili solo online.</p>' : buildTransactionList(transactions).outerHTML}
@@ -175,55 +177,59 @@ export async function renderInventory(container) {
   categorySelect.addEventListener('change', renderList);
   equipableSelect.addEventListener('change', renderList);
 
-  container.querySelectorAll('[data-money-action]')
-    .forEach((button) => button.addEventListener('click', async () => {
-      const direction = button.dataset.moneyAction;
-      const title = direction === 'pay' ? 'Paga monete' : 'Ricevi monete';
-      const submitLabel = direction === 'pay' ? 'Paga' : 'Ricevi';
-      const formData = await openFormModal({ title, submitLabel, content: moneyFields({ direction }) });
-      if (!formData) return;
-      if (!wallet) {
-        wallet = {
-          user_id: activeCharacter.user_id,
-          character_id: activeCharacter.id,
-          cp: 0,
-          sp: 0,
-          gp: 0,
-          pp: 0
+  document.querySelectorAll('[data-money-action]')
+    .forEach((button) => {
+      if (button.dataset.bound) return;
+      button.dataset.bound = 'true';
+      button.addEventListener('click', async () => {
+        const direction = button.dataset.moneyAction;
+        const title = direction === 'pay' ? 'Paga monete' : 'Ricevi monete';
+        const submitLabel = direction === 'pay' ? 'Paga' : 'Ricevi';
+        const formData = await openFormModal({ title, submitLabel, content: moneyFields({ direction }) });
+        if (!formData) return;
+        if (!wallet) {
+          wallet = {
+            user_id: activeCharacter.user_id,
+            character_id: activeCharacter.id,
+            cp: 0,
+            sp: 0,
+            gp: 0,
+            pp: 0
+          };
+        }
+        const coin = formData.get('coin');
+        const amount = Number(formData.get('amount') || 0);
+        const delta = {
+          cp: coin === 'cp' ? amount : 0,
+          sp: coin === 'sp' ? amount : 0,
+          gp: coin === 'gp' ? amount : 0,
+          pp: coin === 'pp' ? amount : 0
         };
-      }
-      const coin = formData.get('coin');
-      const amount = Number(formData.get('amount') || 0);
-      const delta = {
-        cp: coin === 'cp' ? amount : 0,
-        sp: coin === 'sp' ? amount : 0,
-        gp: coin === 'gp' ? amount : 0,
-        pp: coin === 'pp' ? amount : 0
-      };
-      const sign = direction === 'pay' ? -1 : 1;
-      const signedDelta = Object.fromEntries(
-        Object.entries(delta).map(([key, value]) => [key, value * sign])
-      );
-      const nextWallet = applyMoneyDelta(wallet, signedDelta);
+        const sign = direction === 'pay' ? -1 : 1;
+        const signedDelta = Object.fromEntries(
+          Object.entries(delta).map(([key, value]) => [key, value * sign])
+        );
+        const nextWallet = applyMoneyDelta(wallet, signedDelta);
 
-      try {
-        const saved = await upsertWallet({ ...nextWallet, user_id: wallet.user_id, character_id: wallet.character_id });
-        await createTransaction({
-          user_id: wallet.user_id,
-          character_id: wallet.character_id,
-          direction,
-          amount: signedDelta,
-          reason: formData.get('reason'),
-          occurred_on: formData.get('occurred_on')
-        });
-        updateCache('wallet', saved);
-        await cacheSnapshot({ wallet: saved });
-        createToast('Wallet aggiornato');
-        renderInventory(container);
-      } catch (error) {
-        createToast('Errore aggiornamento denaro', 'error');
-      }
-    }));
+        try {
+          const saved = await upsertWallet({ ...nextWallet, user_id: wallet.user_id, character_id: wallet.character_id });
+          await createTransaction({
+            user_id: wallet.user_id,
+            character_id: wallet.character_id,
+            direction,
+            amount: signedDelta,
+            reason: formData.get('reason'),
+            occurred_on: formData.get('occurred_on')
+          });
+          updateCache('wallet', saved);
+          await cacheSnapshot({ wallet: saved });
+          createToast('Wallet aggiornato');
+          renderInventory(container);
+        } catch (error) {
+          createToast('Errore aggiornamento denaro', 'error');
+        }
+      });
+    });
 
   const transactionAmount = (transaction) => {
     const normalized = normalizeTransactionAmount(transaction.amount);

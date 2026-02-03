@@ -34,12 +34,20 @@ function renderRoute() {
   updateActiveTab(route);
   const bottomNav = document.querySelector('[data-bottom-nav]');
   const actionsFab = document.querySelector('[data-actions-fab]');
+  const actionsBackdrop = document.querySelector('.actions-fab-backdrop');
   const hideFooter = route === 'login' || route === 'characters';
   const showFab = route === 'home' || route === 'inventory';
   if (bottomNav) bottomNav.hidden = hideFooter;
   if (actionsFab) {
     actionsFab.hidden = !showFab;
     actionsFab.classList.remove('is-open');
+  }
+  if (actionsBackdrop) actionsBackdrop.hidden = !showFab;
+  if (actionsFab) {
+    actionsFab.querySelectorAll('[data-fab-scope]')
+      .forEach((item) => {
+        item.hidden = item.dataset.fabScope !== route;
+      });
   }
   view?.(outlet);
 }

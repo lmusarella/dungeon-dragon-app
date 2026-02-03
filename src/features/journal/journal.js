@@ -48,17 +48,22 @@ export async function renderJournal(container) {
   const normal = entries.filter((entry) => !entry.is_pinned);
 
   container.innerHTML = `
-    <section class="card">
-      <header class="card-header">
-        <h2>Diario</h2>
-        <button class="primary" data-add-entry>Nuova voce</button>
-      </header>
-      <div class="filters">
-        <input type="search" placeholder="Cerca" data-search />
-        <button data-add-tag class="ghost-button">Nuovo tag</button>
-      </div>
+    <div class="journal-layout">
+      <section class="card journal-toolbar">
+        <header class="card-header">
+          <div>
+            <p class="eyebrow">Diario</p>
+            <h2>Appunti e sessioni</h2>
+          </div>
+          <button class="primary" data-add-entry>Nuova voce</button>
+        </header>
+        <div class="filters">
+          <input type="search" placeholder="Cerca" data-search />
+          <button data-add-tag class="ghost-button">Nuovo tag</button>
+        </div>
+      </section>
       <div data-journal-list></div>
-    </section>
+    </div>
   `;
 
   const listEl = container.querySelector('[data-journal-list]');
@@ -69,8 +74,26 @@ export async function renderJournal(container) {
     const filteredPinned = filterEntries(pinned, term);
     const filteredNormal = filterEntries(normal, term);
     listEl.innerHTML = [
-      filteredPinned.length ? '<h3>In evidenza</h3>' + buildEntryList(filteredPinned, entryTagMap, tagMap) : '',
-      filteredNormal.length ? '<h3>Voci</h3>' + buildEntryList(filteredNormal, entryTagMap, tagMap) : '<p class="muted">Nessuna voce.</p>'
+      `
+        <section class="card journal-section-card">
+          <header class="card-header">
+            <p class="eyebrow">In evidenza</p>
+          </header>
+          ${filteredPinned.length
+    ? buildEntryList(filteredPinned, entryTagMap, tagMap)
+    : '<p class="muted">Nessuna voce in evidenza.</p>'}
+        </section>
+      `,
+      `
+        <section class="card journal-section-card">
+          <header class="card-header">
+            <p class="eyebrow">Voci</p>
+          </header>
+          ${filteredNormal.length
+    ? buildEntryList(filteredNormal, entryTagMap, tagMap)
+    : '<p class="muted">Nessuna voce.</p>'}
+        </section>
+      `
     ].join('');
 
     listEl.querySelectorAll('[data-edit]')
@@ -117,11 +140,11 @@ function filterEntries(entries, term) {
 
 function buildEntryList(entries, entryTagMap, tagMap) {
   return `
-    <ul class="journal-list">
+    <ul class="journal-entry-list">
       ${entries.map((entry) => {
         const tagIds = entryTagMap[entry.id] ?? [];
         return `
-          <li>
+          <li class="journal-entry-card">
             <div>
               <strong>${entry.title || 'Senza titolo'}</strong>
               <p class="muted">${entry.entry_date || ''} · Sessione ${entry.session_no ?? '-'}</p>
@@ -130,8 +153,8 @@ function buildEntryList(entries, entryTagMap, tagMap) {
               </div>
             </div>
             <div class="actions">
-              <button data-edit="${entry.id}">Modifica</button>
-              <button data-delete="${entry.id}">Elimina</button>
+              <button class="ghost-button" data-edit="${entry.id}">Modifica</button>
+              <button class="ghost-button" data-delete="${entry.id}">Elimina</button>
             </div>
           </li>
         `;

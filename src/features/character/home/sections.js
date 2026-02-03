@@ -376,7 +376,7 @@ export function buildProficiencyOverview(character, items = [], canEditCharacter
         <header class="card-header">
           <div>
             <p class="eyebrow">Equip</p>
-            <span class="pill">Oggetti in sintonia: ${attunedCount}</span>
+            <span class="pill pill--accent">Oggetti in sintonia: ${attunedCount}</span>
           </div>
           <div class="actions">
             ${canEditCharacter ? `
