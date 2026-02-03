@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  base: '/dungeon-dragon-app/',
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
@@ -13,10 +14,10 @@ export default defineConfig({
         theme_color: '#6f4e37',
         background_color: '#f6f1e7',
         display: 'standalone',
-        start_url: '/#/',
+        start_url: '/dungeon-dragon-app/#/',
         icons: [
           {
-            src: '/icons/icon.svg',
+            src: '/dungeon-dragon-app/icons/icon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any'
