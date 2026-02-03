@@ -61,7 +61,6 @@ export async function renderInventory(container) {
         <header class="card-header">
           <h2 class="eyebrow">Inventario</h2>
           <div class="button-row">
-            <button class="primary" type="button" data-add-loot>Loot rapido</button>
             <button class="primary" data-add-item>Nuovo oggetto</button>
           </div>
         </header>
@@ -255,8 +254,9 @@ export async function renderInventory(container) {
       }
     }));
 
-  const lootButton = container.querySelector('[data-add-loot]');
-  if (lootButton) {
+  const lootButton = document.querySelector('[data-add-loot]');
+  if (lootButton && !lootButton.dataset.bound) {
+    lootButton.dataset.bound = 'true';
     lootButton.addEventListener('click', async () => {
       const formData = await openFormModal({
         title: 'Aggiungi loot',

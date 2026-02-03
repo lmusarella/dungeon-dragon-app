@@ -35,7 +35,7 @@ function renderRoute() {
   const bottomNav = document.querySelector('[data-bottom-nav]');
   const actionsFab = document.querySelector('[data-actions-fab]');
   const hideFooter = route === 'login' || route === 'characters';
-  const showFab = route === 'home';
+  const showFab = route === 'home' || route === 'inventory';
   if (bottomNav) bottomNav.hidden = hideFooter;
   if (actionsFab) {
     actionsFab.hidden = !showFab;

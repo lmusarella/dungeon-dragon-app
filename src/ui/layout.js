@@ -6,7 +6,9 @@ export function renderLayout(container) {
     <div class="app-shell">
       <header class="app-header">
         <div class="app-header-left">
-          <div class="app-logo" aria-hidden="true">D&D</div>
+          <div class="app-logo">
+            <img src="/icons/logo_dd.png" alt="Dungeons & Dragons" class="app-logo-image" />
+          </div>
           <div>
             <h1>Dungeons & Dragons</h1>
             <p class="app-subtitle">Gestione personaggi</p>
@@ -42,6 +44,7 @@ export function renderLayout(container) {
       <main class="app-main" data-route-outlet></main>
       <div class="actions-fab" data-actions-fab>
         <div class="actions-fab-menu" data-actions-menu>
+          <button class="actions-fab-item" type="button" data-add-loot>Loot rapido</button>
           <button class="actions-fab-item" type="button" data-hp-action="heal">Cura</button>
           <button class="actions-fab-item" type="button" data-hp-action="damage">Danno</button>
           <button class="actions-fab-item" type="button" data-rest="short_rest">Riposo Breve</button>
@@ -52,6 +55,7 @@ export function renderLayout(container) {
           Azioni
         </button>
       </div>
+      <div class="actions-fab-backdrop" aria-hidden="true"></div>
       <nav class="bottom-nav" data-bottom-nav>
         <a href="#/home" data-tab="home">Scheda Personaggio</a>
         <a href="#/inventory" data-tab="inventory">Inventario</a>

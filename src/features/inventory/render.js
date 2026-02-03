@@ -2,11 +2,17 @@ import { formatTransactionAmount, formatTransactionDate, getBodyPartLabels, getC
 
 export function buildTransactionList(transactions) {
   const wrapper = document.createElement('div');
-  wrapper.className = 'transaction-list';
+  wrapper.className = 'transaction-list transaction-ledger';
   if (!transactions.length) {
     wrapper.innerHTML = '<p class="muted">Nessuna transazione registrata.</p>';
     return wrapper;
   }
+  wrapper.innerHTML = `
+    <div class="transaction-ledger-header">
+      <span>Descrizione</span>
+      <span>Importo</span>
+    </div>
+  `;
   const list = document.createElement('ul');
   list.className = 'transaction-items';
   transactions.forEach((transaction) => {
@@ -15,11 +21,11 @@ export function buildTransactionList(transactions) {
     const amountLabel = formatTransactionAmount(transaction.amount);
     const dateLabel = formatTransactionDate(transaction.occurred_on || transaction.created_at);
     item.innerHTML = `
-      <div>
+      <div class="transaction-info">
         <strong>${directionLabel}</strong>
         <p class="muted">${transaction.reason || 'Nessuna nota'} · ${dateLabel}</p>
       </div>
-      <span>${amountLabel}</span>
+      <span class="transaction-amount">${amountLabel}</span>
     `;
     list.appendChild(item);
   });
@@ -61,11 +67,13 @@ export function buildItemList(items) {
           <div class="attack-card__body resource-card__body">
             <div class="resource-card__title item-info">
               ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
-              <div>
-                <strong class="attack-card__name">${item.name}</strong>
-                <p class="muted resource-card__description">
-                  ${getCategoryLabel(item.category)} · ${item.qty}x · ${item.weight ?? 0} lb
-                </p>
+              <div class="item-info-body">
+                <div class="item-info-line">
+                  <strong class="attack-card__name">${item.name}</strong>
+                  <span class="muted item-meta">
+                    ${getCategoryLabel(item.category)} · ${item.qty}x · ${item.weight ?? 0} lb
+                  </span>
+                </div>
                 <div class="tag-row resource-card__meta">
                   ${item.equipable ? `<span class="chip">equipaggiabile${getEquipSlots(item).length ? ` · ${getBodyPartLabels(getEquipSlots(item))}` : ''}</span>` : ''}
                   ${item.sovrapponibile ? '<span class="chip">sovrapponibile</span>' : ''}
@@ -76,8 +84,12 @@ export function buildItemList(items) {
           </div>
           <div class="resource-card-actions">
             ${item.category === 'consumable' ? `<button class="resource-action-button" data-use="${item.id}">Usa</button>` : ''}
-            <button class="resource-action-button" data-edit="${item.id}">Modifica</button>
-            <button class="resource-action-button" data-delete="${item.id}">Elimina</button>
+            <button class="resource-action-button icon-button" data-edit="${item.id}" aria-label="Modifica" title="Modifica">
+              <span aria-hidden="true">✏️</span>
+            </button>
+            <button class="resource-action-button icon-button" data-delete="${item.id}" aria-label="Elimina" title="Elimina">
+              <span aria-hidden="true">🗑️</span>
+            </button>
           </div>
         </li>
       `).join('')}
@@ -94,11 +106,13 @@ export function buildEquippedList(items) {
           <div class="attack-card__body resource-card__body">
             <div class="resource-card__title item-info">
               ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
-              <div>
-                <strong class="attack-card__name">${item.name}</strong>
-                <p class="muted resource-card__description">
-                  ${getCategoryLabel(item.category)} · ${getBodyPartLabels(getEquipSlots(item))}
-                </p>
+              <div class="item-info-body">
+                <div class="item-info-line">
+                  <strong class="attack-card__name">${item.name}</strong>
+                  <span class="muted item-meta">
+                    ${getCategoryLabel(item.category)} · ${getBodyPartLabels(getEquipSlots(item))}
+                  </span>
+                </div>
                 <div class="tag-row resource-card__meta">
                   ${item.attunement_active ? '<span class="chip">attuned</span>' : ''}
                 </div>
