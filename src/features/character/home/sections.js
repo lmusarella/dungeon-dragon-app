@@ -645,6 +645,7 @@ export function buildResourceList(
             ` : ''}
             ${canManageResources ? `
               <button class="resource-action-button resource-icon-button" data-edit-resource="${res.id}" aria-label="Modifica risorsa">✏️</button>
+              <button class="resource-action-button resource-icon-button" data-delete-resource="${res.id}" aria-label="Elimina risorsa">🗑️</button>
             ` : ''}
           </div>
         </li>
@@ -664,7 +665,7 @@ export function buildResourceSections(resources, canManageResources) {
     ? `
       <div class="resource-section resource-section--active">
         <div class="resource-section__body">
-          ${buildResourceList(activeResources, canManageResources)}
+          ${buildResourceList(activeResources, canManageResources, { showUseButton: false })}
         </div>
       </div>
     `

@@ -331,7 +331,7 @@ button {
   position: fixed;
   right: auto;
   left: 50%;
-  bottom: 84px;
+  bottom: 60px;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
@@ -2214,6 +2214,14 @@ button {
 
 .detail-card--text p {
   margin: 0;
+}
+
+.proficiency-tabs .detail-card.tab-panel {
+  display: none;
+}
+
+.proficiency-tabs .detail-card.tab-panel.is-active {
+  display: block;
 }
 
 .resource-info,
