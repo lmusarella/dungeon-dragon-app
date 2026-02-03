@@ -8,7 +8,6 @@ import { openCharacterDrawer } from './home/characterDrawer.js';
 import {
   buildAttackSection,
   buildCharacterOverview,
-  buildEquipmentOverview,
   buildEmptyState,
   buildResourceSections,
   buildSavingThrowSection,
@@ -17,7 +16,14 @@ import {
 } from './home/sections.js';
 import { buildLootFields } from '../inventory/render.js';
 import { getWeightUnit } from '../inventory/utils.js';
-import { openBackgroundModal, openResourceDetail, openResourceDrawer, openSpellDrawer, openSpellListModal } from './home/modals.js';
+import {
+  openAvatarModal,
+  openBackgroundModal,
+  openResourceDetail,
+  openResourceDrawer,
+  openSpellDrawer,
+  openSpellListModal
+} from './home/modals.js';
 import { saveCharacterData } from './home/data.js';
 import { abilityShortLabel, savingThrowList, skillList } from './home/constants.js';
 import {
@@ -131,16 +137,6 @@ export async function renderHome(container) {
           </header>
           ${activeCharacter ? buildCharacterOverview(activeCharacter, canEditCharacter, items) : buildEmptyState(canCreateCharacter, offline)}
         </section>
-        ${activeCharacter ? `
-        <section class="card home-card home-section">
-          <header class="card-header">
-            <div>
-              <p class="eyebrow">Equipaggiamento</p>
-            </div>
-          </header>
-          ${buildEquipmentOverview(activeCharacter)}
-        </section>
-        ` : ''}
       </div>
       <div class="home-column home-column--right">
         <section class="card home-card home-section home-scroll-panel">
@@ -242,6 +238,31 @@ export async function renderHome(container) {
       openBackgroundModal(activeCharacter);
     });
   }
+
+  container.querySelectorAll('[data-proficiency-tabs]')
+    .forEach((tabGroup) => {
+      const buttons = Array.from(tabGroup.querySelectorAll('[data-proficiency-tab]'));
+      const panels = Array.from(tabGroup.querySelectorAll('[data-proficiency-panel]'));
+      if (!buttons.length || !panels.length) return;
+      const setActiveTab = (tabKey) => {
+        buttons.forEach((button) => {
+          const isActive = button.dataset.proficiencyTab === tabKey;
+          button.classList.toggle('is-active', isActive);
+          button.setAttribute('aria-selected', String(isActive));
+        });
+        panels.forEach((panel) => {
+          panel.classList.toggle('is-active', panel.dataset.proficiencyPanel === tabKey);
+        });
+      };
+      buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+          setActiveTab(button.dataset.proficiencyTab);
+        });
+      });
+      const defaultTab = buttons.find((button) => button.classList.contains('is-active'))?.dataset.proficiencyTab
+        ?? buttons[0].dataset.proficiencyTab;
+      if (defaultTab) setActiveTab(defaultTab);
+    });
 
   const inspirationButton = container.querySelector('[data-toggle-inspiration]');
   if (inspirationButton && activeCharacter && canEditCharacter) {
@@ -400,6 +421,10 @@ export async function renderHome(container) {
   const avatar = container.querySelector('.character-avatar');
   if (avatar) {
     avatar.setAttribute('draggable', 'false');
+    avatar.addEventListener('click', (event) => {
+      event.preventDefault();
+      openAvatarModal(activeCharacter);
+    });
     avatar.addEventListener('contextmenu', (event) => {
       event.preventDefault();
     });

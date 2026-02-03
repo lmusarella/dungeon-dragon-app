@@ -333,25 +333,38 @@ export function buildProficiencyOverview(character) {
     acc.values.push(cleaned);
     return acc;
   }, { values: [], seen: new Set() }).values;
+  const equipped = equipmentProficiencyList
+    .filter((prof) => proficiencies[prof.key])
+    .map((prof) => prof.label);
   return `
     <div class="detail-section">
-      <div class="accordion-stack">
-        <details class="accordion">
-          <summary>Strumenti</summary>
-          <div class="detail-card detail-card--text">
-            ${tools.length
+      <div class="proficiency-tabs" data-proficiency-tabs>
+        <div class="tab-bar" role="tablist" aria-label="Competenze extra">
+          <button class="tab-bar__button is-active" type="button" role="tab" aria-selected="true" data-proficiency-tab="equipment">
+            Equipaggiamento
+          </button>
+          <button class="tab-bar__button" type="button" role="tab" aria-selected="false" data-proficiency-tab="tools">
+            Strumenti
+          </button>
+          <button class="tab-bar__button" type="button" role="tab" aria-selected="false" data-proficiency-tab="languages">
+            Lingue
+          </button>
+        </div>
+        <div class="detail-card detail-card--text tab-panel is-active" role="tabpanel" data-proficiency-panel="equipment">
+          ${equipped.length
+    ? `<div class="tag-row">${equipped.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
+    : '<p class="muted">Nessuna competenza equipaggiamento.</p>'}
+        </div>
+        <div class="detail-card detail-card--text tab-panel" role="tabpanel" data-proficiency-panel="tools">
+          ${tools.length
     ? `<div class="tag-row">${tools.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
     : '<p class="muted">Aggiungi strumenti nel profilo.</p>'}
-          </div>
-        </details>
-        <details class="accordion">
-          <summary>Lingue</summary>
-          <div class="detail-card detail-card--text">
-            ${languages.length
+        </div>
+        <div class="detail-card detail-card--text tab-panel" role="tabpanel" data-proficiency-panel="languages">
+          ${languages.length
     ? `<div class="tag-row">${languages.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
     : '<p class="muted">Aggiungi lingue conosciute nel profilo.</p>'}
-          </div>
-        </details>
+        </div>
       </div>
     </div>
   `;

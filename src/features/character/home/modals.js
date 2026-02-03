@@ -296,6 +296,28 @@ export function openSpellDrawer(character, onSave) {
   });
 }
 
+export function openAvatarModal(character) {
+  const avatarUrl = character?.data?.avatar_url;
+  if (!avatarUrl) return;
+  const existing = document.querySelector('.avatar-preview');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'avatar-preview';
+  overlay.tabIndex = 0;
+  overlay.innerHTML = `
+    <img class="avatar-preview__image" src="${avatarUrl}" alt="Ritratto di ${character.name}" />
+  `;
+  const close = () => {
+    overlay.remove();
+  };
+  overlay.addEventListener('click', close);
+  overlay.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') close();
+  });
+  document.body.appendChild(overlay);
+  overlay.focus();
+}
+
 export function openResourceDrawer(character, onSave, resource = null) {
   if (!character) return;
   const form = document.createElement('div');
