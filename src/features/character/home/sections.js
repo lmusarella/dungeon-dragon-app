@@ -243,14 +243,6 @@ export function buildCharacterOverview(character, canEditCharacter, items = []) 
         </header>
         ${buildProficiencyOverview(character)}
       </div>
-      <div class="home-section">
-        <header class="card-header">
-          <div>
-            <p class="eyebrow">Talenti</p>
-          </div>
-        </header>
-        ${buildTalentOverview(character)}
-      </div>
     </div>
   `;
 }
@@ -323,6 +315,8 @@ export function buildProficiencyOverview(character) {
   const { tools, languages: legacyLanguages } = parseProficiencyNotesSections(notes);
   const languageNotes = data.language_proficiencies || '';
   const explicitLanguages = parseProficiencyNotes(languageNotes);
+  const talentNotes = data.talents || '';
+  const talents = parseProficiencyNotes(talentNotes);
   const combinedLanguages = [...explicitLanguages, ...legacyLanguages];
   const languages = combinedLanguages.reduce((acc, entry) => {
     const cleaned = entry.trim();
@@ -349,6 +343,9 @@ export function buildProficiencyOverview(character) {
           <button class="tab-bar__button" type="button" role="tab" aria-selected="false" data-proficiency-tab="languages">
             Lingue
           </button>
+          <button class="tab-bar__button" type="button" role="tab" aria-selected="false" data-proficiency-tab="talents">
+            Talenti
+          </button>
         </div>
         <div class="detail-card detail-card--text tab-panel is-active" role="tabpanel" data-proficiency-panel="equipment">
           ${equipped.length
@@ -364,6 +361,11 @@ export function buildProficiencyOverview(character) {
           ${languages.length
     ? `<div class="tag-row">${languages.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
     : '<p class="muted">Aggiungi lingue conosciute nel profilo.</p>'}
+        </div>
+        <div class="detail-card detail-card--text tab-panel" role="tabpanel" data-proficiency-panel="talents">
+          ${talents.length
+    ? `<div class="tag-row">${talents.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
+    : '<p class="muted">Aggiungi talenti nel profilo.</p>'}
         </div>
       </div>
     </div>
@@ -383,22 +385,6 @@ export function buildEquipmentOverview(character) {
         ${equipped.length
     ? `<div class="tag-row">${equipped.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
     : '<p class="muted">Nessuna competenza equipaggiamento.</p>'}
-      </div>
-    </div>
-  `;
-}
-
-export function buildTalentOverview(character) {
-  const data = character.data || {};
-  const talentNotes = data.talents || '';
-  const talents = parseProficiencyNotes(talentNotes);
-
-  return `
-    <div class="detail-section">
-      <div class="detail-card detail-card--text">
-        ${talents.length
-    ? `<div class="tag-row">${talents.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
-    : '<p class="muted">Aggiungi talenti nel profilo.</p>'}
       </div>
     </div>
   `;

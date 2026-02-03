@@ -4,12 +4,19 @@ import { cacheSnapshot } from '../../lib/offline/cache.js';
 import { applyMoneyDelta, calcTotalWeight } from '../../lib/calc.js';
 import { formatWeight } from '../../lib/format.js';
 import { createToast, openConfirmModal, openFormModal } from '../../ui/components.js';
-import { fetchWallet, upsertWallet, createTransaction, fetchTransactions } from '../wallet/walletApi.js';
+import {
+  fetchWallet,
+  upsertWallet,
+  createTransaction,
+  fetchTransactions,
+  updateTransaction,
+  deleteTransaction
+} from '../wallet/walletApi.js';
 import { renderWalletSummary } from '../wallet/wallet.js';
 import { categories, itemCategories } from './constants.js';
 import { openItemModal } from './modals.js';
 import { buildEquippedList, buildInventoryTree, buildLootFields, buildTransactionList, moneyFields } from './render.js';
-import { getEquipSlots, getWeightUnit } from './utils.js';
+import { getEquipSlots, getWeightUnit, normalizeTransactionAmount } from './utils.js';
 
 export async function renderInventory(container) {
   const state = getState();
@@ -134,7 +141,7 @@ export async function renderInventory(container) {
       return matchesTerm && matchesCategory && matchesEquipable;
     });
 
-    listEl.innerHTML = buildInventoryTree(filtered);
+    listEl.innerHTML = buildInventoryTree(filtered, weightUnit);
     listEl.querySelectorAll('[data-edit]')
       .forEach((btn) => btn.addEventListener('click', () => {
         const item = items.find((entry) => entry.id === btn.dataset.edit);
@@ -154,7 +161,7 @@ export async function renderInventory(container) {
           createToast('Errore eliminazione', 'error');
         }
       }));
-  listEl.querySelectorAll('[data-use]')
+    listEl.querySelectorAll('[data-use]')
       .forEach((btn) => btn.addEventListener('click', async () => {
         const item = items.find((entry) => entry.id === btn.dataset.use);
         if (!item) return;
@@ -209,7 +216,7 @@ export async function renderInventory(container) {
       const direction = button.dataset.moneyAction;
       const title = direction === 'pay' ? 'Paga monete' : 'Ricevi monete';
       const submitLabel = direction === 'pay' ? 'Paga' : 'Ricevi';
-      const formData = await openFormModal({ title, submitLabel, content: moneyFields() });
+      const formData = await openFormModal({ title, submitLabel, content: moneyFields({ direction }) });
       if (!formData) return;
       if (!wallet) {
         wallet = {
@@ -251,6 +258,104 @@ export async function renderInventory(container) {
         renderInventory(container);
       } catch (error) {
         createToast('Errore aggiornamento denaro', 'error');
+      }
+    }));
+
+  const transactionAmount = (transaction) => {
+    const normalized = normalizeTransactionAmount(transaction.amount);
+    return {
+      cp: Number(normalized.cp ?? 0),
+      sp: Number(normalized.sp ?? 0),
+      gp: Number(normalized.gp ?? 0),
+      pp: Number(normalized.pp ?? 0)
+    };
+  };
+
+  const formatDateValue = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  };
+
+  const findPrimaryCoin = (amounts) => {
+    const entries = ['pp', 'gp', 'sp', 'cp']
+      .map((coin) => ({ coin, value: Number(amounts[coin] ?? 0) }))
+      .find((entry) => entry.value !== 0);
+    return entries ?? { coin: 'gp', value: 0 };
+  };
+
+  container.querySelectorAll('[data-edit-transaction]')
+    .forEach((button) => button.addEventListener('click', async () => {
+      const transaction = transactions.find((entry) => entry.id === button.dataset.editTransaction);
+      if (!transaction) return;
+      const currentAmounts = transactionAmount(transaction);
+      const { coin, value } = findPrimaryCoin(currentAmounts);
+      const formData = await openFormModal({
+        title: 'Modifica transazione',
+        submitLabel: 'Salva',
+        content: moneyFields({
+          amount: Math.abs(value),
+          coin,
+          reason: transaction.reason ?? '',
+          occurredOn: formatDateValue(transaction.occurred_on || transaction.created_at),
+          direction: transaction.direction,
+          includeDirection: true
+        })
+      });
+      if (!formData) return;
+      const nextDirection = formData.get('direction') || transaction.direction;
+      const nextCoin = formData.get('coin');
+      const amountValue = Number(formData.get('amount') || 0);
+      const sign = nextDirection === 'pay' ? -1 : 1;
+      const nextSigned = { cp: 0, sp: 0, gp: 0, pp: 0, [nextCoin]: amountValue * sign };
+      const delta = Object.fromEntries(
+        Object.keys(nextSigned).map((key) => [key, (nextSigned[key] || 0) - (currentAmounts[key] || 0)])
+      );
+      const nextWallet = wallet ? applyMoneyDelta(wallet, delta) : null;
+
+      try {
+        if (nextWallet) {
+          const saved = await upsertWallet({ ...nextWallet, user_id: wallet.user_id, character_id: wallet.character_id });
+          updateCache('wallet', saved);
+          await cacheSnapshot({ wallet: saved });
+        }
+        await updateTransaction(transaction.id, {
+          direction: nextDirection,
+          amount: nextSigned,
+          reason: formData.get('reason'),
+          occurred_on: formData.get('occurred_on')
+        });
+        createToast('Transazione aggiornata');
+        renderInventory(container);
+      } catch (error) {
+        createToast('Errore aggiornamento transazione', 'error');
+      }
+    }));
+
+  container.querySelectorAll('[data-delete-transaction]')
+    .forEach((button) => button.addEventListener('click', async () => {
+      const transaction = transactions.find((entry) => entry.id === button.dataset.deleteTransaction);
+      if (!transaction) return;
+      const shouldDelete = await openConfirmModal({ message: 'Eliminare transazione?' });
+      if (!shouldDelete) return;
+      const currentAmounts = transactionAmount(transaction);
+      const delta = Object.fromEntries(
+        Object.keys(currentAmounts).map((key) => [key, -currentAmounts[key]])
+      );
+      const nextWallet = wallet ? applyMoneyDelta(wallet, delta) : null;
+
+      try {
+        if (nextWallet) {
+          const saved = await upsertWallet({ ...nextWallet, user_id: wallet.user_id, character_id: wallet.character_id });
+          updateCache('wallet', saved);
+          await cacheSnapshot({ wallet: saved });
+        }
+        await deleteTransaction(transaction.id);
+        createToast('Transazione eliminata');
+        renderInventory(container);
+      } catch (error) {
+        createToast('Errore eliminazione transazione', 'error');
       }
     }));
 
