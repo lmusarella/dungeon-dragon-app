@@ -5,7 +5,7 @@ export function renderLayout(container) {
   const baseUrl = import.meta.env.BASE_URL;
   container.innerHTML = `
     <div class="app-shell">
-      <header class="app-header">
+      <header class="app-header" data-app-header>
         <div class="app-header-left">
           <div class="app-logo">
             <img src="${baseUrl}icons/logo_dd.png" alt="Dungeons & Dragons" class="app-logo-image" />
@@ -153,7 +153,8 @@ export function updateOfflineBanner() {
   const banner = document.querySelector('[data-offline-banner]');
   if (!banner) return;
   const { offline } = getState();
-  banner.hidden = !offline;
+  const route = window.location.hash.replace('#/', '') || 'home';
+  banner.hidden = route === 'login' || !offline;
 }
 
 export function updateHeaderInfo() {

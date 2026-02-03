@@ -24,15 +24,21 @@ function renderRoute() {
   const bottomNav = document.querySelector('[data-bottom-nav]');
   const actionsFab = document.querySelector('[data-actions-fab]');
   const actionsBackdrop = document.querySelector('.actions-fab-backdrop');
+  const appHeader = document.querySelector('[data-app-header]');
+  const offlineBanner = document.querySelector('[data-offline-banner]');
   const hideShell = route === 'login' || route === 'characters';
+  const hideHeader = route === 'login';
   const showFab = route === 'home' || route === 'inventory';
   const applyShellVisibility = (shouldHide, shouldShowFab) => {
+    const { offline } = getState();
     if (bottomNav) bottomNav.hidden = shouldHide;
     if (actionsFab) {
       actionsFab.hidden = !shouldShowFab;
       actionsFab.classList.remove('is-open');
     }
     if (actionsBackdrop) actionsBackdrop.hidden = !shouldShowFab;
+    if (appHeader) appHeader.hidden = hideHeader;
+    if (offlineBanner) offlineBanner.hidden = hideHeader || !offline;
     if (actionsFab) {
       actionsFab.querySelectorAll('[data-fab-scope]')
         .forEach((item) => {
