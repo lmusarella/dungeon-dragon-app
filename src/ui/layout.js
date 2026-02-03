@@ -7,7 +7,7 @@ export function renderLayout(container) {
       <header class="app-header">
         <div class="app-header-left">
           <div class="app-logo">
-            <img src="/icons/logo_dd.png" alt="Dungeons & Dragons" class="app-logo-image" />
+            <img src="public/icons/logo_dd.png" alt="Dungeons & Dragons" class="app-logo-image" />
           </div>
           <div>
             <h1>Dungeons & Dragons</h1>
