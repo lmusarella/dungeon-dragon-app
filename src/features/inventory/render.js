@@ -1,3 +1,4 @@
+import { formatWeight } from '../../lib/format.js';
 import { formatTransactionAmount, formatTransactionDate, getBodyPartLabels, getCategoryLabel, getEquipSlots } from './utils.js';
 
 export function buildTransactionList(transactions) {
@@ -25,7 +26,17 @@ export function buildTransactionList(transactions) {
         <strong>${directionLabel}</strong>
         <p class="muted">${transaction.reason || 'Nessuna nota'} · ${dateLabel}</p>
       </div>
-      <span class="transaction-amount">${amountLabel}</span>
+      <div class="transaction-meta">
+        <span class="transaction-amount">${amountLabel}</span>
+        <div class="transaction-actions">
+          <button class="icon-button" type="button" data-edit-transaction="${transaction.id}" aria-label="Modifica transazione" title="Modifica">
+            <span aria-hidden="true">✏️</span>
+          </button>
+          <button class="icon-button icon-button--danger" type="button" data-delete-transaction="${transaction.id}" aria-label="Elimina transazione" title="Elimina">
+            <span aria-hidden="true">🗑️</span>
+          </button>
+        </div>
+      </div>
     `;
     list.appendChild(item);
   });
@@ -33,7 +44,7 @@ export function buildTransactionList(transactions) {
   return wrapper;
 }
 
-export function buildInventoryTree(items) {
+export function buildInventoryTree(items, weightUnit = 'lb') {
   const containers = items.filter((item) => item.category === 'container');
   const topLevel = items.filter((item) => !item.container_item_id && item.category !== 'container');
 
@@ -42,7 +53,7 @@ export function buildInventoryTree(items) {
     return `
       <div class="inventory-group">
         <p class="eyebrow">${container.name}</p>
-        ${buildItemList(children)}
+        ${buildItemList(children, weightUnit)}
       </div>
     `;
   }).join('');
@@ -51,12 +62,12 @@ export function buildInventoryTree(items) {
     ${containerSections}
     <div class="inventory-group">
       <p class="eyebrow">Oggetti</p>
-      ${buildItemList(topLevel)}
+      ${buildItemList(topLevel, weightUnit)}
     </div>
   `;
 }
 
-export function buildItemList(items) {
+export function buildItemList(items, weightUnit = 'lb') {
   if (!items.length) {
     return '<p class="muted eyebrow">Nessun oggetto.</p>';
   }
@@ -71,7 +82,7 @@ export function buildItemList(items) {
                 <div class="item-info-line">
                   <strong class="attack-card__name">${item.name}</strong>
                   <span class="muted item-meta">
-                    ${getCategoryLabel(item.category)} · ${item.qty}x · ${item.weight ?? 0} lb
+                    ${getCategoryLabel(item.category)} · ${item.qty}x · ${formatWeight(item.weight ?? 0, weightUnit)}
                   </span>
                 </div>
                 <div class="tag-row resource-card__meta">
@@ -131,30 +142,40 @@ export function buildEquippedList(items) {
   `;
 }
 
-export function moneyFields() {
+export function moneyFields({ amount = 0, coin = 'gp', reason = '', occurredOn, direction = 'receive', includeDirection = false } = {}) {
+  const resolvedDate = occurredOn || new Date().toISOString().split('T')[0];
   return `
     <div class="money-grid compact-grid-fields">
       <label class="field">
         <span>Quantità</span>
-        <input name="amount" type="number" value="0" min="0" />
+        <input name="amount" type="number" value="${amount}" min="0" />
       </label>
       <label class="field">
         <span>Tipo moneta</span>
         <select name="coin">
-          <option value="pp">Platino (PP)</option>
-          <option value="gp">Oro (GP)</option>
-          <option value="sp">Argento (SP)</option>
-          <option value="cp">Rame (CP)</option>
+          <option value="pp" ${coin === 'pp' ? 'selected' : ''}>Platino (PP)</option>
+          <option value="gp" ${coin === 'gp' ? 'selected' : ''}>Oro (GP)</option>
+          <option value="sp" ${coin === 'sp' ? 'selected' : ''}>Argento (SP)</option>
+          <option value="cp" ${coin === 'cp' ? 'selected' : ''}>Rame (CP)</option>
         </select>
       </label>
     </div>
+    ${includeDirection ? `
+      <label class="field">
+        <span>Direzione</span>
+        <select name="direction">
+          <option value="receive" ${direction === 'receive' ? 'selected' : ''}>Entrata</option>
+          <option value="pay" ${direction === 'pay' ? 'selected' : ''}>Pagamento</option>
+        </select>
+      </label>
+    ` : ''}
     <label class="field">
       <span>Motivo</span>
-      <input name="reason" placeholder="Motivo" />
+      <input name="reason" placeholder="Motivo" value="${reason}" />
     </label>
     <label class="field">
       <span>Data</span>
-      <input name="occurred_on" type="date" value="${new Date().toISOString().split('T')[0]}" />
+      <input name="occurred_on" type="date" value="${resolvedDate}" />
     </label>
   `;
 }
