@@ -1,4 +1,4 @@
-import { fetchCharacters, fetchResources, updateResource, updateResourcesReset } from './characterApi.js';
+import { deleteResource, fetchCharacters, fetchResources, updateResource, updateResourcesReset } from './characterApi.js';
 import { createItem, fetchItems } from '../inventory/inventoryApi.js';
 import { getState, setActiveCharacter, setState, updateCache } from '../../app/state.js';
 import { buildInput, createToast, openConfirmModal, openFormModal } from '../../ui/components.js';
@@ -330,39 +330,36 @@ export async function renderHome(container) {
       });
     }));
 
-  const longPressDelay = 500;
   container.querySelectorAll('[data-resource-card]')
     .forEach((card) => {
-      let pressTimer = null;
-      const startPress = (event) => {
+      const handleOpen = async (event) => {
         if (event.target.closest('button')) return;
-        pressTimer = setTimeout(async () => {
-          const resource = resources.find((entry) => entry.id === card.dataset.resourceCard);
-          if (!resource) return;
-          openResourceDetail(resource);
-        }, longPressDelay);
+        const resource = resources.find((entry) => entry.id === card.dataset.resourceCard);
+        if (!resource) return;
+        openResourceDetail(resource, {
+          onUse: async () => {
+            const maxUses = Number(resource.max_uses) || 0;
+            if (!maxUses || resource.used >= maxUses) return;
+            try {
+              await updateResource(resource.id, { used: Math.min(resource.used + 1, maxUses) });
+              createToast('Risorsa usata');
+              renderHome(container);
+            } catch (error) {
+              createToast('Errore utilizzo risorsa', 'error');
+            }
+          },
+          onReset: async () => {
+            try {
+              await updateResource(resource.id, { used: 0 });
+              createToast('Risorsa ripristinata');
+              renderHome(container);
+            } catch (error) {
+              createToast('Errore ripristino risorsa', 'error');
+            }
+          }
+        });
       };
-      const cancelPress = () => {
-        if (pressTimer) {
-          clearTimeout(pressTimer);
-          pressTimer = null;
-        }
-      };
-      const handleSelect = (event) => {
-        if (event.target.closest('button')) return;
-        container.querySelectorAll('.resource-card.is-selected')
-          .forEach((selectedCard) => selectedCard.classList.remove('is-selected'));
-        card.classList.add('is-selected');
-        window.setTimeout(() => {
-          card.classList.remove('is-selected');
-        }, 800);
-      };
-      card.addEventListener('pointerdown', startPress);
-      card.addEventListener('pointerup', cancelPress);
-      card.addEventListener('pointerleave', cancelPress);
-      card.addEventListener('pointercancel', cancelPress);
-      card.addEventListener('pointermove', cancelPress);
-      card.addEventListener('click', handleSelect);
+      card.addEventListener('click', handleOpen);
     });
 
   container.querySelectorAll('[data-use-resource]')
@@ -377,6 +374,21 @@ export async function renderHome(container) {
         renderHome(container);
       } catch (error) {
         createToast('Errore utilizzo risorsa', 'error');
+      }
+    }));
+
+  container.querySelectorAll('[data-delete-resource]')
+    .forEach((button) => button.addEventListener('click', async () => {
+      const resource = resources.find((entry) => entry.id === button.dataset.deleteResource);
+      if (!resource) return;
+      const shouldDelete = await openConfirmModal({ message: 'Eliminare risorsa?' });
+      if (!shouldDelete) return;
+      try {
+        await deleteResource(resource.id);
+        createToast('Risorsa eliminata');
+        renderHome(container);
+      } catch (error) {
+        createToast('Errore eliminazione risorsa', 'error');
       }
     }));
 

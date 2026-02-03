@@ -1,11 +1,10 @@
-import { createResource, deleteResource, updateResource } from '../characterApi.js';
+import { createResource, updateResource } from '../characterApi.js';
 import { getState } from '../../../app/state.js';
 import {
   buildInput,
   buildSelect,
   buildTextarea,
   createToast,
-  openConfirmModal,
   openFormModal
 } from '../../../ui/components.js';
 import { consumeSpellSlot, saveCharacterData } from './data.js';
@@ -55,10 +54,17 @@ export function openBackgroundModal(character) {
   });
 }
 
-export function openResourceDetail(resource) {
+export function openResourceDetail(resource, { onUse, onReset } = {}) {
   const detail = document.createElement('div');
   detail.className = 'resource-detail';
   const maxUses = Number(resource.max_uses) || 0;
+  const isExhausted = maxUses && resource.used >= maxUses;
+  const hasAction = Boolean(maxUses && (isExhausted ? onReset : onUse));
+  const submitLabel = maxUses
+    ? isExhausted
+      ? 'Ripristina'
+      : 'Usa'
+    : 'Chiudi';
   const usageLabel = maxUses ? `${resource.used}/${resource.max_uses}` : 'Passiva';
   detail.innerHTML = `
     <div class="detail-card detail-card--text">
@@ -72,8 +78,18 @@ export function openResourceDetail(resource) {
   `;
   openFormModal({
     title: 'Dettaglio risorsa',
-    submitLabel: 'Chiudi',
+    submitLabel,
+    cancelLabel: hasAction ? 'Chiudi' : null,
     content: detail
+  }).then(async (formData) => {
+    if (!formData || !maxUses) return;
+    if (isExhausted && onReset) {
+      await onReset();
+      return;
+    }
+    if (!isExhausted && onUse) {
+      await onUse();
+    }
   });
 }
 
@@ -405,31 +421,6 @@ export function openResourceDrawer(character, onSave, resource = null) {
   };
   passiveInput?.addEventListener('change', syncPassiveState);
   syncPassiveState();
-
-  if (resource) {
-    const deleteButton = document.createElement('button');
-    deleteButton.type = 'button';
-    deleteButton.className = 'resource-action-button resource-delete-button';
-    deleteButton.textContent = 'Elimina';
-    deleteButton.addEventListener('click', async () => {
-      const shouldDelete = await openConfirmModal({ message: 'Eliminare risorsa?' });
-      if (!shouldDelete) return;
-      try {
-        await deleteResource(resource.id);
-        createToast('Risorsa eliminata');
-        onSave();
-        const modal = document.querySelector('[data-form-modal]');
-        const cancelButton = modal?.querySelector('[data-form-cancel]');
-        cancelButton?.click();
-      } catch (error) {
-        createToast('Errore eliminazione risorsa', 'error');
-      }
-    });
-    const deleteWrapper = document.createElement('div');
-    deleteWrapper.className = 'resource-form-actions';
-    deleteWrapper.appendChild(deleteButton);
-    form.appendChild(deleteWrapper);
-  }
 
   openFormModal({
     title: resource ? 'Modifica abilità' : 'Nuova abilità',
