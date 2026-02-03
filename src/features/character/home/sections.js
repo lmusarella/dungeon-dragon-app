@@ -333,21 +333,9 @@ export function buildProficiencyOverview(character) {
     acc.values.push(cleaned);
     return acc;
   }, { values: [], seen: new Set() }).values;
-  const equipped = equipmentProficiencyList
-    .filter((prof) => proficiencies[prof.key])
-    .map((prof) => prof.label);
-
   return `
     <div class="detail-section">
       <div class="accordion-stack">
-        <details class="accordion">
-          <summary>Equipaggiamento</summary>
-          <div class="detail-card detail-card--text">
-            ${equipped.length
-    ? `<div class="tag-row">${equipped.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
-    : '<p class="muted">Nessuna competenza equipaggiamento.</p>'}
-          </div>
-        </details>
         <details class="accordion">
           <summary>Strumenti</summary>
           <div class="detail-card detail-card--text">
@@ -364,6 +352,24 @@ export function buildProficiencyOverview(character) {
     : '<p class="muted">Aggiungi lingue conosciute nel profilo.</p>'}
           </div>
         </details>
+      </div>
+    </div>
+  `;
+}
+
+export function buildEquipmentOverview(character) {
+  const data = character.data || {};
+  const proficiencies = data.proficiencies || {};
+  const equipped = equipmentProficiencyList
+    .filter((prof) => proficiencies[prof.key])
+    .map((prof) => prof.label);
+
+  return `
+    <div class="detail-section">
+      <div class="detail-card detail-card--text">
+        ${equipped.length
+    ? `<div class="tag-row">${equipped.map((label) => `<span class="chip">${label}</span>`).join('')}</div>`
+    : '<p class="muted">Nessuna competenza equipaggiamento.</p>'}
       </div>
     </div>
   `;

@@ -1,5 +1,5 @@
 import { fetchCharacters, fetchResources, updateResource, updateResourcesReset } from './characterApi.js';
-import { fetchItems } from '../inventory/inventoryApi.js';
+import { createItem, fetchItems } from '../inventory/inventoryApi.js';
 import { getState, setActiveCharacter, setState, updateCache } from '../../app/state.js';
 import { buildInput, createToast, openConfirmModal, openFormModal } from '../../ui/components.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
@@ -8,12 +8,15 @@ import { openCharacterDrawer } from './home/characterDrawer.js';
 import {
   buildAttackSection,
   buildCharacterOverview,
+  buildEquipmentOverview,
   buildEmptyState,
   buildResourceSections,
   buildSavingThrowSection,
   buildSkillList,
   buildSpellSection
 } from './home/sections.js';
+import { buildLootFields } from '../inventory/render.js';
+import { getWeightUnit } from '../inventory/utils.js';
 import { openBackgroundModal, openResourceDetail, openResourceDrawer, openSpellDrawer, openSpellListModal } from './home/modals.js';
 import { saveCharacterData } from './home/data.js';
 import { abilityShortLabel, savingThrowList, skillList } from './home/constants.js';
@@ -128,6 +131,16 @@ export async function renderHome(container) {
           </header>
           ${activeCharacter ? buildCharacterOverview(activeCharacter, canEditCharacter, items) : buildEmptyState(canCreateCharacter, offline)}
         </section>
+        ${activeCharacter ? `
+        <section class="card home-card home-section">
+          <header class="card-header">
+            <div>
+              <p class="eyebrow">Equipaggiamento</p>
+            </div>
+          </header>
+          ${buildEquipmentOverview(activeCharacter)}
+        </section>
+        ` : ''}
       </div>
       <div class="home-column home-column--right">
         <section class="card home-card home-section home-scroll-panel">
@@ -386,21 +399,12 @@ export async function renderHome(container) {
 
   const avatar = container.querySelector('.character-avatar');
   if (avatar) {
-    avatar.addEventListener('pointerdown', (event) => {
-      if (event.button && event.button !== 0) return;
+    avatar.setAttribute('draggable', 'false');
+    avatar.addEventListener('contextmenu', (event) => {
       event.preventDefault();
-      const src = avatar.getAttribute('src');
-      if (!src) return;
-      const closePreview = openAvatarPreview(src, avatar.getAttribute('alt') || 'Ritratto personaggio');
-      const closeOnRelease = () => {
-        closePreview();
-        window.removeEventListener('pointerup', closeOnRelease);
-        window.removeEventListener('pointercancel', closeOnRelease);
-        window.removeEventListener('blur', closeOnRelease);
-      };
-      window.addEventListener('pointerup', closeOnRelease);
-      window.addEventListener('pointercancel', closeOnRelease);
-      window.addEventListener('blur', closeOnRelease);
+    });
+    avatar.addEventListener('dragstart', (event) => {
+      event.preventDefault();
     });
   }
 
@@ -414,7 +418,8 @@ function bindFabHandlers() {
     const hpButton = event.target.closest('[data-hp-action]');
     const restButton = event.target.closest('[data-rest]');
     const diceButton = event.target.closest('[data-open-dice]');
-    if (!hpButton && !restButton && !diceButton) return;
+    const lootButton = event.target.closest('[data-add-loot]');
+    if (!hpButton && !restButton && !diceButton && !lootButton) return;
     event.preventDefault();
     const container = lastHomeContainer ?? document.querySelector('[data-route-outlet]');
     if (hpButton) {
@@ -429,6 +434,11 @@ function bindFabHandlers() {
     }
     if (diceButton) {
       handleDiceAction(diceButton.dataset.openDice);
+      closeFabMenu();
+      return;
+    }
+    if (lootButton) {
+      await handleLootAction(container);
       closeFabMenu();
     }
   });
@@ -451,6 +461,45 @@ function getHomeContext() {
     activeCharacter,
     canEditCharacter: Boolean(user) && !offline
   };
+}
+
+async function handleLootAction(container) {
+  const { activeCharacter } = getHomeContext();
+  const state = getState();
+  if (!activeCharacter) return;
+  if (state.offline) {
+    createToast('Loot disponibile solo online.', 'error');
+    return;
+  }
+  const weightUnit = getWeightUnit(activeCharacter);
+  const weightStep = weightUnit === 'kg' ? '0.1' : '1';
+  const formData = await openFormModal({
+    title: 'Aggiungi loot',
+    submitLabel: 'Aggiungi',
+    content: buildLootFields(weightStep)
+  });
+  if (!formData) return;
+  try {
+    await createItem({
+      user_id: activeCharacter.user_id,
+      character_id: activeCharacter.id,
+      name: formData.get('name'),
+      qty: Number(formData.get('qty')),
+      weight: Number(formData.get('weight')),
+      value_cp: Number(formData.get('value_cp')),
+      category: 'loot',
+      equipable: false,
+      equip_slot: null,
+      equip_slots: [],
+      sovrapponibile: false
+    });
+    createToast('Loot aggiunto');
+    if (container) {
+      renderHome(container);
+    }
+  } catch (error) {
+    createToast('Errore loot', 'error');
+  }
 }
 
 function buildSkillRollOptions(character) {
@@ -738,24 +787,6 @@ function openDiceRollerModal({
     rollType,
     weakPoints
   });
-}
-
-function openAvatarPreview(src, alt) {
-  const existing = document.querySelector('.avatar-preview');
-  if (existing) {
-    existing.remove();
-  }
-  const overlay = document.createElement('div');
-  overlay.className = 'avatar-preview';
-  const image = document.createElement('img');
-  image.className = 'avatar-preview__image';
-  image.src = src;
-  image.alt = alt;
-  overlay.appendChild(image);
-  document.body.appendChild(overlay);
-  return () => {
-    overlay.remove();
-  };
 }
 
 function buildHpShortcutFields(

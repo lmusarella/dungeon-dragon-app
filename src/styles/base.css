@@ -360,7 +360,7 @@ button {
 .actions-fab-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(28, 27, 26, 0.25);
+  background: rgba(28, 27, 26, 0.45);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
@@ -396,27 +396,27 @@ button {
 }
 
 .actions-fab.is-open .actions-fab-item:nth-child(1) {
-  transform: translate(-50%, -120px) translateX(-140px);
+  transform: translate(-50%, -96px) translateX(-170px);
 }
 
 .actions-fab.is-open .actions-fab-item:nth-child(2) {
-  transform: translate(-50%, -165px) translateX(-90px);
+  transform: translate(-50%, -130px) translateX(-110px);
 }
 
 .actions-fab.is-open .actions-fab-item:nth-child(3) {
-  transform: translate(-50%, -190px) translateX(-30px);
+  transform: translate(-50%, -148px) translateX(-50px);
 }
 
 .actions-fab.is-open .actions-fab-item:nth-child(4) {
-  transform: translate(-50%, -190px) translateX(30px);
+  transform: translate(-50%, -148px) translateX(50px);
 }
 
 .actions-fab.is-open .actions-fab-item:nth-child(5) {
-  transform: translate(-50%, -165px) translateX(90px);
+  transform: translate(-50%, -130px) translateX(110px);
 }
 
 .actions-fab.is-open .actions-fab-item:nth-child(6) {
-  transform: translate(-50%, -120px) translateX(140px);
+  transform: translate(-50%, -96px) translateX(170px);
 }
 
 .actions-fab-toggle {
@@ -1053,7 +1053,10 @@ button {
   object-fit: cover;
   border: 2px solid #eadfc9;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-  cursor: pointer;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .hp-panel {
@@ -1431,6 +1434,16 @@ button {
   background-size: cover;
   background-position: center;
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.coin-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .coin-avatar--pp {
