@@ -33,7 +33,7 @@ export async function renderCharacterSelect(container) {
           <h2>Seleziona personaggio</h2>
           <p class="muted">Scegli una scheda per aprire la home del personaggio.</p>
         </div>
-        ${canCreateCharacter ? '<button class="primary" type="button" data-create-character>Nuovo personaggio</button>' : ''}
+        ${canCreateCharacter ? '<button class="icon-button icon-button--add character-select-add" type="button" data-create-character aria-label="Nuovo personaggio" title="Nuovo personaggio">+</button>' : ''}
       </header>
       <div class="character-card-grid">
         ${characters.length
@@ -64,11 +64,10 @@ function buildCharacterCard(character, isActive) {
   const avatar = data.avatar_url
     ? `<img src="${data.avatar_url}" alt="Ritratto di ${character.name}" />`
     : `<span>${getInitials(character.name)}</span>`;
-  const levelLabel = data.level ? `Livello ${data.level}` : 'Livello n.d.';
+  const levelLabel = data.level ? `Livello ${data.level}` : null;
   const classLabel = data.class_name || data.class_archetype || data.archetype;
-  const primaryMeta = [levelLabel, classLabel].filter(Boolean).join(' · ');
-  const secondaryMeta = [data.race, data.background, data.alignment].filter(Boolean).join(' · ');
-  const fallbackMeta = secondaryMeta || 'Razza, background o allineamento non specificati';
+  const primaryMeta = [levelLabel, classLabel].filter(Boolean);
+  const secondaryMeta = [data.race].filter(Boolean).join(' · ');
   return `
     <button class="character-card ${isActive ? 'is-active' : ''}" type="button" data-character-card="${character.id}">
       <div class="character-card-avatar">
@@ -76,9 +75,12 @@ function buildCharacterCard(character, isActive) {
       </div>
       <div class="character-card-info">
         <h3>${character.name}</h3>
-        <p class="muted">${character.system || 'Sistema non specificato'}</p>
-        <p class="character-card-meta">${primaryMeta || 'Dettagli base non specificati'}</p>
-        <p class="character-card-meta muted">${fallbackMeta}</p>
+        ${primaryMeta.length
+    ? `<div class="character-card-tags">
+            ${primaryMeta.map((item) => `<span class="character-tag">${item}</span>`).join('')}
+          </div>`
+    : '<p class="character-card-meta muted">Dettagli base non specificati</p>'}
+        ${secondaryMeta ? `<p class="character-card-detail muted">${secondaryMeta}</p>` : ''}
       </div>
     </button>
   `;

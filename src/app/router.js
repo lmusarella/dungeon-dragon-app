@@ -28,7 +28,7 @@ function renderRoute() {
   const offlineBanner = document.querySelector('[data-offline-banner]');
   const appShell = document.querySelector('.app-shell');
   const hideShell = route === 'login' || route === 'characters';
-  const hideHeader = route === 'login' || route === 'characters';
+  const hideHeader = route === 'login';
   const showFab = route === 'home' || route === 'inventory';
   const isAuthRoute = route === 'login' || route === 'characters';
   if (appShell) {

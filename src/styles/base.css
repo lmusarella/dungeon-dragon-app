@@ -2191,6 +2191,13 @@ button {
   margin-bottom: 16px;
 }
 
+.character-select-add {
+  width: 36px;
+  height: 36px;
+  font-size: 1.6rem;
+  box-shadow: 0 6px 16px rgba(111, 78, 55, 0.25);
+}
+
 .character-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -2201,10 +2208,10 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 14px;
   border-radius: 16px;
   border: 1px solid #e6dcc8;
-  background: #fff;
+  background: linear-gradient(135deg, #fff, #fff7ea);
   text-align: left;
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
@@ -2213,12 +2220,33 @@ button {
 .character-card-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .character-card-meta {
   font-size: 0.9rem;
   margin: 0;
+}
+
+.character-card-detail {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.character-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.character-tag {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #5a3f2a;
+  background: #f6e6d1;
+  border: 1px solid rgba(111, 78, 55, 0.2);
 }
 
 .character-card:hover {
