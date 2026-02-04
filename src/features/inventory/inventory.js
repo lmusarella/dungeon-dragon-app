@@ -15,7 +15,7 @@ import {
 import { renderWalletSummary } from '../wallet/wallet.js';
 import { categories, itemCategories } from './constants.js';
 import { openItemModal } from './modals.js';
-import { buildInventoryTree, buildLootFields, buildTransactionList, moneyFields } from './render.js';
+import { buildInventoryTree, buildLootFields, buildTransactionList, exchangeFields, moneyFields } from './render.js';
 import { getWeightUnit, normalizeTransactionAmount } from './utils.js';
 
 export async function renderInventory(container) {
@@ -81,6 +81,11 @@ export async function renderInventory(container) {
         <section class="card inventory-wallet">
           <header class="card-header">
             <p class="eyebrow">Monete</p>
+            <div class="button-row">
+              <button class="icon-button icon-button--swap" type="button" data-exchange-coins aria-label="Scambia monete" title="Scambia monete">
+                <span aria-hidden="true">⇄</span>
+              </button>
+            </div>
           </header>
           ${renderWalletSummary(wallet)}
         </section>
@@ -227,6 +232,62 @@ export async function renderInventory(container) {
         }
       });
     });
+
+  const exchangeButton = container.querySelector('[data-exchange-coins]');
+  if (exchangeButton && !exchangeButton.dataset.bound) {
+    exchangeButton.dataset.bound = 'true';
+    exchangeButton.addEventListener('click', async () => {
+      const formData = await openFormModal({
+        title: 'Scambia monete',
+        submitLabel: 'Scambia',
+        content: exchangeFields()
+      });
+      if (!formData) return;
+      if (!wallet) {
+        wallet = {
+          user_id: activeCharacter.user_id,
+          character_id: activeCharacter.id,
+          cp: 0,
+          sp: 0,
+          gp: 0,
+          pp: 0
+        };
+      }
+      const amountGp = Number(formData.get('amount') || 0);
+      const target = formData.get('target');
+      if (amountGp <= 0) {
+        createToast('Inserisci un importo valido', 'error');
+        return;
+      }
+      if (amountGp > Number(wallet.gp || 0)) {
+        createToast('Oro insufficiente', 'error');
+        return;
+      }
+      const delta = { cp: 0, sp: 0, gp: -amountGp, pp: 0 };
+      if (target === 'pp') {
+        if (amountGp % 10 !== 0) {
+          createToast('Per il platino servono multipli di 10 oro', 'error');
+          return;
+        }
+        delta.pp = amountGp / 10;
+      } else if (target === 'sp') {
+        delta.sp = amountGp * 10;
+      } else if (target === 'cp') {
+        delta.cp = amountGp * 100;
+      }
+      const nextWallet = applyMoneyDelta(wallet, delta);
+
+      try {
+        const saved = await upsertWallet({ ...nextWallet, user_id: wallet.user_id, character_id: wallet.character_id });
+        updateCache('wallet', saved);
+        await cacheSnapshot({ wallet: saved });
+        createToast('Scambio completato');
+        renderInventory(container);
+      } catch (error) {
+        createToast('Errore scambio monete', 'error');
+      }
+    });
+  }
 
   const transactionAmount = (transaction) => {
     const normalized = normalizeTransactionAmount(transaction.amount);
