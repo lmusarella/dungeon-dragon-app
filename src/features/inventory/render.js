@@ -167,6 +167,26 @@ export function moneyFields({ amount = 0, coin = 'gp', reason = '', occurredOn, 
   `;
 }
 
+export function exchangeFields({ amount = 0, target = 'pp' } = {}) {
+  return `
+    <div class="money-grid compact-grid-fields">
+      <label class="field">
+        <span>Oro da scambiare</span>
+        <input name="amount" type="number" value="${amount}" min="0" step="1" />
+      </label>
+      <label class="field">
+        <span>Moneta di destinazione</span>
+        <select name="target">
+          <option value="pp" ${target === 'pp' ? 'selected' : ''}>Platino (PP)</option>
+          <option value="sp" ${target === 'sp' ? 'selected' : ''}>Argento (SP)</option>
+          <option value="cp" ${target === 'cp' ? 'selected' : ''}>Rame (CP)</option>
+        </select>
+      </label>
+    </div>
+    <p class="muted">Tasso di cambio: 1 PP = 10 GP · 1 GP = 10 SP · 1 SP = 10 CP.</p>
+  `;
+}
+
 export function buildLootFields(weightStep) {
   return `
     <div class="compact-field-grid">
