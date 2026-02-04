@@ -5,7 +5,7 @@ import { setState } from '../../app/state.js';
 
 export function renderLogin(container) {
   container.innerHTML = `
-    <section class="login-view">
+    <section class="login-view auth-screen">
       <div class="card login-card">
         <div class="login-header">
           <img class="login-logo" src="/icons/logo_dd.png" alt="Dungeon & Dragon" />

@@ -15,9 +15,10 @@ import {
   buildSkillList,
   buildSpellSection
 } from './home/sections.js';
-import { buildLootFields } from '../inventory/render.js';
+import { buildLootFields, moneyFields } from '../inventory/render.js';
 import { getWeightUnit } from '../inventory/utils.js';
 import { bodyParts } from '../inventory/constants.js';
+import { fetchWallet, upsertWallet, createTransaction } from '../wallet/walletApi.js';
 import {
   openAvatarModal,
   openBackgroundModal,
@@ -41,6 +42,7 @@ import {
   normalizeNumber,
   rollDie
 } from './home/utils.js';
+import { applyMoneyDelta } from '../../lib/calc.js';
 
 let fabHandlersBound = false;
 let lastHomeContainer = null;
@@ -589,14 +591,25 @@ function bindFabHandlers() {
     const fabContainer = event.target.closest('[data-actions-fab]');
     if (!fabContainer) return;
     const hpButton = event.target.closest('[data-hp-action]');
+    const moneyButton = event.target.closest('[data-money-action]');
     const restButton = event.target.closest('[data-rest]');
     const diceButton = event.target.closest('[data-open-dice]');
     const lootButton = event.target.closest('[data-add-loot]');
-    if (!hpButton && !restButton && !diceButton && !lootButton) return;
+    if (!hpButton && !moneyButton && !restButton && !diceButton && !lootButton) return;
     event.preventDefault();
     const container = lastHomeContainer ?? null;
     if (hpButton) {
       await handleHpAction(hpButton.dataset.hpAction, container);
+      closeFabMenu();
+      return;
+    }
+    if (moneyButton) {
+      const route = window.location.hash.replace('#/', '') || 'home';
+      if (route === 'inventory') {
+        closeFabMenu();
+        return;
+      }
+      await handleMoneyAction(moneyButton.dataset.moneyAction, container);
       closeFabMenu();
       return;
     }
@@ -675,6 +688,75 @@ async function handleLootAction(container) {
     }
   } catch (error) {
     createToast('Errore loot', 'error');
+  }
+}
+
+async function handleMoneyAction(direction, container) {
+  const { activeCharacter, canEditCharacter } = getHomeContext();
+  if (!activeCharacter) return;
+  if (!canEditCharacter) {
+    createToast('Azioni denaro disponibili solo con profilo online', 'error');
+    return;
+  }
+  const state = getState();
+  let wallet = state.cache.wallet;
+  if (!wallet && !state.offline) {
+    try {
+      wallet = await fetchWallet(activeCharacter.id);
+      updateCache('wallet', wallet);
+      if (wallet) {
+        await cacheSnapshot({ wallet });
+      }
+    } catch (error) {
+      createToast('Errore caricamento wallet', 'error');
+    }
+  }
+  const title = direction === 'pay' ? 'Paga monete' : 'Ricevi monete';
+  const submitLabel = direction === 'pay' ? 'Paga' : 'Ricevi';
+  const formData = await openFormModal({ title, submitLabel, content: moneyFields({ direction }) });
+  if (!formData) return;
+  if (!wallet) {
+    wallet = {
+      user_id: activeCharacter.user_id,
+      character_id: activeCharacter.id,
+      cp: 0,
+      sp: 0,
+      gp: 0,
+      pp: 0
+    };
+  }
+  const coin = formData.get('coin');
+  const amount = Number(formData.get('amount') || 0);
+  const delta = {
+    cp: coin === 'cp' ? amount : 0,
+    sp: coin === 'sp' ? amount : 0,
+    gp: coin === 'gp' ? amount : 0,
+    pp: coin === 'pp' ? amount : 0
+  };
+  const sign = direction === 'pay' ? -1 : 1;
+  const signedDelta = Object.fromEntries(
+    Object.entries(delta).map(([key, value]) => [key, value * sign])
+  );
+  const nextWallet = applyMoneyDelta(wallet, signedDelta);
+
+  try {
+    const saved = await upsertWallet({ ...nextWallet, user_id: wallet.user_id, character_id: wallet.character_id });
+    await createTransaction({
+      user_id: wallet.user_id,
+      character_id: wallet.character_id,
+      direction,
+      amount: signedDelta,
+      reason: formData.get('reason'),
+      occurred_on: formData.get('occurred_on')
+    });
+    updateCache('wallet', saved);
+    await cacheSnapshot({ wallet: saved });
+    createToast('Wallet aggiornato');
+    if (container) {
+      renderHome(container);
+    }
+  } catch (error) {
+    createToast('Errore aggiornamento denaro', 'error');
   }
 }
 
@@ -853,7 +935,11 @@ async function handleRestAction(resetOn, container) {
 
 async function handleHpAction(action, container) {
   const { activeCharacter, canEditCharacter } = getHomeContext();
-  if (!activeCharacter || !canEditCharacter) return;
+  if (!activeCharacter) return;
+  if (!canEditCharacter) {
+    createToast('Azioni HP disponibili solo con profilo online', 'error');
+    return;
+  }
   const title = action === 'heal' ? 'Cura PF' : 'Infliggi danno';
   const submitLabel = action === 'heal' ? 'Cura' : 'Danno';
   const formData = await openFormModal({

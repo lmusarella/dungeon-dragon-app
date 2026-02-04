@@ -6,7 +6,11 @@ import { cacheSnapshot } from '../../lib/offline/cache.js';
 import { openCharacterDrawer } from './home/characterDrawer.js';
 
 export async function renderCharacterSelect(container) {
-  container.innerHTML = `<section class="card"><p>Caricamento...</p></section>`;
+  container.innerHTML = `
+    <section class="auth-screen character-select-view">
+      <div class="card character-select-card"><p>Caricamento...</p></div>
+    </section>
+  `;
   const state = getState();
   const { user, offline } = state;
 
@@ -27,7 +31,8 @@ export async function renderCharacterSelect(container) {
   const canCreateCharacter = Boolean(user) && !offline;
 
   container.innerHTML = `
-    <section class="card">
+    <section class="auth-screen character-select-view">
+      <div class="card character-select-card">
       <header class="character-select-header">
         <div>
           <h2>Seleziona personaggio</h2>
@@ -35,10 +40,11 @@ export async function renderCharacterSelect(container) {
         </div>
         ${canCreateCharacter ? '<button class="icon-button icon-button--add character-select-add" type="button" data-create-character aria-label="Nuovo personaggio" title="Nuovo personaggio">+</button>' : ''}
       </header>
-      <div class="character-card-grid">
+        <div class="character-card-grid">
         ${characters.length
     ? characters.map((character) => buildCharacterCard(character, character.id === activeCharacter?.id)).join('')
     : '<p>Non hai ancora creato un personaggio.</p>'}
+        </div>
       </div>
     </section>
   `;
