@@ -253,28 +253,31 @@ export async function renderInventory(container) {
           pp: 0
         };
       }
-      const amountGp = Number(formData.get('amount') || 0);
+      const amount = Number(formData.get('amount') || 0);
+      const source = formData.get('source');
       const target = formData.get('target');
-      if (amountGp <= 0) {
+      if (amount <= 0) {
         createToast('Inserisci un importo valido', 'error');
         return;
       }
-      if (amountGp > Number(wallet.gp || 0)) {
-        createToast('Oro insufficiente', 'error');
+      if (source === target) {
+        createToast('Scegli due monete diverse', 'error');
         return;
       }
-      const delta = { cp: 0, sp: 0, gp: -amountGp, pp: 0 };
-      if (target === 'pp') {
-        if (amountGp % 10 !== 0) {
-          createToast('Per il platino servono multipli di 10 oro', 'error');
-          return;
-        }
-        delta.pp = amountGp / 10;
-      } else if (target === 'sp') {
-        delta.sp = amountGp * 10;
-      } else if (target === 'cp') {
-        delta.cp = amountGp * 100;
+      if (amount > Number(wallet[source] || 0)) {
+        createToast('Monete insufficienti', 'error');
+        return;
       }
+      const coinValues = { cp: 1, sp: 10, gp: 100, pp: 1000 };
+      const sourceValue = coinValues[source];
+      const targetValue = coinValues[target];
+      const totalCp = amount * sourceValue;
+      if (totalCp % targetValue !== 0) {
+        createToast('Serve un multiplo preciso per lo scambio', 'error');
+        return;
+      }
+      const targetAmount = totalCp / targetValue;
+      const delta = { cp: 0, sp: 0, gp: 0, pp: 0, [source]: -amount, [target]: targetAmount };
       const nextWallet = applyMoneyDelta(wallet, delta);
 
       try {
