@@ -1,10 +1,11 @@
-import { getState, setState } from '../../app/state.js';
+import { getState, normalizeCharacterId, setState } from '../../app/state.js';
 import { supabase } from '../../lib/supabase.js';
 import { createToast } from '../../ui/components.js';
 
 export async function renderSettings(container) {
   const { characters, activeCharacterId } = getState();
-  const active = characters.find((char) => char.id === activeCharacterId);
+  const normalizedActiveId = normalizeCharacterId(activeCharacterId);
+  const active = characters.find((char) => normalizeCharacterId(char.id) === normalizedActiveId);
   if (!active) {
     container.innerHTML = '<section class="card"><p>Nessun personaggio selezionato.</p></section>';
     return;

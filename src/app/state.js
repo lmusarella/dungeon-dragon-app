@@ -20,16 +20,22 @@ function getStorageKey(userId) {
   return userId ? `${ACTIVE_CHARACTER_STORAGE_KEY}:${userId}` : ACTIVE_CHARACTER_STORAGE_KEY;
 }
 
+export function normalizeCharacterId(id) {
+  if (id === null || id === undefined || id === '') return null;
+  return String(id);
+}
+
 export function getStoredActiveCharacterId(userId) {
   if (typeof localStorage === 'undefined') return null;
-  return localStorage.getItem(getStorageKey(userId));
+  return normalizeCharacterId(localStorage.getItem(getStorageKey(userId)));
 }
 
 export function setStoredActiveCharacterId(userId, id) {
   if (typeof localStorage === 'undefined') return;
   const key = getStorageKey(userId);
-  if (id) {
-    localStorage.setItem(key, id);
+  const normalized = normalizeCharacterId(id);
+  if (normalized) {
+    localStorage.setItem(key, normalized);
   } else {
     localStorage.removeItem(key);
   }
@@ -50,7 +56,7 @@ export function subscribe(cb) {
 }
 
 export function setActiveCharacter(id) {
-  state.activeCharacterId = id ?? null;
+  state.activeCharacterId = normalizeCharacterId(id);
   setStoredActiveCharacterId(state.user?.id, state.activeCharacterId);
   listeners.forEach((cb) => cb(state));
 }

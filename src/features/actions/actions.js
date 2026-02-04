@@ -1,4 +1,4 @@
-import { getState, updateCache } from '../../app/state.js';
+import { getState, normalizeCharacterId, updateCache } from '../../app/state.js';
 import { fetchWallet, upsertWallet, createTransaction } from '../wallet/walletApi.js';
 import { renderWalletSummary } from '../wallet/wallet.js';
 import { applyMoneyDelta } from '../../lib/calc.js';
@@ -8,7 +8,8 @@ import { createItem } from '../inventory/inventoryApi.js';
 
 export async function renderActions(container) {
   const state = getState();
-  const activeCharacter = state.characters.find((char) => char.id === state.activeCharacterId);
+  const normalizedActiveId = normalizeCharacterId(state.activeCharacterId);
+  const activeCharacter = state.characters.find((char) => normalizeCharacterId(char.id) === normalizedActiveId);
   if (!activeCharacter) {
     container.innerHTML = '<section class="card"><p>Nessun personaggio selezionato.</p></section>';
     return;

@@ -1,6 +1,6 @@
 import { deleteResource, fetchCharacters, fetchResources, updateResource, updateResourcesReset } from './characterApi.js';
 import { createItem, fetchItems, updateItem } from '../inventory/inventoryApi.js';
-import { getState, setActiveCharacter, setState, updateCache } from '../../app/state.js';
+import { getState, normalizeCharacterId, setActiveCharacter, setState, updateCache } from '../../app/state.js';
 import { buildInput, createToast, openConfirmModal, openFormModal } from '../../ui/components.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 import { openDiceOverlay } from '../dice-roller/overlay/dice.js';
@@ -62,12 +62,14 @@ export async function renderHome(container) {
     }
   }
 
-  const hasActive = characters.some((char) => char.id === state.activeCharacterId);
+  const activeId = normalizeCharacterId(state.activeCharacterId);
+  const hasActive = characters.some((char) => normalizeCharacterId(char.id) === activeId);
   if (!hasActive && characters.length) {
     setActiveCharacter(characters[0].id);
   }
 
-  const activeCharacter = characters.find((char) => char.id === getState().activeCharacterId);
+  const resolvedActiveId = normalizeCharacterId(getState().activeCharacterId);
+  const activeCharacter = characters.find((char) => normalizeCharacterId(char.id) === resolvedActiveId);
   const canCreateCharacter = Boolean(user) && !offline;
   const canManageResources = Boolean(user) && !offline;
   const canEditCharacter = Boolean(user) && !offline;
@@ -75,19 +77,27 @@ export async function renderHome(container) {
   let resources = state.cache.resources;
   let items = state.cache.items;
   if (!offline && activeCharacter) {
-    try {
-      resources = await fetchResources(activeCharacter.id);
+    const [resourcesResult, itemsResult] = await Promise.allSettled([
+      fetchResources(activeCharacter.id),
+      fetchItems(activeCharacter.id)
+    ]);
+    const snapshot = {};
+    if (resourcesResult.status === 'fulfilled') {
+      resources = resourcesResult.value;
       updateCache('resources', resources);
-      await cacheSnapshot({ resources });
-    } catch (error) {
+      snapshot.resources = resources;
+    } else {
       createToast('Errore caricamento risorse', 'error');
     }
-    try {
-      items = await fetchItems(activeCharacter.id);
+    if (itemsResult.status === 'fulfilled') {
+      items = itemsResult.value;
       updateCache('items', items);
-      await cacheSnapshot({ items });
-    } catch (error) {
+      snapshot.items = items;
+    } else {
       createToast('Errore caricamento equip', 'error');
+    }
+    if (Object.keys(snapshot).length) {
+      await cacheSnapshot(snapshot);
     }
   }
 
@@ -619,7 +629,8 @@ function closeFabMenu() {
 function getHomeContext() {
   const state = getState();
   const { user, offline, characters, activeCharacterId } = state;
-  const activeCharacter = characters.find((char) => char.id === activeCharacterId);
+  const normalizedActiveId = normalizeCharacterId(activeCharacterId);
+  const activeCharacter = characters.find((char) => normalizeCharacterId(char.id) === normalizedActiveId);
   return {
     activeCharacter,
     canEditCharacter: Boolean(user) && !offline

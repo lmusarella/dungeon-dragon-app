@@ -9,13 +9,14 @@ import {
   attachTag,
   detachTag
 } from './journalApi.js';
-import { getState, updateCache } from '../../app/state.js';
+import { getState, normalizeCharacterId, updateCache } from '../../app/state.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 import { buildDrawerLayout, buildInput, buildTextarea, createToast, openDrawer, closeDrawer, openConfirmModal } from '../../ui/components.js';
 
 export async function renderJournal(container) {
   const state = getState();
-  const activeCharacter = state.characters.find((char) => char.id === state.activeCharacterId);
+  const normalizedActiveId = normalizeCharacterId(state.activeCharacterId);
+  const activeCharacter = state.characters.find((char) => normalizeCharacterId(char.id) === normalizedActiveId);
   if (!activeCharacter) {
     container.innerHTML = '<section class="card"><p>Nessun personaggio selezionato.</p></section>';
     return;

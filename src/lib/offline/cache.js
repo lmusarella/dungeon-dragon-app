@@ -1,5 +1,12 @@
 import { db } from './dexie.js';
-import { getState, getStoredActiveCharacterId, setActiveCharacter, setState, updateCache } from '../../app/state.js';
+import {
+  getState,
+  getStoredActiveCharacterId,
+  normalizeCharacterId,
+  setActiveCharacter,
+  setState,
+  updateCache
+} from '../../app/state.js';
 
 export async function loadCachedData() {
   const { user } = getState();
@@ -9,9 +16,11 @@ export async function loadCachedData() {
     setState({ characters });
   }
   const storedActiveId = getStoredActiveCharacterId(user.id);
-  const activeCharacterId = (storedActiveId && characters.some((char) => char.id === storedActiveId))
-    ? storedActiveId
-    : characters[0]?.id ?? null;
+  const normalizedStoredId = normalizeCharacterId(storedActiveId);
+  const activeCharacterId = (normalizedStoredId
+    && characters.some((char) => normalizeCharacterId(char.id) === normalizedStoredId))
+    ? normalizedStoredId
+    : normalizeCharacterId(characters[0]?.id);
   if (activeCharacterId) {
     setActiveCharacter(activeCharacterId);
     const [items, resources, journal, wallet, tags] = await Promise.all([
