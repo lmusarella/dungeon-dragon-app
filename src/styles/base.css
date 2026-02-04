@@ -532,6 +532,20 @@ button {
   margin-bottom: 12px;
 }
 
+.field__input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field__input-row input {
+  flex: 1;
+}
+
+.field__hint {
+  font-size: 0.85rem;
+}
+
 .field input,
 .field select,
 .field textarea {
@@ -549,6 +563,20 @@ button {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
+}
+
+.modal-section {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(214, 198, 173, 0.4);
+}
+
+.modal-section:last-of-type {
+  border-bottom: none;
+}
+
+.modal-section__title {
+  font-size: 0.95rem;
+  margin: 0 0 10px;
 }
 
 .checkbox {

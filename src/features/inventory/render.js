@@ -167,31 +167,63 @@ export function moneyFields({ amount = 0, coin = 'gp', reason = '', occurredOn, 
   `;
 }
 
-export function exchangeFields({ amount = 0, source = 'gp', target = 'pp' } = {}) {
+export function exchangeFields({
+  amount = 0,
+  source = 'gp',
+  target = 'pp',
+  targetAmount = 0,
+  available = {}
+} = {}) {
+  const entries = [
+    { key: 'pp', label: 'Platino (PP)', value: Number(available.pp ?? 0) },
+    { key: 'gp', label: 'Oro (GP)', value: Number(available.gp ?? 0) },
+    { key: 'sp', label: 'Argento (SP)', value: Number(available.sp ?? 0) },
+    { key: 'cp', label: 'Rame (CP)', value: Number(available.cp ?? 0) }
+  ];
+  const hasAvailable = entries.some((entry) => entry.value > 0);
+  const sourceOptions = entries
+    .filter((entry) => entry.value > 0)
+    .map((entry) => `
+          <option value="${entry.key}" ${source === entry.key ? 'selected' : ''}>${entry.label}</option>
+        `).join('');
+  const targetOptions = entries
+    .map((entry) => `
+          <option value="${entry.key}" ${target === entry.key ? 'selected' : ''}>${entry.label}</option>
+        `).join('');
   return `
-    <div class="money-grid compact-grid-fields">
-      <label class="field">
-        <span>Quantità da scambiare</span>
-        <input name="amount" type="number" value="${amount}" min="0" step="1" />
-      </label>
-      <label class="field">
-        <span>Moneta di partenza</span>
-        <select name="source">
-          <option value="pp" ${source === 'pp' ? 'selected' : ''}>Platino (PP)</option>
-          <option value="gp" ${source === 'gp' ? 'selected' : ''}>Oro (GP)</option>
-          <option value="sp" ${source === 'sp' ? 'selected' : ''}>Argento (SP)</option>
-          <option value="cp" ${source === 'cp' ? 'selected' : ''}>Rame (CP)</option>
-        </select>
-      </label>
-      <label class="field">
-        <span>Moneta di destinazione</span>
-        <select name="target">
-          <option value="pp" ${target === 'pp' ? 'selected' : ''}>Platino (PP)</option>
-          <option value="gp" ${target === 'gp' ? 'selected' : ''}>Oro (GP)</option>
-          <option value="sp" ${target === 'sp' ? 'selected' : ''}>Argento (SP)</option>
-          <option value="cp" ${target === 'cp' ? 'selected' : ''}>Rame (CP)</option>
-        </select>
-      </label>
+    <div class="modal-section">
+      <h4 class="modal-section__title">Seleziona le monete da scambiare</h4>
+      <div class="money-grid compact-grid-fields">
+        <label class="field">
+          <span>Tipo moneta</span>
+          <select name="source" ${hasAvailable ? '' : 'disabled'}>
+            ${hasAvailable ? sourceOptions : '<option value=\"\" selected>Nessuna moneta disponibile</option>'}
+          </select>
+        </label>
+        <label class="field">
+          <span>Quantità</span>
+          <div class="field__input-row">
+            <input name="amount" type="number" value="${amount}" min="0" step="1" ${hasAvailable ? '' : 'disabled'} />
+            <button class="chip chip--small" type="button" data-exchange-max ${hasAvailable ? '' : 'disabled'}>Max</button>
+          </div>
+          <span class="field__hint muted" data-exchange-available></span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-section">
+      <h4 class="modal-section__title">Scegli la moneta di destinazione</h4>
+      <div class="money-grid compact-grid-fields">
+        <label class="field">
+          <span>Moneta di destinazione</span>
+          <select name="target">
+            ${targetOptions}
+          </select>
+        </label>
+        <label class="field">
+          <span>Controvalore</span>
+          <input name="target_amount" type="number" value="${targetAmount}" min="0" step="1" readonly />
+        </label>
+      </div>
     </div>
     <p class="muted">Tasso di cambio: 1 PP = 10 GP · 1 GP = 10 SP · 1 SP = 10 CP.</p>
   `;
