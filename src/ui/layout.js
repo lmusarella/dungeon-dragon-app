@@ -45,15 +45,14 @@ export function renderLayout(container) {
       <main class="app-main" data-route-outlet></main>
       <div class="actions-fab" data-actions-fab>
         <div class="actions-fab-menu" data-actions-menu>
-        <button class="actions-fab-item" type="button" data-rest="short_rest">RB</button>  
+          <button class="actions-fab-item" type="button" data-rest="short_rest">Riposo Breve</button>
           <button class="actions-fab-item" type="button" data-add-loot>Loot</button>
           <button class="actions-fab-item" type="button" data-money-action="pay" data-fab-scope="inventory">Paga</button>
           <button class="actions-fab-item" type="button" data-money-action="receive" data-fab-scope="inventory">Ricevi</button>
           <button class="actions-fab-item" type="button" data-hp-action="heal">Cura</button>
           <button class="actions-fab-item" type="button" data-hp-action="damage">Danno</button>
-                
           <button class="actions-fab-item" type="button" data-open-dice="roller">Dadi</button>
-           <button class="actions-fab-item" type="button" data-rest="long_rest">RL</button>
+          <button class="actions-fab-item" type="button" data-rest="long_rest">Riposo Lungo</button>
         </div>
         <button class="actions-fab-toggle" type="button" data-actions-toggle aria-expanded="false">
           Azioni
