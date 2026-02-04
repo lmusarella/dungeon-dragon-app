@@ -1,5 +1,5 @@
 import { fetchItems, createItem, updateItem, deleteItem } from './inventoryApi.js';
-import { getState, updateCache } from '../../app/state.js';
+import { getState, normalizeCharacterId, updateCache } from '../../app/state.js';
 import { cacheSnapshot } from '../../lib/offline/cache.js';
 import { applyMoneyDelta, calcTotalWeight } from '../../lib/calc.js';
 import { formatWeight } from '../../lib/format.js';
@@ -20,7 +20,8 @@ import { getWeightUnit, normalizeTransactionAmount } from './utils.js';
 
 export async function renderInventory(container) {
   const state = getState();
-  const activeCharacter = state.characters.find((char) => char.id === state.activeCharacterId);
+  const normalizedActiveId = normalizeCharacterId(state.activeCharacterId);
+  const activeCharacter = state.characters.find((char) => normalizeCharacterId(char.id) === normalizedActiveId);
   if (!activeCharacter) {
     container.innerHTML = '<section class="card"><p>Nessun personaggio selezionato.</p></section>';
     return;
