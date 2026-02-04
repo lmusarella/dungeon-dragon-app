@@ -29,7 +29,8 @@ function renderRoute() {
   const appShell = document.querySelector('.app-shell');
   const hideShell = route === 'login' || route === 'characters';
   const hideHeader = route === 'login';
-  const showFab = route === 'home' || route === 'inventory';
+  const fabAlwaysVisibleRoutes = ['home', 'inventory', 'journal'];
+  const showFab = fabAlwaysVisibleRoutes.includes(route);
   const isAuthRoute = route === 'login' || route === 'characters';
   if (appShell) {
     appShell.classList.toggle('app-shell--auth', isAuthRoute);
@@ -47,7 +48,7 @@ function renderRoute() {
     if (actionsFab) {
       actionsFab.querySelectorAll('[data-fab-scope]')
         .forEach((item) => {
-          item.hidden = item.dataset.fabScope !== route;
+          item.hidden = !fabAlwaysVisibleRoutes.includes(route) && item.dataset.fabScope !== route;
         });
     }
   };

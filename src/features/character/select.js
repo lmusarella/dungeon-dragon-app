@@ -67,7 +67,7 @@ function buildCharacterCard(character, isActive) {
   const levelLabel = data.level ? `Livello ${data.level}` : null;
   const classLabel = data.class_name || data.class_archetype || data.archetype;
   const primaryMeta = [levelLabel, classLabel].filter(Boolean);
-  const secondaryMeta = [data.race].filter(Boolean).join(' · ');
+  const tagMeta = [...primaryMeta, data.race].filter(Boolean);
   return `
     <button class="character-card ${isActive ? 'is-active' : ''}" type="button" data-character-card="${character.id}">
       <div class="character-card-avatar">
@@ -75,12 +75,11 @@ function buildCharacterCard(character, isActive) {
       </div>
       <div class="character-card-info">
         <h3>${character.name}</h3>
-        ${primaryMeta.length
+        ${tagMeta.length
     ? `<div class="character-card-tags">
-            ${primaryMeta.map((item) => `<span class="character-tag">${item}</span>`).join('')}
+            ${tagMeta.map((item) => `<span class="character-tag">${item}</span>`).join('')}
           </div>`
     : '<p class="character-card-meta muted">Dettagli base non specificati</p>'}
-        ${secondaryMeta ? `<p class="character-card-detail muted">${secondaryMeta}</p>` : ''}
       </div>
     </button>
   `;
