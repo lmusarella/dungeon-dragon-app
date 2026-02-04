@@ -167,17 +167,27 @@ export function moneyFields({ amount = 0, coin = 'gp', reason = '', occurredOn, 
   `;
 }
 
-export function exchangeFields({ amount = 0, target = 'pp' } = {}) {
+export function exchangeFields({ amount = 0, source = 'gp', target = 'pp' } = {}) {
   return `
     <div class="money-grid compact-grid-fields">
       <label class="field">
-        <span>Oro da scambiare</span>
+        <span>Quantità da scambiare</span>
         <input name="amount" type="number" value="${amount}" min="0" step="1" />
+      </label>
+      <label class="field">
+        <span>Moneta di partenza</span>
+        <select name="source">
+          <option value="pp" ${source === 'pp' ? 'selected' : ''}>Platino (PP)</option>
+          <option value="gp" ${source === 'gp' ? 'selected' : ''}>Oro (GP)</option>
+          <option value="sp" ${source === 'sp' ? 'selected' : ''}>Argento (SP)</option>
+          <option value="cp" ${source === 'cp' ? 'selected' : ''}>Rame (CP)</option>
+        </select>
       </label>
       <label class="field">
         <span>Moneta di destinazione</span>
         <select name="target">
           <option value="pp" ${target === 'pp' ? 'selected' : ''}>Platino (PP)</option>
+          <option value="gp" ${target === 'gp' ? 'selected' : ''}>Oro (GP)</option>
           <option value="sp" ${target === 'sp' ? 'selected' : ''}>Argento (SP)</option>
           <option value="cp" ${target === 'cp' ? 'selected' : ''}>Rame (CP)</option>
         </select>
