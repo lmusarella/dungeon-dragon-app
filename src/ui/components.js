@@ -139,7 +139,8 @@ export function openFormModal({
   content = '',
   submitLabel = 'Conferma',
   cancelLabel = 'Annulla',
-  cardClass = ''
+  cardClass = '',
+  onOpen
 } = {}) {
   return new Promise((resolve) => {
     const modal = document.querySelector('[data-form-modal]');
@@ -191,6 +192,14 @@ export function openFormModal({
     modal.hidden = false;
     modal.classList.add('open');
 
+    let onOpenCleanup = null;
+    if (typeof onOpen === 'function') {
+      const cleanupCandidate = onOpen({ modal, formEl, fieldsEl });
+      if (typeof cleanupCandidate === 'function') {
+        onOpenCleanup = cleanupCandidate;
+      }
+    }
+
     const cleanup = (result) => {
       modal.classList.remove('open');
       modal.hidden = true;
@@ -198,6 +207,9 @@ export function openFormModal({
         modal.dataset.formCardClasses.split(' ').filter(Boolean)
           .forEach((cls) => modalCard.classList.remove(cls));
         modal.dataset.formCardClasses = '';
+      }
+      if (onOpenCleanup) {
+        onOpenCleanup();
       }
       formEl?.removeEventListener('submit', onSubmit);
       cancelButton?.removeEventListener('click', onCancel);

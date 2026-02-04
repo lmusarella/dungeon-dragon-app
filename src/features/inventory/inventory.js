@@ -237,10 +237,108 @@ export async function renderInventory(container) {
   if (exchangeButton && !exchangeButton.dataset.bound) {
     exchangeButton.dataset.bound = 'true';
     exchangeButton.addEventListener('click', async () => {
+      const coinValues = { cp: 1, sp: 10, gp: 100, pp: 1000 };
+      const coinLabels = { cp: 'Rame (CP)', sp: 'Argento (SP)', gp: 'Oro (GP)', pp: 'Platino (PP)' };
+      const available = {
+        cp: Number(wallet?.cp ?? 0),
+        sp: Number(wallet?.sp ?? 0),
+        gp: Number(wallet?.gp ?? 0),
+        pp: Number(wallet?.pp ?? 0)
+      };
+      const availableCoins = Object.keys(available).filter((coin) => available[coin] > 0);
+      const defaultSource = availableCoins[0] ?? 'gp';
+      const defaultTarget = availableCoins.find((coin) => coin !== defaultSource)
+        ?? (defaultSource === 'pp' ? 'gp' : 'pp');
       const formData = await openFormModal({
         title: 'Scambia monete',
         submitLabel: 'Scambia',
-        content: exchangeFields()
+        content: exchangeFields({
+          available,
+          source: defaultSource,
+          target: defaultTarget
+        }),
+        onOpen: ({ fieldsEl }) => {
+          if (!fieldsEl) return null;
+          const sourceSelect = fieldsEl.querySelector('select[name="source"]');
+          const targetSelect = fieldsEl.querySelector('select[name="target"]');
+          const amountInput = fieldsEl.querySelector('input[name="amount"]');
+          const targetInput = fieldsEl.querySelector('input[name="target_amount"]');
+          const maxButton = fieldsEl.querySelector('[data-exchange-max]');
+          const availableHint = fieldsEl.querySelector('[data-exchange-available]');
+
+          const clampExchange = (source, target, amount) => {
+            const sourceValue = coinValues[source];
+            const targetValue = coinValues[target];
+            if (!sourceValue || !targetValue) {
+              return { amount: 0, targetAmount: 0 };
+            }
+            const availableAmount = Number(available[source] ?? 0);
+            const normalizedAmount = Math.min(Number(amount) || 0, availableAmount);
+            const totalCp = normalizedAmount * sourceValue;
+            const targetAmount = Math.floor(totalCp / targetValue);
+            const adjustedAmount = Math.floor((targetAmount * targetValue) / sourceValue);
+            return { amount: adjustedAmount, targetAmount };
+          };
+
+          const updateAvailableHint = (source) => {
+            if (!availableHint) return;
+            if (!source) {
+              availableHint.textContent = 'Nessuna moneta disponibile';
+              return;
+            }
+            const label = coinLabels[source] ?? source;
+            availableHint.textContent = `Disponibili: ${available[source] ?? 0} ${label}`;
+          };
+
+          const syncValues = (nextAmount, { useAdjustedAmount = true } = {}) => {
+            const source = sourceSelect?.value;
+            const target = targetSelect?.value;
+            if (!source || !target || !amountInput || !targetInput) return;
+            const result = clampExchange(source, target, nextAmount);
+            if (useAdjustedAmount) {
+              amountInput.value = result.amount;
+            }
+            targetInput.value = result.targetAmount;
+          };
+
+          if (sourceSelect) {
+            updateAvailableHint(sourceSelect.value);
+          }
+          if (amountInput && targetInput) {
+            syncValues(amountInput.value, { useAdjustedAmount: true });
+          }
+
+          const onSourceChange = () => {
+            updateAvailableHint(sourceSelect?.value);
+            syncValues(amountInput?.value ?? 0, { useAdjustedAmount: true });
+          };
+          const onTargetChange = () => {
+            syncValues(amountInput?.value ?? 0, { useAdjustedAmount: true });
+          };
+          const onAmountInput = () => {
+            syncValues(amountInput?.value ?? 0, { useAdjustedAmount: true });
+          };
+          const onMaxClick = () => {
+            if (!sourceSelect || !targetSelect || !amountInput) return;
+            const source = sourceSelect.value;
+            const target = targetSelect.value;
+            const maxAmount = clampExchange(source, target, available[source] ?? 0).amount;
+            amountInput.value = maxAmount;
+            syncValues(maxAmount, { useAdjustedAmount: false });
+          };
+
+          sourceSelect?.addEventListener('change', onSourceChange);
+          targetSelect?.addEventListener('change', onTargetChange);
+          amountInput?.addEventListener('input', onAmountInput);
+          maxButton?.addEventListener('click', onMaxClick);
+
+          return () => {
+            sourceSelect?.removeEventListener('change', onSourceChange);
+            targetSelect?.removeEventListener('change', onTargetChange);
+            amountInput?.removeEventListener('input', onAmountInput);
+            maxButton?.removeEventListener('click', onMaxClick);
+          };
+        }
       });
       if (!formData) return;
       if (!wallet) {
@@ -256,6 +354,13 @@ export async function renderInventory(container) {
       const amount = Number(formData.get('amount') || 0);
       const source = formData.get('source');
       const target = formData.get('target');
+      const availableAmount = Number(wallet[source] || 0);
+      const sourceValue = coinValues[source];
+      const targetValue = coinValues[target];
+      const normalizedAmount = Math.min(amount, availableAmount);
+      const totalCp = normalizedAmount * sourceValue;
+      const targetAmount = Math.floor(totalCp / targetValue);
+      const adjustedAmount = Math.floor((targetAmount * targetValue) / sourceValue);
       if (amount <= 0) {
         createToast('Inserisci un importo valido', 'error');
         return;
@@ -264,20 +369,18 @@ export async function renderInventory(container) {
         createToast('Scegli due monete diverse', 'error');
         return;
       }
-      if (amount > Number(wallet[source] || 0)) {
+      if (adjustedAmount <= 0) {
+        createToast('Importo troppo basso per il cambio', 'error');
+        return;
+      }
+      if (adjustedAmount > Number(wallet[source] || 0)) {
         createToast('Monete insufficienti', 'error');
         return;
       }
-      const coinValues = { cp: 1, sp: 10, gp: 100, pp: 1000 };
-      const sourceValue = coinValues[source];
-      const targetValue = coinValues[target];
-      const totalCp = amount * sourceValue;
-      if (totalCp % targetValue !== 0) {
-        createToast('Serve un multiplo preciso per lo scambio', 'error');
-        return;
+      if (adjustedAmount !== amount) {
+        createToast(`Adeguato a ${adjustedAmount} ${source.toUpperCase()} per un cambio preciso`, 'info');
       }
-      const targetAmount = totalCp / targetValue;
-      const delta = { cp: 0, sp: 0, gp: 0, pp: 0, [source]: -amount, [target]: targetAmount };
+      const delta = { cp: 0, sp: 0, gp: 0, pp: 0, [source]: -adjustedAmount, [target]: targetAmount };
       const nextWallet = applyMoneyDelta(wallet, delta);
 
       try {
