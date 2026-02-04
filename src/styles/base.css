@@ -157,6 +157,7 @@ button {
 }
 
 .eyebrow {
+  font-family: 'Fraunces', 'Inter', serif;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 0.62rem;
@@ -2141,6 +2142,36 @@ button {
 .login-card {
   max-width: 420px;
   margin: 40px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.login-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.login-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  border: 1px solid #e6dcc8;
+  background: #fff;
+  object-fit: cover;
+  padding: 6px;
+}
+
+.login-title {
+  font-family: 'Fraunces', 'Inter', serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.login-subtitle {
+  margin: 0 0 8px;
 }
 
 .login-view {

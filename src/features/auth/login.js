@@ -7,8 +7,14 @@ export function renderLogin(container) {
   container.innerHTML = `
     <section class="login-view">
       <div class="card login-card">
-        <h2>Accedi</h2>
-        <p>Usa email e password per entrare o creare l'account.</p>
+        <div class="login-header">
+          <img class="login-logo" src="/icons/logo_dd.png" alt="Dungeon & Dragon" />
+          <div>
+            <p class="eyebrow">Dungeon &amp; Dragon</p>
+            <p class="login-title">Accedi</p>
+          </div>
+        </div>
+        <p class="login-subtitle">Usa email e password per entrare o creare l'account.</p>
         <form data-login-form>
           <label class="field">
             <span>Email</span>
