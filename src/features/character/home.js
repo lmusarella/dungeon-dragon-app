@@ -853,7 +853,11 @@ async function handleRestAction(resetOn, container) {
 
 async function handleHpAction(action, container) {
   const { activeCharacter, canEditCharacter } = getHomeContext();
-  if (!activeCharacter || !canEditCharacter) return;
+  if (!activeCharacter) return;
+  if (!canEditCharacter) {
+    createToast('Azioni HP disponibili solo con profilo online', 'error');
+    return;
+  }
   const title = action === 'heal' ? 'Cura PF' : 'Infliggi danno';
   const submitLabel = action === 'heal' ? 'Cura' : 'Danno';
   const formData = await openFormModal({

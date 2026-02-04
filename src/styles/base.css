@@ -7,6 +7,9 @@
   font-weight: 400;
   color: #1c1b1a;
   background-color: #f6f1e7;
+  --accent: #3b5d60;
+  --accent-strong: #2f4a4d;
+  --accent-rgb: 59, 93, 96;
   --coin-pp-image: url('/icons/moneta_platino.png');
   --coin-gp-image: url('/icons/moneta_oro.png');
   --coin-sp-image: url('/icons/moneta_argento.png');
@@ -77,7 +80,7 @@ button {
 }
 
 .primary {
-  background: #6f4e37;
+  background: var(--accent);
   color: #fff;
   border-radius: 12px;
   padding: 12px 18px;
@@ -85,8 +88,8 @@ button {
 }
 
 .ghost-button {
-  border: 1px solid #6f4e37;
-  color: #6f4e37;
+  border: 1px solid var(--accent);
+  color: var(--accent);
   border-radius: 12px;
   padding: 10px 16px;
   min-height: 44px;
@@ -200,7 +203,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 14px rgba(111, 78, 55, 0.12);
+  box-shadow: 0 6px 14px rgba(var(--accent-rgb), 0.12);
   overflow: hidden;
 }
 
@@ -266,7 +269,7 @@ button {
   height: 36px;
   border-radius: 50%;
   background: #eadfc9;
-  color: #6f4e37;
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -296,7 +299,7 @@ button {
 .menu-button span {
   width: 18px;
   height: 2px;
-  background: #6f4e37;
+  background: var(--accent);
   border-radius: 999px;
 }
 
@@ -335,7 +338,7 @@ button {
 }
 
 .bottom-nav a.active {
-  color: #6f4e37;
+  color: var(--accent);
 }
 
 .actions-fab {
@@ -393,7 +396,7 @@ button {
   background: #fffaf1;
   color: #5a3b25;
   font-weight: 600;
-  box-shadow: 0 6px 18px rgba(111, 78, 55, 0.12);
+  box-shadow: 0 6px 18px rgba(var(--accent-rgb), 0.12);
   transform: translate(-50%, 0) scale(0.9);
   opacity: 0;
   pointer-events: none;
@@ -442,16 +445,16 @@ button {
   padding: 14px 20px;
   border-radius: 999px;
   border: none;
-  background: linear-gradient(135deg, #6f4e37, #8b5b3c);
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   color: #fff8ea;
   font-weight: 700;
   letter-spacing: 0.02em;
-  box-shadow: 0 10px 20px rgba(111, 78, 55, 0.2);
+  box-shadow: 0 10px 20px rgba(var(--accent-rgb), 0.2);
 }
 
 .actions-fab-toggle:hover,
 .actions-fab-item:hover {
-  box-shadow: 0 10px 18px rgba(111, 78, 55, 0.2);
+  box-shadow: 0 10px 18px rgba(var(--accent-rgb), 0.2);
 }
 
 .field {
@@ -476,8 +479,8 @@ button {
 .field select:focus,
 .field textarea:focus {
   outline: none;
-  border-color: #6f4e37;
-  box-shadow: 0 0 0 3px rgba(111, 78, 55, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
 
 .checkbox {
@@ -497,7 +500,7 @@ button {
 
 .equip-slot-field legend {
   font-weight: 600;
-  color: #6f4e37;
+  color: var(--accent);
   padding: 0 6px;
 }
 
@@ -593,7 +596,7 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-weight: 600;
-  color: #6f4e37;
+  color: var(--accent);
 }
 
 .inventory-table__body {
@@ -675,7 +678,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #6f4e37;
+  background: var(--accent);
   color: #fff;
   font-weight: 700;
   border-radius: 12px;
@@ -708,15 +711,15 @@ button {
   border: 1px solid #eadfc9;
   border-radius: 12px;
   background: linear-gradient(135deg, #fff8e8, #fdf1d6);
-  box-shadow: inset 0 0 0 1px rgba(111, 78, 55, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.06);
   border-bottom: none;
   font-size: 0.75rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .resource-card.is-selected {
-  border-color: #6f4e37;
-  box-shadow: 0 0 0 3px rgba(111, 78, 55, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2);
   transform: translateY(-1px);
 }
 
@@ -775,7 +778,7 @@ button {
 .resource-charge-count {
   font-weight: 600;
   font-size: 0.78rem;
-  color: #6f4e37;
+  color: var(--accent);
 }
 
 .resource-card-actions {
@@ -813,8 +816,8 @@ button {
 }
 
 .resource-cta-button {
-  border: 1px solid #6f4e37;
-  background: #6f4e37;
+  border: 1px solid var(--accent);
+  background: var(--accent);
   color: #fff;
   border-radius: 10px;
   width: 30px;
@@ -841,7 +844,7 @@ button {
 .resource-action-button {
   border: 1px solid #c9b79f;
   background: #fff;
-  color: #6f4e37;
+  color: var(--accent);
   border-radius: 10px;
   min-height: 26px;
   font-size: 0.85rem;
@@ -884,9 +887,9 @@ button {
   position: absolute;
   top: -6px;
   right: -6px;
-  background: #6f4e37;
+  background: var(--accent);
   color: #fff;
-  box-shadow: 0 4px 8px rgba(111, 78, 55, 0.25);
+  box-shadow: 0 4px 8px rgba(var(--accent-rgb), 0.25);
   text-transform: uppercase;
   font-size: 0.57rem;
   padding: 1px 4px;
@@ -959,13 +962,13 @@ button {
 }
 
 .icon-button--add {
-  background: #6f4e37;
-  border-color: #6f4e37;
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
 }
 
 .icon-button--dice {
-  color: #6f4e37;
+  color: var(--accent);
 }
 
 .icon-button--fire {
@@ -1155,7 +1158,7 @@ button {
   background: linear-gradient(180deg, #fff8e8 0%, #fdf1d6 100%);
   border-radius: 16px;
   padding: 12px;
-  box-shadow: inset 0 0 0 1px rgba(111, 78, 55, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.08);
 }
 
 .hp-bar-row {
@@ -1176,12 +1179,12 @@ button {
   padding: 6px;
   border-radius: 12px;
   background: linear-gradient(140deg, #fef6e5 0%, #f3d5a9 100%);
-  border: 3px solid rgba(111, 78, 55, 0.2);
+  border: 3px solid rgba(var(--accent-rgb), 0.2);
   text-align: center;
   display: flex;
   flex-direction: column;
   font-weight: 600;
-  box-shadow: 0 6px 12px rgba(111, 78, 55, 0.12);
+  box-shadow: 0 6px 12px rgba(var(--accent-rgb), 0.12);
 }
 
 .armor-class-card strong {
@@ -1197,7 +1200,7 @@ button {
   border-radius: 999px;
   font-size: 0.65rem;
   padding: 3px 4px;
-  box-shadow: 0 4px 8px rgba(111, 78, 55, 0.25);
+  box-shadow: 0 4px 8px rgba(var(--accent-rgb), 0.25);
 }
 
 .armor-class-card--initiative {
@@ -1359,14 +1362,14 @@ button {
 .death-saves__tag {
   font-size: 0.6rem;
   font-weight: 700;
-  color: #6f4e37;
+  color: var(--accent);
 }
 
 .death-save-dot {
   width: 15px;
   height: 15px;
   border-radius: 999px;
-  border: 1px solid rgba(111, 78, 55, 0.35);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
   background: #fffaf1;
   padding: 0;
   display: inline-flex;
@@ -1388,13 +1391,13 @@ button {
 }
 
 .death-save-dot:focus-visible {
-  outline: 2px solid #6f4e37;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 .death-save-dot:hover {
   transform: scale(1.05);
-  box-shadow: 0 2px 6px rgba(111, 78, 55, 0.2);
+  box-shadow: 0 2px 6px rgba(var(--accent-rgb), 0.2);
 }
 
 .weakness-track {
@@ -1597,7 +1600,7 @@ button {
   width: 30px;
   height: 30px;
   border-radius: 999px;
-  background: #6f4e37;
+  background: var(--accent);
   border: 1px solid rgba(255, 255, 255, 0.45);
   display: inline-flex;
   align-items: center;
@@ -1605,7 +1608,7 @@ button {
   font-size: 0.75rem;
   font-weight: 700;
   color: #fff;
-  box-shadow: 0 4px 8px rgba(111, 78, 55, 0.25);
+  box-shadow: 0 4px 8px rgba(var(--accent-rgb), 0.25);
 }
 
 .stat-card--str {
@@ -1787,7 +1790,7 @@ button {
 
 .spell-slot-count {
   font-weight: 600;
-  color: #6f4e37;
+  color: var(--accent);
   min-width: 18px;
   text-align: center;
 }
@@ -1919,7 +1922,7 @@ button {
   padding: 6px 12px;
   border-radius: 10px;
   font-weight: 600;
-  color: #6f4e37;
+  color: var(--accent);
   cursor: pointer;
 }
 
@@ -1966,7 +1969,7 @@ button {
 }
 
 .drawer-close {
-  border: 1px solid #6f4e37;
+  border: 1px solid var(--accent);
   border-radius: 10px;
   padding: 8px 12px;
   margin-bottom: 12px;
@@ -2103,7 +2106,7 @@ button {
 }
 
 .toast {
-  background: #6f4e37;
+  background: var(--accent);
   color: #fff;
   padding: 12px 16px;
   border-radius: 12px;
@@ -2181,6 +2184,24 @@ button {
   width: 100%;
 }
 
+.auth-screen {
+  background-image:
+    linear-gradient(140deg, rgba(255, 250, 241, 0.92), rgba(241, 234, 220, 0.96)),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="%23fdf7ea"/><path d="M0 32h160M0 80h160M0 128h160" stroke="%23eadfc9" stroke-width="1"/><circle cx="24" cy="24" r="6" fill="%23e8dcc6"/><circle cx="120" cy="104" r="8" fill="%23efe6d6"/></svg>');
+  background-size: cover, 180px 180px;
+  background-position: center, center;
+  border-radius: 18px;
+}
+
+.character-select-view {
+  padding: 32px;
+}
+
+.character-select-card {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
 .character-select-header {
   display: flex;
   justify-content: space-between;
@@ -2193,7 +2214,7 @@ button {
   width: 36px;
   height: 36px;
   font-size: 1.6rem;
-  box-shadow: 0 6px 16px rgba(111, 78, 55, 0.25);
+  box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.25);
 }
 
 .character-card-grid {
@@ -2244,18 +2265,18 @@ button {
   font-weight: 600;
   color: #5a3f2a;
   background: #f6e6d1;
-  border: 1px solid rgba(111, 78, 55, 0.2);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
 }
 
 .character-card:hover {
-  border-color: #6f4e37;
-  box-shadow: 0 8px 20px rgba(111, 78, 55, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.15);
   transform: translateY(-2px);
 }
 
 .character-card.is-active {
-  border-color: #6f4e37;
-  box-shadow: 0 6px 18px rgba(111, 78, 55, 0.18);
+  border-color: var(--accent);
+  box-shadow: 0 6px 18px rgba(var(--accent-rgb), 0.18);
 }
 
 .character-card-avatar {
@@ -2263,7 +2284,7 @@ button {
   height: 56px;
   border-radius: 14px;
   background: #eadfc9;
-  color: #6f4e37;
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2412,9 +2433,9 @@ button {
 }
 
 .pill--accent {
-  background: #6f4e37;
+  background: var(--accent);
   color: #fff8ea;
-  box-shadow: 0 6px 16px rgba(111, 78, 55, 0.3);
+  box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.3);
 }
 
 .meta-tag {
@@ -2570,7 +2591,7 @@ button {
 
 .transaction-amount {
   font-weight: 700;
-  color: #6f4e37;
+  color: var(--accent);
   white-space: nowrap;
 }
 
@@ -2779,7 +2800,7 @@ button {
 }
 
 .toggle-pill input {
-  accent-color: #6f4e37;
+  accent-color: var(--accent);
 }
 
 .modifier-card {
@@ -2791,7 +2812,7 @@ button {
   border-radius: 12px;
   border: 3px solid #eadfc9;
   background: linear-gradient(135deg, #fff8e8, #fdf1d6);
-  box-shadow: inset 0 0 0 1px rgba(111, 78, 55, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.06);
 }
 
 .modifier-card--proficiency {
@@ -2883,14 +2904,14 @@ button {
   padding: 2px 6px;
   border-radius: 8px;
   background: #e6dcc8;
-  color: #6f4e37;
+  color: var(--accent);
   border: 1px solid transparent;
 }
 
 .modifier-ability--str {
   background: #fff0e6;
   border-color: #f1c9b1;
-  color: #6f4e37;
+  color: var(--accent);
 }
 
 .modifier-ability--dex {
@@ -2902,7 +2923,7 @@ button {
 .modifier-ability--con {
   background: #fef2e4;
   border-color: #f3cfac;
-  color: #6f4e37;
+  color: var(--accent);
 }
 
 .modifier-ability--int {
@@ -2936,7 +2957,7 @@ button {
   padding: 2px 6px;
   border-radius: 999px;
   background: #e6dcc8;
-  color: #6f4e37;
+  color: var(--accent);
 }
 
 .modifier-tag--pro {
@@ -3117,7 +3138,7 @@ button {
   border: 2px dashed #d8c5a5;
   background: #fdf7ea;
   font-size: 0.7rem;
-  color: #6f4e37;
+  color: var(--accent);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
   position: relative;
@@ -3385,7 +3406,7 @@ button {
   content: '+';
   float: right;
   font-weight: 700;
-  color: #6f4e37;
+  color: var(--accent);
 }
 
 .accordion[open] summary::after {
