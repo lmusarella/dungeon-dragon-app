@@ -78,6 +78,7 @@ function buildOverlayMarkup() {
             </p>
          <p class="diceov-warning" data-weakness-warning hidden></p>
          <p class="diceov-warning" data-rollmode-warning hidden></p>
+         <p class="diceov-warning" data-autofail-warning hidden></p>
         </div>
        
         <div class="diceov-control" data-dice-control="generic">       
@@ -269,6 +270,7 @@ export function openDiceOverlay({
   const inspirationWarning = overlayEl.querySelector('[data-inspiration-warning]');
   const weaknessWarning = overlayEl.querySelector('[data-weakness-warning]');
   const rollModeWarning = overlayEl.querySelector('[data-rollmode-warning]');
+  const autoFailWarning = overlayEl.querySelector('[data-autofail-warning]');
   const rollModeInput = overlayEl.querySelector('select[name="dice-roll-mode"]');
   const modifierInput = overlayEl.querySelector('input[name="dice-modifier"]');
   const modifierField = modifierInput?.closest('.diceov-field--modifier');
@@ -388,21 +390,45 @@ export function openDiceOverlay({
       selectInput.innerHTML = '';
       state.selectionRollMode = null;
       state.selectionRollModeReason = null;
+      if (autoFailWarning) autoFailWarning.setAttribute('hidden', '');
       return;
     }
     selectWrapper.removeAttribute('hidden');
     if (selectLabel) selectLabel.textContent = selection?.label || 'Seleziona';
     selectInput.innerHTML = state.selectionOptions
-      .map((option) => `<option value="${option.value}">${option.label}</option>`)
+      .map((option) => `
+        <option value="${option.value}" ${option.disabled ? 'disabled' : ''}>${option.label}</option>
+      `)
       .join('');
-    const desiredValue = selection?.value ?? state.selectionOptions[0]?.value;
+    const availableOptions = state.selectionOptions.filter((option) => !option.disabled);
+    const desiredValue = selection?.value ?? availableOptions[0]?.value ?? state.selectionOptions[0]?.value;
     if (desiredValue !== undefined) selectInput.value = desiredValue;
     const selected = state.selectionOptions.find((option) => option.value === selectInput.value);
-    if (selected && modifierInput) {
+    if (selected && !selected.disabled && modifierInput) {
       modifierInput.value = Number(selected.modifier) || 0;
     }
-    state.selectionRollMode = selected?.rollMode || null;
-    state.selectionRollModeReason = selected?.rollModeReason || null;
+    state.selectionRollMode = selected?.disabled ? null : (selected?.rollMode || null);
+    state.selectionRollModeReason = selected?.disabled ? null : (selected?.rollModeReason || null);
+    if (selectInput) selectInput.disabled = availableOptions.length === 0;
+    updateAutoFailWarning();
+  }
+
+  function updateAutoFailWarning() {
+    if (!autoFailWarning) return;
+    const disabledOptions = state.selectionOptions.filter((option) => option.disabled && option.disabledReason);
+    if (!disabledOptions.length) {
+      autoFailWarning.setAttribute('hidden', '');
+      autoFailWarning.textContent = '';
+      return;
+    }
+    const labels = disabledOptions
+      .map((option) => option.shortLabel || option.label || option.value)
+      .filter(Boolean)
+      .join(', ');
+    const reasons = [...new Set(disabledOptions.map((option) => option.disabledReason).filter(Boolean))];
+    const reasonText = reasons.length ? ` (${reasons.join('; ')})` : '';
+    autoFailWarning.textContent = `TS ${labels}: fallimento diretto${reasonText}.`;
+    autoFailWarning.removeAttribute('hidden');
   }
 
   function updateWeaknessWarning() {
@@ -618,9 +644,9 @@ export function openDiceOverlay({
   if (selectInput) {
     selectInput.onchange = () => {
       const selected = state.selectionOptions.find((option) => option.value === selectInput.value);
-      if (selected && modifierInput) modifierInput.value = Number(selected.modifier) || 0;
-      state.selectionRollMode = selected?.rollMode || null;
-      state.selectionRollModeReason = selected?.rollModeReason || null;
+      if (selected && !selected.disabled && modifierInput) modifierInput.value = Number(selected.modifier) || 0;
+      state.selectionRollMode = selected?.disabled ? null : (selected?.rollMode || null);
+      state.selectionRollModeReason = selected?.disabled ? null : (selected?.rollModeReason || null);
       if (!inspirationInput?.checked) {
         applyDefaultRollMode();
       }

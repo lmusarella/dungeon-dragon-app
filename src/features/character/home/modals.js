@@ -83,7 +83,7 @@ export async function openConditionsModal(character) {
     label.className = 'checkbox condition-modal__item';
     label.innerHTML = `
       <input type="checkbox" name="conditions" value="${condition.key}" ${current.includes(condition.key) ? 'checked' : ''} />
-      <span><strong>${condition.label}</strong> <span class="muted">${condition.effect}</span></span>
+      <span><strong>${condition.label}</strong></span>
     `;
     list.appendChild(label);
   });

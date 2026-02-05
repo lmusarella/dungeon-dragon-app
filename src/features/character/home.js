@@ -31,7 +31,7 @@ import {
   openSpellListModal
 } from './home/modals.js';
 import { saveCharacterData } from './home/data.js';
-import { abilityShortLabel, savingThrowList, skillList } from './home/constants.js';
+import { abilityShortLabel, conditionList, savingThrowList, skillList } from './home/constants.js';
 import {
   applyRestRecovery,
   buildSpellDamageOverlayConfig,
@@ -788,6 +788,80 @@ async function handleMoneyAction(direction, container) {
   }
 }
 
+const conditionLabels = conditionList.reduce((acc, condition) => {
+  acc[condition.key] = condition.label;
+  return acc;
+}, {});
+
+const attackRollEffects = {
+  advantage: ['invisibile'],
+  disadvantage: ['accecato', 'avvelenato', 'intralciato', 'prono', 'spaventato']
+};
+
+const savingThrowEffects = {
+  disadvantage: {
+    dex: ['intralciato']
+  },
+  autoFail: {
+    str: ['paralizzato', 'privo_di_sensi', 'stordito'],
+    dex: ['paralizzato', 'privo_di_sensi', 'stordito']
+  }
+};
+
+function getConditionState(character) {
+  const data = character?.data || {};
+  if (Array.isArray(data.conditions)) return data.conditions;
+  if (data.condition) return [data.condition];
+  return [];
+}
+
+function formatConditionList(keys) {
+  return keys
+    .map((key) => conditionLabels[key] || key)
+    .filter(Boolean);
+}
+
+function getAttackRollMode(conditionState) {
+  const advantageKeys = attackRollEffects.advantage.filter((key) => conditionState.includes(key));
+  const disadvantageKeys = attackRollEffects.disadvantage.filter((key) => conditionState.includes(key));
+  if (advantageKeys.length && disadvantageKeys.length) {
+    return { rollMode: null, rollModeReason: null };
+  }
+  if (advantageKeys.length) {
+    return {
+      rollMode: 'advantage',
+      rollModeReason: `Vantaggio: condizioni ${formatConditionList(advantageKeys).join(', ')}.`
+    };
+  }
+  if (disadvantageKeys.length) {
+    return {
+      rollMode: 'disadvantage',
+      rollModeReason: `Svantaggio: condizioni ${formatConditionList(disadvantageKeys).join(', ')}.`
+    };
+  }
+  return { rollMode: null, rollModeReason: null };
+}
+
+function getSavingThrowEffects(conditionState, saveKey) {
+  const autoFailKeys = savingThrowEffects.autoFail[saveKey] || [];
+  const autoFailConditions = autoFailKeys.filter((key) => conditionState.includes(key));
+  if (autoFailConditions.length) {
+    return {
+      disabled: true,
+      disabledReason: `Condizioni: ${formatConditionList(autoFailConditions).join(', ')}`
+    };
+  }
+  const disadvantageKeys = savingThrowEffects.disadvantage[saveKey] || [];
+  const disadvantageConditions = disadvantageKeys.filter((key) => conditionState.includes(key));
+  if (disadvantageConditions.length) {
+    return {
+      rollMode: 'disadvantage',
+      rollModeReason: `Svantaggio: condizioni ${formatConditionList(disadvantageConditions).join(', ')}.`
+    };
+  }
+  return {};
+}
+
 function buildSkillRollOptions(character, items = []) {
   const data = character.data || {};
   const abilities = data.abilities || {};
@@ -820,15 +894,22 @@ function buildSavingThrowRollOptions(character) {
   const abilities = data.abilities || {};
   const proficiencyBonus = normalizeNumber(data.proficiency_bonus);
   const savingStates = data.saving_throws || {};
+  const conditionState = getConditionState(character);
   return savingThrowList.map((save) => {
     const proficient = Boolean(savingStates[save.key]);
     const total = calculateSkillModifier(abilities[save.key], proficiencyBonus, proficient ? 1 : 0);
     const modifierValue = total ?? 0;
+    const effects = getSavingThrowEffects(conditionState, save.key);
+    const autoFailLabel = effects.disabled ? ' · fallimento diretto' : '';
     return {
       value: save.key,
-      label: `${save.label} (${formatSigned(total)})`,
+      label: `${save.label} (${formatSigned(total)})${autoFailLabel}`,
       shortLabel: abilityShortLabel[save.key] || save.label,
-      modifier: modifierValue
+      modifier: modifierValue,
+      rollMode: effects.rollMode || null,
+      rollModeReason: effects.rollModeReason || null,
+      disabled: effects.disabled || false,
+      disabledReason: effects.disabledReason || null
     };
   });
 }
@@ -840,6 +921,8 @@ function buildAttackRollOptions(character, items = []) {
   const equippedWeapons = (items || []).filter((item) => item.category === 'weapon' && item.equipable && getEquipSlots(item).length);
   const proficiencyBonus = normalizeNumber(data.proficiency_bonus) ?? 0;
   const proficiencies = data.proficiencies || {};
+  const conditionState = getConditionState(character);
+  const attackRollMode = getAttackRollMode(conditionState);
   const options = equippedWeapons.map((weapon) => {
     const weaponRange = weapon.weapon_range || (weapon.range_normal ? 'ranged' : 'melee');
     const attackAbility = weapon.attack_ability || (weaponRange === 'ranged' ? 'dex' : 'str');
@@ -856,7 +939,9 @@ function buildAttackRollOptions(character, items = []) {
       value: `weapon:${weapon.id ?? weapon.name}`,
       label: `${weapon.name} (${formatSigned(attackTotal)})`,
       shortLabel: weapon.name,
-      modifier: attackTotal
+      modifier: attackTotal,
+      rollMode: attackRollMode.rollMode,
+      rollModeReason: attackRollMode.rollModeReason
     };
   });
 
@@ -878,7 +963,9 @@ function buildAttackRollOptions(character, items = []) {
         value: `spell:${spell.id}`,
         label: `${spell.name} (${formatSigned(spellAttackBonus)})`,
         shortLabel: spell.name,
-        modifier: spellAttackBonus
+        modifier: spellAttackBonus,
+        rollMode: attackRollMode.rollMode,
+        rollModeReason: attackRollMode.rollModeReason
       });
     });
   }
