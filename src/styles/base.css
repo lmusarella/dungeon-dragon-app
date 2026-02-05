@@ -2151,7 +2151,7 @@ button {
 
 .spell-list-modal__items {
   display: grid;
-  gap: 8px;
+  gap: 4px;
 }
 
 .spell-list-modal__item {
@@ -2161,7 +2161,7 @@ button {
   gap: 12px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid #eadbc6;
+  border: 3px solid #eadbc6;
   background: #fffaf1;
   font-size: 0.75rem;
 }
