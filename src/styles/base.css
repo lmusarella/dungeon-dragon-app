@@ -742,6 +742,11 @@ button {
   font-size: 0.6rem;
 }
 
+.inventory-table__badges .resource-chip--floating {
+  position: static;
+  text-transform: none;
+}
+
 .inventory-table__cell--item .item-info-body {
   gap: 4px;
 }
@@ -862,6 +867,11 @@ button {
 
 .resource-card__badges .resource-chip {
   font-size: 0.6rem;
+}
+
+.resource-card__badges .resource-chip--floating {
+  position: static;
+  text-transform: none;
 }
 
 .resource-card__meta {
@@ -1037,6 +1047,18 @@ button {
 
 .resource-chip--floating.resource-chip--action {
   background: #b0882f;
+}
+
+.resource-chip--floating.resource-chip--magic {
+  background: #7c4bd9;
+}
+
+.resource-chip--floating.resource-chip--equipable {
+  background: #1f7a6f;
+}
+
+.resource-chip--floating.resource-chip--attunement {
+  background: #c2543d;
 }
 
 .resource-form-actions {
