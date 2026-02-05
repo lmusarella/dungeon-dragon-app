@@ -738,7 +738,7 @@ export function buildResourceSections(resources, canManageResources) {
     showCharges: false,
     showUseButton: false,
     showDescription: true,
-    showCastTime: false
+    showCastTime: true
   })}
         </div>
       </div>

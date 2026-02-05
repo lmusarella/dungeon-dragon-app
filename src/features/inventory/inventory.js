@@ -69,7 +69,10 @@ export async function renderInventory(container) {
         <div class="filters">
           <input type="search" placeholder="Cerca" data-search />
           <select data-category></select>
-          <select data-equipable></select>
+          <label class="toggle-pill filter-toggle">
+            <input type="checkbox" data-equipable-filter />
+            <span>Oggetti equipaggiabili</span>
+          </label>
           <label class="toggle-pill filter-toggle">
             <input type="checkbox" data-magic-filter />
             <span>Oggetti magici</span>
@@ -108,7 +111,7 @@ export async function renderInventory(container) {
   const listEl = container.querySelector('[data-inventory-list]');
   const searchInput = container.querySelector('[data-search]');
   const categorySelect = container.querySelector('[data-category]');
-  const equipableSelect = container.querySelector('[data-equipable]');
+  const equipableFilter = container.querySelector('[data-equipable-filter]');
   const magicFilter = container.querySelector('[data-magic-filter]');
   categories.forEach((cat) => {
     const option = document.createElement('option');
@@ -116,28 +119,16 @@ export async function renderInventory(container) {
     option.textContent = cat.equipable ? `${cat.label} · equipaggiabile` : cat.label;
     categorySelect.appendChild(option);
   });
-  [
-    { value: '', label: 'Tutti' },
-    { value: 'equipable', label: 'Equipaggiabili' },
-    { value: 'non-equipable', label: 'Non equipaggiabili' }
-  ].forEach((optionData) => {
-    const option = document.createElement('option');
-    option.value = optionData.value;
-    option.textContent = optionData.label;
-    equipableSelect.appendChild(option);
-  });
 
   function renderList() {
     const term = searchInput.value.toLowerCase();
     const category = categorySelect.value;
-    const equipableFilter = equipableSelect.value;
+    const equipableOnly = equipableFilter?.checked ?? false;
     const magicOnly = magicFilter?.checked ?? false;
     const filtered = items.filter((item) => {
       const matchesTerm = item.name.toLowerCase().includes(term);
       const matchesCategory = !category || item.category === category;
-      const matchesEquipable = !equipableFilter
-        || (equipableFilter === 'equipable' && item.equipable)
-        || (equipableFilter === 'non-equipable' && !item.equipable);
+      const matchesEquipable = !equipableOnly || item.equipable;
       const matchesMagic = !magicOnly || item.is_magic;
       return matchesTerm && matchesCategory && matchesEquipable && matchesMagic;
     });
@@ -184,7 +175,7 @@ export async function renderInventory(container) {
   renderList();
   searchInput.addEventListener('input', renderList);
   categorySelect.addEventListener('change', renderList);
-  equipableSelect.addEventListener('change', renderList);
+  equipableFilter?.addEventListener('change', renderList);
   magicFilter?.addEventListener('change', renderList);
 
   document.querySelectorAll('[data-money-action]')

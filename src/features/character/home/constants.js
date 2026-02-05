@@ -47,6 +47,7 @@ export const equipmentProficiencyList = [
 ];
 
 export const RESOURCE_CAST_TIME_ORDER = [
+  { label: 'Sempre attiva', className: 'resource-chip--always' },
   { label: 'Azione Gratuita', className: 'resource-chip--free' },
   { label: 'Azione Bonus', className: 'resource-chip--bonus' },
   { label: 'Reazione', className: 'resource-chip--reaction' },

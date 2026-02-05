@@ -1037,6 +1037,10 @@ button {
   background: #1f7a6f;
 }
 
+.resource-chip--floating.resource-chip--always {
+  background: #0f766e;
+}
+
 .resource-chip--floating.resource-chip--bonus {
   background: #7c4bd9;
 }

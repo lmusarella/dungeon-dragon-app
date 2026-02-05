@@ -523,6 +523,7 @@ export function openResourceDrawer(character, onSave, resource = null) {
   castTimeField.className = 'field';
   castTimeField.innerHTML = '<span>Tipo di lancio</span>';
   const castTimeSelect = buildSelect([
+    { value: 'Sempre attiva', label: 'Sempre attiva' },
     { value: 'Azione', label: 'Azione' },
     { value: 'Reazione', label: 'Reazione' },
     { value: 'Azione Bonus', label: 'Azione Bonus' },
