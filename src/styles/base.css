@@ -2181,6 +2181,24 @@ button {
   color: #5a381f;
 }
 
+.spell-list-modal__split {
+  display: grid;
+  gap: 14px;
+}
+
+.spell-list-modal__subsection {
+  display: grid;
+  gap: 6px;
+}
+
+.spell-list-modal__subsection-title {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #6a5540;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .spell-list-modal__items {
   display: grid;
   gap: 4px;

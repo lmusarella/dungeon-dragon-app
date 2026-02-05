@@ -165,37 +165,7 @@ export function openSpellListModal(character, onRender) {
   const data = character.data || {};
   const spells = Array.isArray(data.spells) ? sortSpellsByLevel(data.spells) : [];
   const canPrepare = Boolean(data.spellcasting?.can_prepare);
-  const content = document.createElement('div');
-  content.className = 'spell-list-modal';
-  if (!spells.length) {
-    content.innerHTML = '<p class="muted">Nessun incantesimo configurato.</p>';
-  } else {
-    const grouped = spells.reduce((acc, spell) => {
-      const level = Number(spell.level) || 0;
-      acc[level] = acc[level] || [];
-      acc[level].push(spell);
-      return acc;
-    }, {});
-    const levels = Object.keys(grouped).map(Number).sort((a, b) => a - b);
-    const nav = `
-      <nav class="spell-list-modal__nav" aria-label="Livelli incantesimo">
-        ${levels.map((level, index) => {
-    const label = level === 0 ? 'Trucchetti' : `${level} Livello`;
-    return `
-          <button class="spell-list-modal__nav-button${index === 0 ? ' is-active' : ''}" type="button" data-spell-level="${level}">
-            ${label}
-          </button>
-        `;
-  }).join('')}
-      </nav>
-    `;
-    content.innerHTML = `${nav}${levels.map((level, index) => {
-      const title = level === 0 ? 'Trucchetti' : `Incantesimi di livello ${level}°`;
-      return `
-        <section class="spell-list-modal__section${index === 0 ? '' : ' is-hidden'}" data-spell-section="${level}">
-          <h4>${title}</h4>
-          <div class="spell-list-modal__items">
-            ${grouped[level].map((spell) => {
+  const renderSpellItem = (spell, level) => {
     const typeLabel = getSpellTypeLabel(spell);
     const damageModifier = Number(spell.damage_modifier) || 0;
     const damageText = spell.damage_die
@@ -238,8 +208,67 @@ export function openSpellListModal(character, onRender) {
                 </div>
               </div>
             `;
+  };
+  const content = document.createElement('div');
+  content.className = 'spell-list-modal';
+  if (!spells.length) {
+    content.innerHTML = '<p class="muted">Nessun incantesimo configurato.</p>';
+  } else {
+    const grouped = spells.reduce((acc, spell) => {
+      const level = Number(spell.level) || 0;
+      acc[level] = acc[level] || [];
+      acc[level].push(spell);
+      return acc;
+    }, {});
+    const levels = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+    const nav = `
+      <nav class="spell-list-modal__nav" aria-label="Livelli incantesimo">
+        ${levels.map((level, index) => {
+    const label = level === 0 ? 'Trucchetti' : `${level} Livello`;
+    return `
+          <button class="spell-list-modal__nav-button${index === 0 ? ' is-active' : ''}" type="button" data-spell-level="${level}">
+            ${label}
+          </button>
+        `;
   }).join('')}
+      </nav>
+    `;
+    content.innerHTML = `${nav}${levels.map((level, index) => {
+      const title = level === 0 ? 'Trucchetti' : `Incantesimi di livello ${level}°`;
+      const isSplitView = canPrepare && level > 0;
+      const preparedSpells = isSplitView
+        ? grouped[level].filter((spell) => (spell.prep_state || 'known') === 'prepared')
+        : [];
+      const knownSpells = isSplitView
+        ? grouped[level].filter((spell) => (spell.prep_state || 'known') !== 'prepared')
+        : [];
+      return `
+        <section class="spell-list-modal__section${index === 0 ? '' : ' is-hidden'}" data-spell-section="${level}">
+          <h4>${title}</h4>
+          ${isSplitView ? `
+          <div class="spell-list-modal__split">
+            <div class="spell-list-modal__subsection">
+              <h5 class="spell-list-modal__subsection-title">Incantesimi preparati</h5>
+              <div class="spell-list-modal__items">
+                ${preparedSpells.length
+    ? preparedSpells.map((spell) => renderSpellItem(spell, level)).join('')
+    : '<p class="muted">Nessun incantesimo preparato.</p>'}
+              </div>
+            </div>
+            <div class="spell-list-modal__subsection">
+              <h5 class="spell-list-modal__subsection-title">Incantesimi conosciuti da preparare</h5>
+              <div class="spell-list-modal__items">
+                ${knownSpells.length
+    ? knownSpells.map((spell) => renderSpellItem(spell, level)).join('')
+    : '<p class="muted">Nessun incantesimo da preparare.</p>'}
+              </div>
+            </div>
           </div>
+          ` : `
+          <div class="spell-list-modal__items">
+            ${grouped[level].map((spell) => renderSpellItem(spell, level)).join('')}
+          </div>
+          `}
         </section>
       `;
     }).join('')}`;
