@@ -81,6 +81,14 @@ export function buildCharacterOverview(character, canEditCharacter, items = []) 
       </ul>
     `
     : '<p class="muted">Nessun effetto attivo.</p>';
+  const conditionsEffectsTooltip = `
+    <details class="info-tooltip">
+      <summary aria-label="Vedi effetti delle condizioni">?</summary>
+      <div class="info-tooltip__panel">
+        ${conditionsEffects}
+      </div>
+    </details>
+  `;
   const weaknessLevels = [
     { value: 1, description: 'Svantaggio sulle prove di caratteristica.' },
     { value: 2, description: 'Velocità dimezzata.' },
@@ -90,13 +98,22 @@ export function buildCharacterOverview(character, canEditCharacter, items = []) 
     { value: 6, description: 'Morte.' }
   ];
   const activeWeaknesses = weaknessLevels.filter((level) => level.value <= weakPoints);
-  const weaknessDescription = activeWeaknesses.length
+  const weaknessEffects = activeWeaknesses.length
     ? `
       <ul class="weakness-track__list">
         ${activeWeaknesses.map((level) => `<li>${level.description}</li>`).join('')}
       </ul>
     `
-    : 'Nessun indebolimento.';
+    : '<p class="muted">Nessun indebolimento.</p>';
+  const weaknessEffectsTooltip = `
+    <details class="info-tooltip">
+      <summary aria-label="Vedi effetti dei punti indebolimento">?</summary>
+      <div class="info-tooltip__panel">
+        ${weaknessEffects}
+      </div>
+    </details>
+  `;
+  const weaknessStatus = `Livello attuale: ${weakPoints}`;
   const armorClass = calculateArmorClass(data, abilities, items);
   const abilityCards = [
     { key: 'str', label: abilityShortLabel.str, value: abilities.str },
@@ -211,7 +228,10 @@ export function buildCharacterOverview(character, canEditCharacter, items = []) 
           </div>
           <div class="hp-panel-status-row">
             <div class="weakness-track">
-              <span class="weakness-track__label">Punti indebolimento</span>
+              <div class="track-label-row">
+                <span class="weakness-track__label">Punti indebolimento</span>
+                ${weaknessEffectsTooltip}
+              </div>
               <div class="weakness-track__group" role="radiogroup" aria-label="Livelli indebolimento">
                 ${weaknessLevels.map((level) => {
     const isFilled = level.value === weakPoints;
@@ -229,15 +249,19 @@ export function buildCharacterOverview(character, canEditCharacter, items = []) 
                 `;
   }).join('')}
               </div>
-              <div class="weakness-track__description">${weaknessDescription}</div>
+              <div class="weakness-track__description">${weaknessStatus}</div>
             </div>
             <div class="condition-track">
-              <span class="condition-track__label">Condizioni</span>
+              <div class="track-label-row">
+                <span class="condition-track__label">Condizioni</span>
+                ${conditionsEffectsTooltip}
+              </div>
               <div class="condition-track__row">
                 <span class="condition-track__value">${conditionsLabel}</span>
-                <button class="ghost-button" type="button" data-edit-conditions ${canEditCharacter ? '' : 'disabled'} aria-label="Gestisci condizioni">+</button>
+                <button class="icon-button condition-track__add" type="button" data-edit-conditions ${canEditCharacter ? '' : 'disabled'} aria-label="Gestisci condizioni">
+                  <span aria-hidden="true">+</span>
+                </button>
               </div>
-              <div class="condition-track__effects">${conditionsEffects}</div>
             </div>
             <div class="death-saves">
               <span class="death-saves__label">TS morte</span>

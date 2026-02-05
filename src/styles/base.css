@@ -1566,6 +1566,7 @@ button {
   color: #6a5540;
   align-items: flex-start;
   text-align: left;
+  position: relative;
 }
 
 .weakness-track__label {
@@ -1607,6 +1608,7 @@ button {
   align-items: flex-start;
   text-align: left;
   max-width: 260px;
+  position: relative;
 }
 
 .condition-track__label {
@@ -1620,6 +1622,77 @@ button {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.track-label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.condition-track__add {
+  width: 28px;
+  height: 28px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.info-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.info-tooltip summary {
+  list-style: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
+  background: #fffaf1;
+  color: var(--accent);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.info-tooltip summary::-webkit-details-marker {
+  display: none;
+}
+
+.info-tooltip[open] summary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.info-tooltip__panel {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  min-width: 200px;
+  max-width: 260px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(234, 223, 201, 0.9);
+  background: #fffaf1;
+  color: #6a5540;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  z-index: 5;
+}
+
+.info-tooltip__panel p {
+  margin: 0;
+}
+
+.info-tooltip__panel ul {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 4px;
+  font-size: 0.6rem;
 }
 
 .condition-track__value {
@@ -1644,7 +1717,7 @@ button {
 
 .condition-modal__list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .condition-modal__item {
@@ -1653,7 +1726,8 @@ button {
 
 .condition-modal__item .muted {
   display: block;
-  margin-top: 4px;
+  margin-top: 2px;
+  font-size: 0.65rem;
 }
 
 .stat-mini-card {
