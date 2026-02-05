@@ -16,6 +16,7 @@ import {
   buildSpellSection
 } from './home/sections.js';
 import { buildLootFields, moneyFields } from '../inventory/render.js';
+import { openItemImageModal } from '../inventory/modals.js';
 import { getWeightUnit } from '../inventory/utils.js';
 import { bodyParts } from '../inventory/constants.js';
 import { fetchWallet, upsertWallet, createTransaction } from '../wallet/walletApi.js';
@@ -579,6 +580,17 @@ export async function renderHome(container) {
     });
   }
 
+  container.querySelectorAll('[data-item-image]')
+    .forEach((image) => {
+      image.setAttribute('draggable', 'false');
+      image.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const item = items?.find((entry) => String(entry.id) === image.dataset.itemImage);
+        if (item) openItemImageModal(item);
+      });
+    });
+
 }
 
 export function bindGlobalFabHandlers() {
@@ -761,12 +773,16 @@ async function handleMoneyAction(direction, container) {
   }
 }
 
-function buildSkillRollOptions(character) {
+function buildSkillRollOptions(character, items = []) {
   const data = character.data || {};
   const abilities = data.abilities || {};
   const proficiencyBonus = normalizeNumber(data.proficiency_bonus);
   const skillStates = data.skills || {};
   const skillMasteryStates = data.skill_mastery || {};
+  const hasHeavyArmor = (items || []).some((item) => item.category === 'armor'
+    && item.armor_type === 'heavy'
+    && item.equipable
+    && getEquipSlots(item).length);
   return skillList.map((skill) => {
     const proficient = Boolean(skillStates[skill.key]);
     const mastery = Boolean(skillMasteryStates[skill.key]);
@@ -776,7 +792,8 @@ function buildSkillRollOptions(character) {
       value: skill.key,
       label: `${skill.label} (${formatSigned(total)})`,
       shortLabel: skill.label,
-      modifier: modifierValue
+      modifier: modifierValue,
+      rollMode: skill.key === 'stealth' && hasHeavyArmor ? 'disadvantage' : null
     };
   });
 }
@@ -883,7 +900,7 @@ function handleDiceAction(type) {
       mode: 'd20',
       rollType: 'TA',
       selection: activeCharacter
-        ? { label: 'Abilità', options: buildSkillRollOptions(activeCharacter) }
+        ? { label: 'Abilità', options: buildSkillRollOptions(activeCharacter, items) }
         : null
     },
     'attack-roll': {

@@ -2678,6 +2678,17 @@ button {
   background: #fff;
 }
 
+.item-avatar[data-item-image] {
+  cursor: pointer;
+}
+
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
 .transaction-list {
   display: flex;
   flex-direction: column;
@@ -2752,6 +2763,40 @@ button {
   font-weight: 700;
   color: var(--accent);
   white-space: nowrap;
+}
+
+.inventory-transactions .transaction-ledger {
+  padding: 8px 10px;
+  border-radius: 14px;
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(214, 198, 173, 0.2) 0,
+    rgba(214, 198, 173, 0.2) 1px,
+    transparent 1px,
+    transparent 30px
+  );
+}
+
+.inventory-transactions .transaction-ledger-header {
+  font-size: 0.7rem;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+}
+
+.inventory-transactions .transaction-items li {
+  padding: 6px 0;
+}
+
+.inventory-transactions .transaction-info strong {
+  font-size: 0.9rem;
+}
+
+.inventory-transactions .transaction-info .muted {
+  font-size: 0.72rem;
+}
+
+.inventory-transactions .transaction-amount {
+  font-size: 0.85rem;
 }
 
 .detail-card label {

@@ -14,7 +14,7 @@ import {
 } from '../wallet/walletApi.js';
 import { renderWalletSummary } from '../wallet/wallet.js';
 import { categories, itemCategories } from './constants.js';
-import { openItemModal } from './modals.js';
+import { openItemImageModal, openItemModal } from './modals.js';
 import { buildInventoryTree, buildLootFields, buildTransactionList, exchangeFields, moneyFields } from './render.js';
 import { getWeightUnit, normalizeTransactionAmount } from './utils.js';
 
@@ -80,7 +80,7 @@ export async function renderInventory(container) {
         </div>
         <div class="carry-widget">
           <span>Carico totale</span>
-          <strong>${formatWeight(totalWeight, weightUnit)}</strong>
+          <strong data-carry-total>${formatWeight(totalWeight, weightUnit)}</strong>
         </div>
         <div data-inventory-list></div>
       </section>
@@ -113,6 +113,7 @@ export async function renderInventory(container) {
   const categorySelect = container.querySelector('[data-category]');
   const equipableFilter = container.querySelector('[data-equipable-filter]');
   const magicFilter = container.querySelector('[data-magic-filter]');
+  const carryTotalEl = container.querySelector('[data-carry-total]');
   categories.forEach((cat) => {
     const option = document.createElement('option');
     option.value = cat.value;
@@ -134,10 +135,20 @@ export async function renderInventory(container) {
     });
 
     listEl.innerHTML = buildInventoryTree(filtered, weightUnit);
+    if (carryTotalEl) {
+      carryTotalEl.textContent = formatWeight(calcTotalWeight(filtered), weightUnit);
+    }
     listEl.querySelectorAll('[data-edit]')
       .forEach((btn) => btn.addEventListener('click', () => {
         const item = items.find((entry) => entry.id === btn.dataset.edit);
         if (item) openItemModal(activeCharacter, item, items, renderInventory.bind(null, container));
+      }));
+    listEl.querySelectorAll('[data-item-image]')
+      .forEach((image) => image.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const item = items.find((entry) => String(entry.id) === image.dataset.itemImage);
+        if (item) openItemImageModal(item);
       }));
     listEl.querySelectorAll('[data-delete]')
       .forEach((btn) => btn.addEventListener('click', async () => {

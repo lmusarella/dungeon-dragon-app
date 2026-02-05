@@ -18,7 +18,9 @@ import {
   parseProficiencyNotes,
   parseProficiencyNotesSections
 } from './utils.js';
-import { getBodyPartLabels, getCategoryLabel, getItemStatusLabels } from '../../inventory/utils.js';
+import { calcTotalWeight } from '../../../lib/calc.js';
+import { formatWeight } from '../../../lib/format.js';
+import { getBodyPartLabels, getCategoryLabel, getItemStatusLabels, getWeightUnit } from '../../inventory/utils.js';
 
 export function buildEmptyState(canCreateCharacter, offline) {
   if (!canCreateCharacter) {
@@ -377,12 +379,17 @@ export function buildProficiencyOverview(character, items = [], canEditCharacter
 export function buildEquipSection(character, items = [], canEditCharacter = false) {
   const equippedItems = (items || []).filter((item) => getEquipSlots(item).length);
   const attunedCount = (items || []).filter((item) => item.attunement_active).length;
+  const totalWeight = calcTotalWeight(items);
+  const weightUnit = getWeightUnit(character);
   return `
     <section class="card home-card home-section home-scroll-panel">
       <header class="card-header">
         <div>
           <p class="eyebrow">Equip</p>
-          <span class="pill pill--accent">Oggetti in sintonia: ${attunedCount}</span>
+          <div class="pill-row">
+            <span class="pill pill--accent">Oggetti in sintonia: ${attunedCount}</span>
+            <span class="pill">Carico totale: ${formatWeight(totalWeight, weightUnit)}</span>
+          </div>
         </div>
         <div class="actions">
           ${canEditCharacter ? `
@@ -405,7 +412,7 @@ export function buildEquipSection(character, items = [], canEditCharacter = fals
                 </div>
                 <div class="attack-card__body resource-card__body">
                   <div class="resource-card__title item-info">
-                    ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
+                    ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" data-item-image="${item.id}" />` : ''}
                     <div class="item-info-body">
                       <div class="item-info-line">
                         <strong class="attack-card__name">${item.name}</strong>

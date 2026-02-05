@@ -366,3 +366,20 @@ export async function openItemModal(character, item, items, onSave) {
     createToast('Errore salvataggio oggetto', 'error');
   }
 }
+
+export function openItemImageModal(item) {
+  if (!item?.image_url) return;
+  const content = document.createElement('div');
+  content.className = 'resource-detail';
+  content.innerHTML = `
+    <div class="detail-card detail-card--text">
+      <img class="resource-detail-image" src="${item.image_url}" alt="Foto di ${item.name}" />
+    </div>
+  `;
+  openFormModal({
+    title: item.name,
+    submitLabel: 'Chiudi',
+    cancelLabel: null,
+    content
+  });
+}

@@ -108,7 +108,7 @@ export function buildItemList(items, weightUnit = 'lb') {
               ${item.attunement_active ? `<span class="resource-chip resource-chip--floating resource-chip--attunement">${statusLabels.attunement}</span>` : ''}
             </div>
             <div class="inventory-table__cell inventory-table__cell--item">
-              ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
+              ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" data-item-image="${item.id}" />` : ''}
               <div class="item-info-body">
                 <strong>${item.name}</strong>
               </div>

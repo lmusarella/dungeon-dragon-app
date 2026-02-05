@@ -291,7 +291,8 @@ export function openDiceOverlay({
     inspirationAvailable: Boolean(allowInspiration),
     inspirationConsumed: false,
     selectionOptions: Array.isArray(selection?.options) ? selection.options : [],
-    history: loadHistory()
+    history: loadHistory(),
+    selectionRollMode: null
   };
 
   const normalizedWeakPoints = Math.max(0, Number(weakPoints) || 0);
@@ -381,6 +382,7 @@ export function openDiceOverlay({
     if (!state.selectionOptions.length) {
       selectWrapper.setAttribute('hidden', '');
       selectInput.innerHTML = '';
+      state.selectionRollMode = null;
       return;
     }
     selectWrapper.removeAttribute('hidden');
@@ -394,6 +396,7 @@ export function openDiceOverlay({
     if (selected && modifierInput) {
       modifierInput.value = Number(selected.modifier) || 0;
     }
+    state.selectionRollMode = selected?.rollMode || null;
   }
 
   function updateWeaknessWarning() {
@@ -405,7 +408,9 @@ export function openDiceOverlay({
 
   function applyDefaultRollMode() {
     if (!rollModeInput) return;
-    rollModeInput.value = weaknessReason ? 'disadvantage' : 'normal';
+    rollModeInput.value = weaknessReason
+      ? 'disadvantage'
+      : (state.selectionRollMode || 'normal');
     updateWeaknessWarning();
   }
 
@@ -597,6 +602,10 @@ export function openDiceOverlay({
     selectInput.onchange = () => {
       const selected = state.selectionOptions.find((option) => option.value === selectInput.value);
       if (selected && modifierInput) modifierInput.value = Number(selected.modifier) || 0;
+      state.selectionRollMode = selected?.rollMode || null;
+      if (!inspirationInput?.checked) {
+        applyDefaultRollMode();
+      }
       updateModifier();
     };
   }
