@@ -203,8 +203,8 @@ export function openSpellListModal(character, onRender) {
                     <span aria-hidden="true">🗑️</span>
                   </button>
                   ${level > 0
-    ? `<button class="resource-cta-button resource-cta-button--label" type="button" data-spell-cast="${spell.id}">Lancia</button>`
-    : ''}
+        ? `<button class="resource-cta-button resource-cta-button--label" type="button" data-spell-cast="${spell.id}">Lancia</button>`
+        : ''}
                 </div>
               </div>
             `;
@@ -224,13 +224,13 @@ export function openSpellListModal(character, onRender) {
     const nav = `
       <nav class="spell-list-modal__nav" aria-label="Livelli incantesimo">
         ${levels.map((level, index) => {
-    const label = level === 0 ? 'Trucchetti' : `${level} Livello`;
-    return `
+      const label = level === 0 ? 'Trucchetti' : `${level} Livello`;
+      return `
           <button class="spell-list-modal__nav-button${index === 0 ? ' is-active' : ''}" type="button" data-spell-level="${level}">
             ${label}
           </button>
         `;
-  }).join('')}
+    }).join('')}
       </nav>
     `;
     content.innerHTML = `${nav}${levels.map((level, index) => {
@@ -251,16 +251,16 @@ export function openSpellListModal(character, onRender) {
               <h5 class="spell-list-modal__subsection-title">Incantesimi preparati</h5>
               <div class="spell-list-modal__items">
                 ${preparedSpells.length
-    ? preparedSpells.map((spell) => renderSpellItem(spell, level)).join('')
-    : '<p class="muted">Nessun incantesimo preparato.</p>'}
+            ? preparedSpells.map((spell) => renderSpellItem(spell, level)).join('')
+            : '<p class="muted">Nessun incantesimo preparato.</p>'}
               </div>
             </div>
             <div class="spell-list-modal__subsection">
               <h5 class="spell-list-modal__subsection-title">Incantesimi conosciuti da preparare</h5>
               <div class="spell-list-modal__items">
                 ${knownSpells.length
-    ? knownSpells.map((spell) => renderSpellItem(spell, level)).join('')
-    : '<p class="muted">Nessun incantesimo da preparare.</p>'}
+            ? knownSpells.map((spell) => renderSpellItem(spell, level)).join('')
+            : '<p class="muted">Nessun incantesimo da preparare.</p>'}
               </div>
             </div>
           </div>
@@ -639,23 +639,13 @@ export function openResourceDrawer(character, onSave, resource = null) {
     elements.filter(Boolean).forEach((element) => row.appendChild(element));
     return row;
   };
-  const nameField = buildInput({ label: 'Nome abilità', name: 'name', placeholder: 'Es. Ispirazione', value: resource?.name ?? '' });
+  const nameField = buildInput({ label: 'Nome abilità', name: 'name', placeholder: 'Es. Azione Impetuosa', value: resource?.name ?? '' });
   const imageField = buildInput({
     label: 'Foto (URL)',
     name: 'image_url',
     placeholder: 'https://.../risorsa.png',
     value: resource?.image_url ?? ''
   });
-  form.appendChild(buildRow([nameField, imageField], 'balanced'));
-  const passiveField = document.createElement('div');
-  passiveField.className = 'modal-toggle-field';
-  passiveField.innerHTML = `
-    <span class="modal-toggle-field__label">Passiva (senza cariche)</span>
-    <label class="diceov-toggle">
-      <input type="checkbox" name="is_passive" />
-      <span class="diceov-toggle-track" aria-hidden="true"></span>
-    </label>
-  `;
   const castTimeField = document.createElement('label');
   castTimeField.className = 'field';
   castTimeField.innerHTML = '<span>Tipo di lancio</span>';
@@ -668,24 +658,38 @@ export function openResourceDrawer(character, onSave, resource = null) {
   ], resource?.cast_time ?? 'Azione');
   castTimeSelect.name = 'cast_time';
   castTimeField.appendChild(castTimeSelect);
+
+  form.appendChild(buildRow([nameField, castTimeField, imageField], 'balanced'));
+
+
+  const passiveField = document.createElement('div');
+  passiveField.className = 'modal-toggle-field';
+  passiveField.innerHTML = `
+    <span class="modal-toggle-field__label">Passiva (senza cariche)</span>
+    <label class="diceov-toggle">
+      <input type="checkbox" name="is_passive" />
+      <span class="diceov-toggle-track" aria-hidden="true"></span>
+    </label>
+  `;
+
   const maxUsesField = buildInput({ label: 'Cariche massime', name: 'max_uses', type: 'number', value: resource?.max_uses ?? 1 });
   const usedField = buildInput({ label: 'Cariche consumate', name: 'used', type: 'number', value: resource?.used ?? 0 });
-  form.appendChild(buildRow([castTimeField, maxUsesField, usedField], 'compact'));
 
-  const recoveryGrid = document.createElement('div');
-  recoveryGrid.className = 'compact-field-grid';
-  recoveryGrid.appendChild(buildInput({
+  form.appendChild(buildRow([passiveField, maxUsesField, usedField], 'compact'));
+
+  const inputRiposoCorto = buildInput({
     label: 'Recupero riposo breve',
     name: 'recovery_short',
     type: 'number',
     value: resource?.recovery_short ?? ''
-  }));
-  recoveryGrid.appendChild(buildInput({
+  })
+
+  const inputRiposoLungo = buildInput({
     label: 'Recupero riposo lungo',
     name: 'recovery_long',
     type: 'number',
     value: resource?.recovery_long ?? ''
-  }));
+  })
 
   const resetField = document.createElement('label');
   resetField.className = 'field';
@@ -696,8 +700,8 @@ export function openResourceDrawer(character, onSave, resource = null) {
   ], resource?.reset_on ?? 'long_rest');
   resetSelect.name = 'reset_on';
   resetField.appendChild(resetSelect);
-  form.appendChild(buildRow([passiveField, resetField], 'balanced'));
-  form.appendChild(recoveryGrid);
+  form.appendChild(buildRow([resetField, inputRiposoCorto, inputRiposoLungo], 'balanced'));
+
   form.appendChild(buildTextarea({
     label: 'Descrizione',
     name: 'description',
