@@ -76,7 +76,9 @@ export function renderLayout(container) {
         <div class="modal-overlay" data-confirm-overlay></div>
         <div class="modal-card" role="dialog" aria-modal="true">
           <p class="eyebrow" data-confirm-title>Conferma</p>
+          <div class="modal-divider" aria-hidden="true"></div>
           <p class="eyebrow" data-confirm-message></p>
+          <div class="modal-divider" aria-hidden="true"></div>
           <div class="modal-actions">
             <div class="modal-actions__left">
               <button class="ghost-button" data-confirm-cancel>Annulla</button>
@@ -91,8 +93,10 @@ export function renderLayout(container) {
         <div class="modal-overlay" data-form-overlay></div>
         <div class="modal-card" role="dialog" aria-modal="true">
           <p class="eyebrow" data-form-title>Inserisci dati</p>
+          <div class="modal-divider" aria-hidden="true"></div>
           <form data-form-body>
             <div data-form-fields></div>
+            <div class="modal-divider" aria-hidden="true"></div>
             <div class="modal-actions">
               <div class="modal-actions__left">
                 <button class="ghost-button" type="button" data-form-cancel>Annulla</button>
