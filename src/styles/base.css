@@ -33,7 +33,6 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: 'Fraunces', 'Inter', serif;
   letter-spacing: 0.02em;
 }
 
@@ -2132,7 +2131,7 @@ button {
   background: #fffaf1;
   border-radius: 16px;
   padding: 20px;
-  width: min(520px, 92%);
+  width: min(580px, 92%);
   max-height: 85vh;
   overflow-y: auto;
   border: 1px solid #e6dcc8;

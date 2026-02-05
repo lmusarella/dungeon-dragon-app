@@ -225,7 +225,6 @@ export function exchangeFields({
         </label>
       </div>
     </div>
-    <p class="muted">Tasso di cambio: 1 PP = 10 GP · 1 GP = 10 SP · 1 SP = 10 CP.</p>
   `;
 }
 
