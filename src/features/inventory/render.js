@@ -1,5 +1,12 @@
 import { formatWeight } from '../../lib/format.js';
-import { formatTransactionAmount, formatTransactionDate, getBodyPartLabels, getCategoryLabel, getEquipSlots } from './utils.js';
+import {
+  formatTransactionAmount,
+  formatTransactionDate,
+  getBodyPartLabels,
+  getCategoryLabel,
+  getEquipSlots,
+  getItemStatusLabels
+} from './utils.js';
 
 export function buildTransactionList(transactions) {
   const wrapper = document.createElement('div');
@@ -95,8 +102,14 @@ export function buildItemList(items, weightUnit = 'lb') {
         ${items.map((item) => {
     const volumeValue = item.volume !== null && item.volume !== undefined ? item.volume : '-';
     const equipSlots = getEquipSlots(item);
+    const statusLabels = getItemStatusLabels(item);
     return `
           <div class="inventory-table__row">
+            <div class="inventory-table__badges">
+              <span class="resource-chip resource-chip--floating resource-chip--magic">${statusLabels.magic}</span>
+              <span class="resource-chip resource-chip--floating resource-chip--equipable">${statusLabels.equipable}</span>
+              <span class="resource-chip resource-chip--floating resource-chip--attunement">${statusLabels.attunement}</span>
+            </div>
             <div class="inventory-table__cell inventory-table__cell--item">
               ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
               <div class="item-info-body">

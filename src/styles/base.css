@@ -585,6 +585,10 @@ button {
   margin-bottom: 12px;
 }
 
+.filter-toggle {
+  margin-bottom: 0;
+}
+
 .equip-slot-field {
   border: 1px solid #eadfc9;
   border-radius: 14px;
@@ -704,6 +708,7 @@ button {
   border: 3px solid #eadfc9;
   border-radius: 16px;
   background: #fff;
+  position: relative;
 }
 
 .inventory-table__cell {
@@ -721,6 +726,25 @@ button {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.inventory-table__badges {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.inventory-table__badges .resource-chip {
+  font-size: 0.6rem;
+}
+
+.inventory-table__badges .resource-chip--floating {
+  position: static;
+  text-transform: none;
 }
 
 .inventory-table__cell--item .item-info-body {
@@ -829,6 +853,25 @@ button {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.resource-card__badges {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.resource-card__badges .resource-chip {
+  font-size: 0.6rem;
+}
+
+.resource-card__badges .resource-chip--floating {
+  position: static;
+  text-transform: none;
 }
 
 .resource-card__meta {
@@ -1004,6 +1047,18 @@ button {
 
 .resource-chip--floating.resource-chip--action {
   background: #b0882f;
+}
+
+.resource-chip--floating.resource-chip--magic {
+  background: #7c4bd9;
+}
+
+.resource-chip--floating.resource-chip--equipable {
+  background: #1f7a6f;
+}
+
+.resource-chip--floating.resource-chip--attunement {
+  background: #c2543d;
 }
 
 .resource-form-actions {

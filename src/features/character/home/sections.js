@@ -18,7 +18,7 @@ import {
   parseProficiencyNotes,
   parseProficiencyNotesSections
 } from './utils.js';
-import { getBodyPartLabels, getCategoryLabel } from '../../inventory/utils.js';
+import { getBodyPartLabels, getCategoryLabel, getItemStatusLabels } from '../../inventory/utils.js';
 
 export function buildEmptyState(canCreateCharacter, offline) {
   if (!canCreateCharacter) {
@@ -395,8 +395,15 @@ export function buildEquipSection(character, items = [], canEditCharacter = fals
       ${equippedItems.length
     ? `
           <ul class="inventory-list resource-list resource-list--compact">
-            ${equippedItems.map((item) => `
+            ${equippedItems.map((item) => {
+    const statusLabels = getItemStatusLabels(item);
+    return `
               <li class="modifier-card attack-card resource-card inventory-item-card">
+                <div class="resource-card__badges">
+                  <span class="resource-chip resource-chip--floating resource-chip--magic">${statusLabels.magic}</span>
+                  <span class="resource-chip resource-chip--floating resource-chip--equipable">${statusLabels.equipable}</span>
+                  <span class="resource-chip resource-chip--floating resource-chip--attunement">${statusLabels.attunement}</span>
+                </div>
                 <div class="attack-card__body resource-card__body">
                   <div class="resource-card__title item-info">
                     ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
@@ -416,7 +423,8 @@ export function buildEquipSection(character, items = [], canEditCharacter = fals
                   </div>
                 ` : ''}
               </li>
-            `).join('')}
+            `;
+  }).join('')}
           </ul>
         `
     : '<p class="muted">Nessun oggetto equipaggiato.</p>'}

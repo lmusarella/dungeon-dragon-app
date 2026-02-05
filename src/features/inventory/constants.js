@@ -41,7 +41,6 @@ export const itemCategories = [
   { value: 'consumable', label: 'Consumabili' },
   { value: 'weapon', label: 'Armi', equipable: true },
   { value: 'armor', label: 'Armature', equipable: true },
-  { value: 'magic', label: 'Magici', equipable: true },
   { value: 'jewelry', label: 'Gioielli e ornamenti', equipable: true },
   { value: 'tool', label: 'Strumenti' },
   { value: 'container', label: 'Contenitore', equipable: true },
@@ -53,7 +52,10 @@ export const categories = [
   ...itemCategories
 ];
 
-export const categoryLabels = new Map(itemCategories.map((category) => [category.value, category.label]));
+export const categoryLabels = new Map([
+  ...itemCategories.map((category) => [category.value, category.label]),
+  ['magic', 'Magici']
+]);
 export const bodyPartLabels = new Map(bodyParts.map((part) => [part.value, part.label]));
 
 export const weaponTypes = [

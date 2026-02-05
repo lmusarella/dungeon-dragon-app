@@ -96,7 +96,11 @@ export async function openItemModal(character, item, items, onSave) {
   attunement.className = 'checkbox';
   attunement.innerHTML = '<input type="checkbox" name="attunement_active" /> <span>Sintonia attiva</span>';
   const attunementInput = attunement.querySelector('input');
-  fields.appendChild(buildRow([equipableWrapper, attunement], 'balanced'));
+  const magicField = document.createElement('label');
+  magicField.className = 'checkbox';
+  magicField.innerHTML = '<input type="checkbox" name="is_magic" /> <span>Magico</span>';
+  const magicInput = magicField.querySelector('input');
+  fields.appendChild(buildRow([equipableWrapper, attunement, magicField], 'balanced'));
   fields.appendChild(equipSlotsField);
 
   fields.appendChild(buildTextarea({ label: 'Note', name: 'notes', value: item?.notes ?? '' }));
@@ -211,6 +215,9 @@ export async function openItemModal(character, item, items, onSave) {
 
   if (attunementInput) {
     attunementInput.checked = item?.attunement_active ?? false;
+  }
+  if (magicInput) {
+    magicInput.checked = item?.is_magic ?? false;
   }
   if (equipableInput) {
     equipableInput.checked = item?.equipable ?? false;
@@ -327,6 +334,7 @@ export async function openItemModal(character, item, items, onSave) {
     equip_slots: equipSlots,
     sovrapponibile: isOverlayable,
     attunement_active: formData.get('attunement_active') === 'on',
+    is_magic: formData.get('is_magic') === 'on',
     notes: formData.get('notes'),
     weapon_type: formData.get('weapon_type') || null,
     weapon_range: formData.get('weapon_range') || null,

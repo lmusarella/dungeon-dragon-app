@@ -70,6 +70,10 @@ export async function renderInventory(container) {
           <input type="search" placeholder="Cerca" data-search />
           <select data-category></select>
           <select data-equipable></select>
+          <label class="checkbox filter-toggle">
+            <input type="checkbox" data-magic-filter />
+            <span>Oggetti magici</span>
+          </label>
         </div>
         <div class="carry-widget">
           <span>Carico totale</span>
@@ -105,6 +109,7 @@ export async function renderInventory(container) {
   const searchInput = container.querySelector('[data-search]');
   const categorySelect = container.querySelector('[data-category]');
   const equipableSelect = container.querySelector('[data-equipable]');
+  const magicFilter = container.querySelector('[data-magic-filter]');
   categories.forEach((cat) => {
     const option = document.createElement('option');
     option.value = cat.value;
@@ -126,13 +131,15 @@ export async function renderInventory(container) {
     const term = searchInput.value.toLowerCase();
     const category = categorySelect.value;
     const equipableFilter = equipableSelect.value;
+    const magicOnly = magicFilter?.checked ?? false;
     const filtered = items.filter((item) => {
       const matchesTerm = item.name.toLowerCase().includes(term);
       const matchesCategory = !category || item.category === category;
       const matchesEquipable = !equipableFilter
         || (equipableFilter === 'equipable' && item.equipable)
         || (equipableFilter === 'non-equipable' && !item.equipable);
-      return matchesTerm && matchesCategory && matchesEquipable;
+      const matchesMagic = !magicOnly || item.is_magic;
+      return matchesTerm && matchesCategory && matchesEquipable && matchesMagic;
     });
 
     listEl.innerHTML = buildInventoryTree(filtered, weightUnit);
@@ -178,6 +185,7 @@ export async function renderInventory(container) {
   searchInput.addEventListener('input', renderList);
   categorySelect.addEventListener('change', renderList);
   equipableSelect.addEventListener('change', renderList);
+  magicFilter?.addEventListener('change', renderList);
 
   document.querySelectorAll('[data-money-action]')
     .forEach((button) => {
@@ -517,6 +525,7 @@ export async function renderInventory(container) {
           equip_slot: null,
           equip_slots: [],
           sovrapponibile: false,
+          is_magic: false,
           max_volume: null
         });
         createToast('Loot aggiunto');

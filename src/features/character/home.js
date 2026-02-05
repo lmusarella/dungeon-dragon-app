@@ -680,6 +680,7 @@ async function handleLootAction(container) {
       equip_slot: null,
       equip_slots: [],
       sovrapponibile: false,
+      is_magic: false,
       max_volume: null
     });
     createToast('Loot aggiunto');
