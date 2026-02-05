@@ -258,9 +258,6 @@ export function buildCharacterOverview(character, canEditCharacter, items = []) 
               </div>
               <div class="condition-track__row">
                 <span class="condition-track__value">${conditionsLabel}</span>
-                <button class="icon-button condition-track__add" type="button" data-edit-conditions ${canEditCharacter ? '' : 'disabled'} aria-label="Gestisci condizioni">
-                  <span aria-hidden="true">+</span>
-                </button>
               </div>
             </div>
             <div class="death-saves">

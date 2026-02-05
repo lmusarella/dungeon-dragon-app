@@ -260,14 +260,7 @@ export async function renderHome(container) {
   const conditionsButton = container.querySelector('[data-edit-conditions]');
   if (conditionsButton) {
     conditionsButton.addEventListener('click', async () => {
-      if (!activeCharacter || !canEditCharacter) return;
-      const formData = await openConditionsModal(activeCharacter);
-      if (!formData) return;
-      const selected = formData.getAll('conditions');
-      await saveCharacterData(activeCharacter, {
-        ...activeCharacter.data,
-        conditions: selected
-      }, 'Condizioni aggiornate', () => renderHome(container));
+      await handleConditionsAction(container);
     });
   }
 
@@ -622,7 +615,8 @@ function bindFabHandlers() {
     const restButton = event.target.closest('[data-rest]');
     const diceButton = event.target.closest('[data-open-dice]');
     const lootButton = event.target.closest('[data-add-loot]');
-    if (!hpButton && !moneyButton && !restButton && !diceButton && !lootButton) return;
+    const conditionsButton = event.target.closest('[data-edit-conditions]');
+    if (!hpButton && !moneyButton && !restButton && !diceButton && !lootButton && !conditionsButton) return;
     event.preventDefault();
     const container = lastHomeContainer ?? null;
     if (hpButton) {
@@ -653,6 +647,11 @@ function bindFabHandlers() {
     if (lootButton) {
       await handleLootAction(container);
       closeFabMenu();
+      return;
+    }
+    if (conditionsButton) {
+      await handleConditionsAction(container);
+      closeFabMenu();
     }
   });
   fabHandlersBound = true;
@@ -675,6 +674,20 @@ function getHomeContext() {
     activeCharacter,
     canEditCharacter: Boolean(user) && !offline
   };
+}
+
+async function handleConditionsAction(container) {
+  const { activeCharacter, canEditCharacter } = getHomeContext();
+  if (!activeCharacter || !canEditCharacter) return;
+  const formData = await openConditionsModal(activeCharacter);
+  if (!formData) return;
+  const selected = formData.getAll('conditions');
+  await saveCharacterData(activeCharacter, {
+    ...activeCharacter.data,
+    conditions: selected
+  }, 'Condizioni aggiornate', () => {
+    if (container) renderHome(container);
+  });
 }
 
 async function handleLootAction(container) {

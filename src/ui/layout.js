@@ -51,6 +51,7 @@ export function renderLayout(container) {
           <button class="actions-fab-item" type="button" data-money-action="receive" data-fab-scope="inventory">Ricevi</button>
           <button class="actions-fab-item" type="button" data-hp-action="heal">Cura</button>
           <button class="actions-fab-item" type="button" data-hp-action="damage">Danno</button>
+          <button class="actions-fab-item" type="button" data-edit-conditions data-fab-scope="home">Condizioni</button>
           <button class="actions-fab-item" type="button" data-open-dice="roller">Dadi</button>
           <button class="actions-fab-item" type="button" data-rest="long_rest">Riposo Lungo</button>
         </div>

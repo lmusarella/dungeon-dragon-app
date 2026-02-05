@@ -76,25 +76,45 @@ export async function openConditionsModal(character) {
   const content = document.createElement('div');
   content.className = 'condition-modal';
 
-  const list = document.createElement('div');
-  list.className = 'condition-modal__list';
-  conditionList.forEach((condition) => {
-    const label = document.createElement('label');
-    label.className = 'checkbox condition-modal__item';
-    label.innerHTML = `
-      <input type="checkbox" name="conditions" value="${condition.key}" ${current.includes(condition.key) ? 'checked' : ''} />
-      <span><strong>${condition.label}</strong></span>
-    `;
-    list.appendChild(label);
+  const grid = document.createElement('div');
+  grid.className = 'condition-modal__grid';
+  const splitIndex = Math.ceil(conditionList.length / 2);
+  const sections = [
+    {
+      title: 'Condizioni (A-I)',
+      items: conditionList.slice(0, splitIndex)
+    },
+    {
+      title: 'Condizioni (P-T)',
+      items: conditionList.slice(splitIndex)
+    }
+  ];
+  sections.forEach((section) => {
+    const sectionEl = document.createElement('div');
+    sectionEl.className = 'condition-modal__section';
+    sectionEl.innerHTML = `<h4>${section.title}</h4>`;
+    const list = document.createElement('div');
+    list.className = 'condition-modal__list';
+    section.items.forEach((condition) => {
+      const label = document.createElement('label');
+      label.className = 'checkbox condition-modal__item';
+      label.innerHTML = `
+        <input type="checkbox" name="conditions" value="${condition.key}" ${current.includes(condition.key) ? 'checked' : ''} />
+        <span><strong>${condition.label}</strong></span>
+      `;
+      list.appendChild(label);
+    });
+    sectionEl.appendChild(list);
+    grid.appendChild(sectionEl);
   });
-  content.appendChild(list);
+  content.appendChild(grid);
 
   return openFormModal({
     title: 'Condizioni',
     submitLabel: 'Conferma',
     cancelLabel: 'Annulla',
     content,
-    cardClass: 'modal-card--scrollable'
+    cardClass: 'modal-card--wide'
   });
 }
 
