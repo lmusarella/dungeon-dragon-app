@@ -144,6 +144,11 @@ function parseLastInt(text) {
   return m ? parseInt(m[m.length - 1], 10) : null;
 }
 
+function hasInvalidRolls(notation) {
+  const rolls = Array.isArray(notation?.result) ? notation.result : [];
+  return rolls.some((value) => typeof value === 'number' && value < 0);
+}
+
 const HISTORY_KEY = 'diceRollHistory';
 const HISTORY_LIMIT = 12;
 
@@ -325,6 +330,7 @@ export function openDiceOverlay({
     if (resultValue) resultValue.textContent = label;
     if (resultDetail) resultDetail.textContent = detail;
     state.lastRoll = null;
+    state.lastBuff = null;
   }
 
   function renderHistory() {
@@ -559,6 +565,10 @@ export function openDiceOverlay({
   }
 
   function renderRollResult(notation) {
+    if (hasInvalidRolls(notation)) {
+      resetResult('—', 'Lancio non valido, rilancia i dadi.');
+      return;
+    }
     const modifier = Number(getActiveModifierInput()?.value) || 0;
     if (mode !== 'generic') {
       const info = getD20RollInfo(notation);
@@ -610,6 +620,7 @@ export function openDiceOverlay({
   }
 
   function summarizeRoll(notation) {
+    if (hasInvalidRolls(notation)) return null;
     const modifier = Number(getActiveModifierInput()?.value) || 0;
     if (mode !== 'generic') {
       const info = getD20RollInfo(notation);
@@ -738,6 +749,10 @@ export function openDiceOverlay({
     state.lastRoll = event.detail || null;
     state.lastBuff = null;
     if (state.lastRoll) {
+      if (hasInvalidRolls(state.lastRoll)) {
+        resetResult('—', 'Lancio non valido, rilancia i dadi.');
+        return;
+      }
       void consumeInspiration();
       renderRollResult(state.lastRoll);
     }
