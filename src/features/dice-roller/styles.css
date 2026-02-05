@@ -263,11 +263,6 @@ header {
   align-items: flex-end;
 }
 
-.diceov-field {
-  flex: 1 1 180px;
-  min-width: 0;
-}
-
 .diceov-field--modifier {
   flex: 0 0 auto;
 }
@@ -356,11 +351,6 @@ header {
   flex-wrap: wrap;
 }
 
-.diceov-generic-row .diceov-field {
-  flex: 0 1 140px;
-  min-width: 120px;
-}
-
 .diceov-generic-notation {
   flex: 2 1 240px;
   min-width: 0;
@@ -376,7 +366,7 @@ header {
 }
 
 .diceov-generic-row .diceov-field--modifier {
-  flex: 0 1 120px;
+  flex: 0 1 65px;
 }
 
 .diceov-generic-row .diceov-field--modifier input[type="number"] {
