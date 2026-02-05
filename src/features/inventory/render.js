@@ -2,9 +2,7 @@ import { formatWeight } from '../../lib/format.js';
 import {
   formatTransactionAmount,
   formatTransactionDate,
-  getBodyPartLabels,
   getCategoryLabel,
-  getEquipSlots,
   getItemStatusLabels
 } from './utils.js';
 
@@ -101,24 +99,18 @@ export function buildItemList(items, weightUnit = 'lb') {
       <div class="inventory-table__body">
         ${items.map((item) => {
     const volumeValue = item.volume !== null && item.volume !== undefined ? item.volume : '-';
-    const equipSlots = getEquipSlots(item);
     const statusLabels = getItemStatusLabels(item);
     return `
           <div class="inventory-table__row">
             <div class="inventory-table__badges">
-              <span class="resource-chip resource-chip--floating resource-chip--magic">${statusLabels.magic}</span>
-              <span class="resource-chip resource-chip--floating resource-chip--equipable">${statusLabels.equipable}</span>
-              <span class="resource-chip resource-chip--floating resource-chip--attunement">${statusLabels.attunement}</span>
+              ${item.is_magic ? `<span class="resource-chip resource-chip--floating resource-chip--magic">${statusLabels.magic}</span>` : ''}
+              ${item.equipable ? `<span class="resource-chip resource-chip--floating resource-chip--equipable">${statusLabels.equipable}</span>` : ''}
+              ${item.attunement_active ? `<span class="resource-chip resource-chip--floating resource-chip--attunement">${statusLabels.attunement}</span>` : ''}
             </div>
             <div class="inventory-table__cell inventory-table__cell--item">
               ${item.image_url ? `<img class="item-avatar" src="${item.image_url}" alt="Foto di ${item.name}" />` : ''}
               <div class="item-info-body">
                 <strong>${item.name}</strong>
-                <div class="tag-row resource-card__meta">
-                  ${item.equipable ? `<span class="chip">equipaggiabile${equipSlots.length ? ` · ${getBodyPartLabels(equipSlots)}` : ''}</span>` : ''}
-                  ${item.sovrapponibile ? '<span class="chip">sovrapponibile</span>' : ''}
-                  ${item.attunement_active ? '<span class="chip">in sintonia</span>' : ''}
-                </div>
               </div>
             </div>
             <div class="inventory-table__cell">${getCategoryLabel(item.category)}</div>

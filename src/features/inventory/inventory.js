@@ -70,7 +70,7 @@ export async function renderInventory(container) {
           <input type="search" placeholder="Cerca" data-search />
           <select data-category></select>
           <select data-equipable></select>
-          <label class="checkbox filter-toggle">
+          <label class="toggle-pill filter-toggle">
             <input type="checkbox" data-magic-filter />
             <span>Oggetti magici</span>
           </label>

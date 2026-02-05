@@ -36,15 +36,14 @@ export const bodyParts = [
 ];
 
 export const itemCategories = [
-  { value: 'gear', label: 'Equipaggiamento', equipable: true },
+  { value: 'gear', label: 'Vestiario', equipable: true },
   { value: 'loot', label: 'Loot' },
   { value: 'consumable', label: 'Consumabili' },
   { value: 'weapon', label: 'Armi', equipable: true },
   { value: 'armor', label: 'Armature', equipable: true },
   { value: 'jewelry', label: 'Gioielli e ornamenti', equipable: true },
   { value: 'tool', label: 'Strumenti' },
-  { value: 'container', label: 'Contenitore', equipable: true },
-  { value: 'misc', label: 'Altro' }
+  { value: 'container', label: 'Contenitore', equipable: true }
 ];
 
 export const categories = [

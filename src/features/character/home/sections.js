@@ -400,9 +400,8 @@ export function buildEquipSection(character, items = [], canEditCharacter = fals
     return `
               <li class="modifier-card attack-card resource-card inventory-item-card">
                 <div class="resource-card__badges">
-                  <span class="resource-chip resource-chip--floating resource-chip--magic">${statusLabels.magic}</span>
-                  <span class="resource-chip resource-chip--floating resource-chip--equipable">${statusLabels.equipable}</span>
-                  <span class="resource-chip resource-chip--floating resource-chip--attunement">${statusLabels.attunement}</span>
+                  ${item.is_magic ? `<span class="resource-chip resource-chip--floating resource-chip--magic">${statusLabels.magic}</span>` : ''}
+                  ${item.attunement_active ? `<span class="resource-chip resource-chip--floating resource-chip--attunement">${statusLabels.attunement}</span>` : ''}
                 </div>
                 <div class="attack-card__body resource-card__body">
                   <div class="resource-card__title item-info">
