@@ -116,7 +116,7 @@ export async function renderInventory(container) {
   categories.forEach((cat) => {
     const option = document.createElement('option');
     option.value = cat.value;
-    option.textContent = cat.equipable ? `${cat.label} · equipaggiabile` : cat.label;
+    option.textContent = cat.equipable ? `${cat.label}` : cat.label;
     categorySelect.appendChild(option);
   });
 

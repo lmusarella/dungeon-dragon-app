@@ -683,28 +683,28 @@ button {
   display: grid;
   grid-template-columns: minmax(260px, 2.4fr) repeat(4, minmax(90px, 1fr)) minmax(160px, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 4px;
 }
 
 .inventory-table__header {
   padding: 8px 12px;
   border-radius: 12px;
   background: #fdf7ea;
-  border: 1px solid #eadfc9;
+  border: 3px solid #eadfc9;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--accent);
 }
 
 .inventory-table__body {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .inventory-table__row {
-  padding: 10px 12px;
+  padding: 6px 8px;
   border: 3px solid #eadfc9;
   border-radius: 16px;
   background: #fff;
@@ -712,13 +712,13 @@ button {
 }
 
 .inventory-table__cell {
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .inventory-table__cell--item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .inventory-table__cell--actions {
@@ -1038,7 +1038,7 @@ button {
 }
 
 .resource-chip--floating.resource-chip--always {
-  background: #0f766e;
+  background: #9d7689;
 }
 
 .resource-chip--floating.resource-chip--bonus {
@@ -2294,9 +2294,10 @@ button {
   justify-content: space-between;
   align-items: center;
   background: #fdf7ea;
-  border: 1px solid #eadfc9;
+  border: 3px solid #eadfc9;
   border-radius: 12px;
   padding: 12px;
+  margin-bottom: 8px;
 }
 
 .login-card {
