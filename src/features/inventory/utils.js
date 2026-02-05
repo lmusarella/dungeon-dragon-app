@@ -66,6 +66,14 @@ export function getWeightUnit(character) {
   return character.data?.settings?.weight_unit ?? 'lb';
 }
 
+export function getItemStatusLabels(item = {}) {
+  return {
+    magic: item.is_magic ? 'Magico' : 'Non magico',
+    equipable: item.equipable ? 'Equipaggiabile' : 'Non equipaggiabile',
+    attunement: item.attunement_active ? 'In sintonia' : 'Non in sintonia'
+  };
+}
+
 export function hasProficiencyForItem(character, formData) {
   const proficiencies = character.data?.proficiencies || {};
   const category = formData.get('category');
