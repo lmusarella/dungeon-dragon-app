@@ -37,6 +37,84 @@ export const savingThrowList = [
   { key: 'cha', label: 'Carisma' }
 ];
 
+export const conditionList = [
+  {
+    key: 'accecato',
+    label: 'Accecato',
+    effect: 'Fallisce le prove basate sulla vista; attacchi contro con vantaggio, suoi attacchi con svantaggio.'
+  },
+  {
+    key: 'affascinato',
+    label: 'Affascinato',
+    effect: 'Non può attaccare l’ammaliatore; l’ammaliatore ha vantaggio alle prove sociali.'
+  },
+  {
+    key: 'assordato',
+    label: 'Assordato',
+    effect: 'Fallisce le prove basate sull’udito.'
+  },
+  {
+    key: 'avvelenato',
+    label: 'Avvelenato',
+    effect: 'Svantaggio ai tiri per colpire e alle prove di caratteristica.'
+  },
+  {
+    key: 'esausto',
+    label: 'Esausto',
+    effect: 'I livelli di esaurimento applicano penalità cumulative (vedi regole).'
+  },
+  {
+    key: 'incapacitato',
+    label: 'Incapacitato',
+    effect: 'Non può compiere azioni o reazioni.'
+  },
+  {
+    key: 'intralciato',
+    label: 'Intralciato',
+    effect: 'Velocità 0; attacchi contro con vantaggio, suoi attacchi con svantaggio; svantaggio ai TS di Destrezza.'
+  },
+  {
+    key: 'invisibile',
+    label: 'Invisibile',
+    effect: 'Impossibile da vedere senza mezzi speciali; attacchi contro con svantaggio, suoi attacchi con vantaggio.'
+  },
+  {
+    key: 'paralizzato',
+    label: 'Paralizzato',
+    effect: 'Incapacitato; non può muoversi o parlare; fallisce TS Forza/Destrezza; attacchi contro con vantaggio e critici in mischia.'
+  },
+  {
+    key: 'pietrificato',
+    label: 'Pietrificato',
+    effect: 'Incapacitato, non si muove/parla; resistenza a tutti i danni; immunità a veleno e malattie.'
+  },
+  {
+    key: 'privo_di_sensi',
+    label: 'Privo di sensi',
+    effect: 'Incapacitato; prono; fallisce TS Forza/Destrezza; attacchi contro con vantaggio e critici in mischia.'
+  },
+  {
+    key: 'prono',
+    label: 'Prono',
+    effect: 'Può solo strisciare; attacchi contro con vantaggio in mischia e svantaggio a distanza; suoi attacchi con svantaggio.'
+  },
+  {
+    key: 'spaventato',
+    label: 'Spaventato',
+    effect: 'Svantaggio a prove/attacchi mentre la fonte è in vista; non può avvicinarsi volontariamente.'
+  },
+  {
+    key: 'stordito',
+    label: 'Stordito',
+    effect: 'Incapacitato; non può muoversi; fallisce TS Forza/Destrezza; attacchi contro con vantaggio.'
+  },
+  {
+    key: 'trattenuto',
+    label: 'Trattenuto',
+    effect: 'Velocità 0; termina se l’afferrante è incapacitato o se la creatura è allontanata.'
+  }
+];
+
 export const equipmentProficiencyList = [
   { key: 'weapon_simple', label: 'Armi semplici' },
   { key: 'weapon_martial', label: 'Armi da guerra' },

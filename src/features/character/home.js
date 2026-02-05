@@ -23,6 +23,7 @@ import { fetchWallet, upsertWallet, createTransaction } from '../wallet/walletAp
 import {
   openAvatarModal,
   openBackgroundModal,
+  openConditionsModal,
   openPreparedSpellsModal,
   openResourceDetail,
   openResourceDrawer,
@@ -253,6 +254,20 @@ export async function renderHome(container) {
   if (backgroundButton) {
     backgroundButton.addEventListener('click', () => {
       openBackgroundModal(activeCharacter);
+    });
+  }
+
+  const conditionsButton = container.querySelector('[data-edit-conditions]');
+  if (conditionsButton) {
+    conditionsButton.addEventListener('click', async () => {
+      if (!activeCharacter || !canEditCharacter) return;
+      const formData = await openConditionsModal(activeCharacter);
+      if (!formData) return;
+      const selected = formData.getAll('conditions');
+      await saveCharacterData(activeCharacter, {
+        ...activeCharacter.data,
+        conditions: selected
+      }, 'Condizioni aggiornate', () => renderHome(container));
     });
   }
 

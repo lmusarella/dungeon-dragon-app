@@ -10,6 +10,7 @@ import {
 } from '../../../ui/components.js';
 import { consumeSpellSlot, saveCharacterData } from './data.js';
 import { formatResourceRecovery, formatSigned, getSpellTypeLabel, sortSpellsByLevel } from './utils.js';
+import { conditionList } from './constants.js';
 
 function getPrepStateLabel(state) {
   switch (state) {
@@ -61,6 +62,37 @@ export function openBackgroundModal(character) {
     title: 'Background',
     submitLabel: 'Chiudi',
     cancelLabel: null,
+    content,
+    cardClass: 'modal-card--scrollable'
+  });
+}
+
+export async function openConditionsModal(character) {
+  if (!character) return null;
+  const data = character.data || {};
+  const current = Array.isArray(data.conditions)
+    ? data.conditions
+    : (data.condition ? [data.condition] : []);
+  const content = document.createElement('div');
+  content.className = 'condition-modal';
+
+  const list = document.createElement('div');
+  list.className = 'condition-modal__list';
+  conditionList.forEach((condition) => {
+    const label = document.createElement('label');
+    label.className = 'checkbox condition-modal__item';
+    label.innerHTML = `
+      <input type="checkbox" name="conditions" value="${condition.key}" ${current.includes(condition.key) ? 'checked' : ''} />
+      <span><strong>${condition.label}</strong> <span class="muted">${condition.effect}</span></span>
+    `;
+    list.appendChild(label);
+  });
+  content.appendChild(list);
+
+  return openFormModal({
+    title: 'Condizioni',
+    submitLabel: 'Conferma',
+    cancelLabel: 'Annulla',
     content,
     cardClass: 'modal-card--scrollable'
   });

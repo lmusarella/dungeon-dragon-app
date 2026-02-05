@@ -1597,6 +1597,65 @@ button {
   margin: 0;
 }
 
+.condition-track {
+  margin-left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.65rem;
+  color: #6a5540;
+  align-items: flex-start;
+  text-align: left;
+  max-width: 260px;
+}
+
+.condition-track__label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.condition-track__row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.condition-track__value {
+  font-weight: 600;
+}
+
+.condition-track__effects {
+  font-size: 0.6rem;
+  color: rgba(106, 85, 64, 0.85);
+}
+
+.condition-track__list {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 4px;
+}
+
+.condition-track__list li {
+  margin: 0;
+}
+
+.condition-modal__list {
+  display: grid;
+  gap: 12px;
+}
+
+.condition-modal__item {
+  align-items: flex-start;
+}
+
+.condition-modal__item .muted {
+  display: block;
+  margin-top: 4px;
+}
+
 .stat-mini-card {
   background: rgba(255, 255, 255, 0.75);
   border: 1px solid rgba(234, 223, 201, 0.9);

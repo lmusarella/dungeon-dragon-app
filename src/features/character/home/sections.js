@@ -1,5 +1,6 @@
 import {
   abilityShortLabel,
+  conditionList,
   equipmentProficiencyList,
   RESOURCE_CAST_TIME_ORDER,
   savingThrowList,
@@ -66,6 +67,20 @@ export function buildCharacterOverview(character, canEditCharacter, items = []) 
   const hpLabel = maxHp ? `${currentHp ?? '-'}/${maxHp}` : `${currentHp ?? '-'}`;
   const tempHpLabel = tempHp ?? '-';
   const weakPoints = Math.max(0, Math.min(6, Number(hp.weak_points) || 0));
+  const conditionState = Array.isArray(data.conditions)
+    ? data.conditions
+    : (data.condition ? [data.condition] : []);
+  const activeConditions = conditionList.filter((condition) => conditionState.includes(condition.key));
+  const conditionsLabel = activeConditions.length
+    ? activeConditions.map((condition) => condition.label).join(', ')
+    : 'Normale';
+  const conditionsEffects = activeConditions.length
+    ? `
+      <ul class="condition-track__list">
+        ${activeConditions.map((condition) => `<li><strong>${condition.label}:</strong> ${condition.effect}</li>`).join('')}
+      </ul>
+    `
+    : '<p class="muted">Nessun effetto attivo.</p>';
   const weaknessLevels = [
     { value: 1, description: 'Svantaggio sulle prove di caratteristica.' },
     { value: 2, description: 'Velocità dimezzata.' },
@@ -215,6 +230,14 @@ export function buildCharacterOverview(character, canEditCharacter, items = []) 
   }).join('')}
               </div>
               <div class="weakness-track__description">${weaknessDescription}</div>
+            </div>
+            <div class="condition-track">
+              <span class="condition-track__label">Condizioni</span>
+              <div class="condition-track__row">
+                <span class="condition-track__value">${conditionsLabel}</span>
+                <button class="ghost-button" type="button" data-edit-conditions ${canEditCharacter ? '' : 'disabled'}>Modifica</button>
+              </div>
+              <div class="condition-track__effects">${conditionsEffects}</div>
             </div>
             <div class="death-saves">
               <span class="death-saves__label">TS morte</span>
