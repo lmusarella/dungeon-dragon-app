@@ -2429,10 +2429,11 @@ button {
 }
 
 .modal-divider {
-  height: 1px;
+  height: 2px;
   width: 100%;
-  background: linear-gradient(90deg, rgba(231, 220, 200, 0), rgba(231, 220, 200, 0.8), rgba(231, 220, 200, 0));
-  margin: 6px 0 10px;
+  background: linear-gradient(90deg, rgba(59, 93, 96, 0), rgba(59, 93, 96, 0.9), rgba(59, 93, 96, 0));
+  box-shadow: 0 1px 0 rgba(231, 220, 200, 0.6);
+  margin: 8px 0 12px;
 }
 
 .modal-card--wide {
@@ -2489,6 +2490,23 @@ button {
 
 .modal-toggle-field__label {
   font-weight: 700;
+}
+
+.modal-card--form .modal-toggle-field .diceov-toggle {
+  background: rgba(59, 93, 96, 0.2);
+  border-color: #3b5d60;
+}
+
+.modal-card--form .modal-toggle-field .diceov-toggle-track {
+  background: #8aa0a2;
+}
+
+.modal-card--form .modal-toggle-field .diceov-toggle input:checked + .diceov-toggle-track {
+  background: #3b5d60;
+}
+
+.modal-card--form .modal-toggle-field .diceov-toggle input:focus-visible + .diceov-toggle-track {
+  outline: 2px solid rgba(59, 93, 96, 0.5);
 }
 
 .modal-card--form {
