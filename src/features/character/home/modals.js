@@ -647,9 +647,15 @@ export function openResourceDrawer(character, onSave, resource = null) {
     value: resource?.image_url ?? ''
   });
   form.appendChild(buildRow([nameField, imageField], 'balanced'));
-  const passiveField = document.createElement('label');
-  passiveField.className = 'checkbox';
-  passiveField.innerHTML = '<input type="checkbox" name="is_passive" /> <span>Passiva (senza cariche)</span>';
+  const passiveField = document.createElement('div');
+  passiveField.className = 'modal-toggle-field';
+  passiveField.innerHTML = `
+    <span class="modal-toggle-field__label">Passiva (senza cariche)</span>
+    <label class="diceov-toggle">
+      <input type="checkbox" name="is_passive" />
+      <span class="diceov-toggle-track" aria-hidden="true"></span>
+    </label>
+  `;
   const castTimeField = document.createElement('label');
   castTimeField.className = 'field';
   castTimeField.innerHTML = '<span>Tipo di lancio</span>';
