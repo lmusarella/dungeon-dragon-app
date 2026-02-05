@@ -166,6 +166,11 @@ button {
   color: #947b5a;
 }
 
+.modal-title {
+  color: #3b5d60;
+  text-align: center;
+}
+
 .app-shell {
   display: flex;
   flex-direction: column;
