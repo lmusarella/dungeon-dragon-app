@@ -534,7 +534,7 @@ header {
   grid-template-columns: minmax(150px, 1fr) 88px 48px minmax(110px, 1fr);
   gap: 6px;
   padding: 6px 0;
-  font-size: 0.75rem;
+  font-size: 0.89rem;
   align-items: center;
   color: rgba(255,255,255,0.8);
   white-space: nowrap;
@@ -576,7 +576,7 @@ header {
 }
 
 .diceov-history-subtype {
-  font-size: 0.7rem;
+  font-size: 0.79rem;
   font-weight: 600;
   color: rgba(255,255,255,0.7);
   text-transform: none;

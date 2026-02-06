@@ -691,7 +691,7 @@ export function openResourceDrawer(character, onSave, resource = null) {
   form.appendChild(buildRow([resetField, inputRiposoCorto, inputRiposoLungo], 'balanced'));
 
   const damageDiceNotationField = buildInput({
-    label: 'Notazione dado danno',
+    label: 'Notazione dado',
     name: 'damage_dice_notation',
     placeholder: 'Es. 2d8+1d4',
     value: resource?.damage_dice_notation ?? ''
