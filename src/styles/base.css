@@ -169,6 +169,11 @@ button {
 .modal-title {
   color: #3b5d60;
   text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.9rem;
+  font-weight: 800;
+  margin: 0;
 }
 
 .app-shell {
