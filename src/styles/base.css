@@ -1756,11 +1756,11 @@ button {
   border-radius: 999px;
   border: 1px solid rgba(216, 197, 165, 0.7);
   background: rgba(255, 247, 228, 0.65);
-  font-size: 0.78rem;
 }
 
 .condition-modal__item-label {
   min-width: 0;
+  color: #3b5d60;
 }
 
 .condition-modal__item-label strong {
@@ -1772,16 +1772,16 @@ button {
 
 .condition-modal__toggle {
   flex-shrink: 0;
-  background: rgba(59, 93, 96, 0.2);
-  border-color: #3b5d60;
+  background: rgba(59, 93, 96, 0.2) !important;
+  border-color: #3b5d60 !important;
 }
 
 .condition-modal__toggle .diceov-toggle-track {
-  background: #8aa0a2;
+  background: #8aa0a2 !important;
 }
 
 .condition-modal__toggle input:checked + .diceov-toggle-track {
-  background: #3b5d60;
+  background: #3b5d60 !important;
 }
 
 .condition-modal__toggle input:focus-visible + .diceov-toggle-track {
