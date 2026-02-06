@@ -618,40 +618,34 @@ function bindFabHandlers() {
     const conditionsButton = event.target.closest('[data-edit-conditions]');
     if (!hpButton && !moneyButton && !restButton && !diceButton && !lootButton && !conditionsButton) return;
     event.preventDefault();
+    closeFabMenu();
     const container = lastHomeContainer ?? null;
     if (hpButton) {
       await handleHpAction(hpButton.dataset.hpAction, container);
-      closeFabMenu();
       return;
     }
     if (moneyButton) {
       const route = window.location.hash.replace('#/', '') || 'home';
       if (route === 'inventory') {
-        closeFabMenu();
         return;
       }
       await handleMoneyAction(moneyButton.dataset.moneyAction, container);
-      closeFabMenu();
       return;
     }
     if (restButton) {
       await handleRestAction(restButton.dataset.rest, container);
-      closeFabMenu();
       return;
     }
     if (diceButton) {
       handleDiceAction(diceButton.dataset.openDice);
-      closeFabMenu();
       return;
     }
     if (lootButton) {
       await handleLootAction(container);
-      closeFabMenu();
       return;
     }
     if (conditionsButton) {
       await handleConditionsAction(container);
-      closeFabMenu();
     }
   });
   fabHandlersBound = true;
