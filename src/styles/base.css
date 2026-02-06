@@ -203,7 +203,7 @@ button {
   height: 52px;
   border-radius: 16px;
   background: #fff;
-  border: 1px solid #e6dcc8;
+  border: 3px solid #e6dcc8;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -247,7 +247,7 @@ button {
   gap: 10px;
   padding: 6px 10px;
   background: #fff;
-  border: 1px solid #e6dcc8;
+  border: 3px solid #e6dcc8;
   border-radius: 12px;
 }
 
@@ -291,7 +291,7 @@ button {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  border: 1px solid #d6c6ad;
+  border: 3px solid #d6c6ad;
   background: #fff;
   display: flex;
   flex-direction: column;
@@ -2435,7 +2435,7 @@ button {
   align-items: center;
   padding: 12px 16px;
   border-radius: 12px;
-  border: 1px solid #e6dcc8;
+  border: 3px solid #e6dcc8;
   background: #fff;
   font-weight: 600;
   text-decoration: none;
