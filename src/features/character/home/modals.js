@@ -690,6 +690,20 @@ export function openResourceDrawer(character, onSave, resource = null) {
   resetField.appendChild(resetSelect);
   form.appendChild(buildRow([resetField, inputRiposoCorto, inputRiposoLungo], 'balanced'));
 
+  const damageDiceNotationField = buildInput({
+    label: 'Notazione dado danno',
+    name: 'damage_dice_notation',
+    placeholder: 'Es. 2d8+1d4',
+    value: resource?.damage_dice_notation ?? ''
+  });
+  const damageModifierField = buildInput({
+    label: 'Modificatore dado',
+    name: 'damage_modifier',
+    type: 'number',
+    value: resource?.damage_modifier ?? ''
+  });
+  form.appendChild(buildRow([damageDiceNotationField, damageModifierField], 'compact'));
+
   form.appendChild(buildTextarea({
     label: 'Descrizione',
     name: 'description',
@@ -746,6 +760,8 @@ export function openResourceDrawer(character, onSave, resource = null) {
       image_url: formData.get('image_url')?.trim() || null,
       description: formData.get('description')?.trim() || null,
       cast_time: formData.get('cast_time') || null,
+      damage_dice_notation: formData.get('damage_dice_notation')?.trim() || null,
+      damage_modifier: toNumberOrNull(formData.get('damage_modifier')),
       max_uses: maxUses,
       used,
       reset_on: isPassive ? null : formData.get('reset_on'),
