@@ -1772,6 +1772,26 @@ button {
 
 .condition-modal__toggle {
   flex-shrink: 0;
+  background: rgba(59, 93, 96, 0.2);
+  border-color: #3b5d60;
+}
+
+.condition-modal__toggle .diceov-toggle-track {
+  background: #8aa0a2;
+}
+
+.condition-modal__toggle input:checked + .diceov-toggle-track {
+  background: #3b5d60;
+}
+
+.condition-modal__toggle input:focus-visible + .diceov-toggle-track {
+  outline: 2px solid rgba(59, 93, 96, 0.5);
+}
+
+.condition-modal__item.is-selected {
+  border-color: rgba(59, 93, 96, 0.7);
+  background: rgba(227, 239, 240, 0.92);
+  box-shadow: 0 0 0 1px rgba(59, 93, 96, 0.16);
 }
 
 .condition-modal__item .muted {

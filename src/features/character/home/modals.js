@@ -80,14 +80,19 @@ export async function openConditionsModal(character) {
   list.className = 'condition-modal__list';
   conditionList.forEach((condition) => {
     const label = document.createElement('label');
-    label.className = 'condition-modal__item';
+    const isChecked = current.includes(condition.key);
+    label.className = `condition-modal__item${isChecked ? ' is-selected' : ''}`;
     label.innerHTML = `
       <span class="condition-modal__item-label"><strong>${condition.label}</strong></span>
       <span class="diceov-toggle condition-modal__toggle">
-        <input type="checkbox" name="conditions" value="${condition.key}" ${current.includes(condition.key) ? 'checked' : ''} />
+        <input type="checkbox" name="conditions" value="${condition.key}" ${isChecked ? 'checked' : ''} />
         <span class="diceov-toggle-track" aria-hidden="true"></span>
       </span>
     `;
+    const checkbox = label.querySelector('input[type="checkbox"]');
+    checkbox?.addEventListener('change', () => {
+      label.classList.toggle('is-selected', checkbox.checked);
+    });
     list.appendChild(label);
   });
   content.appendChild(list);
