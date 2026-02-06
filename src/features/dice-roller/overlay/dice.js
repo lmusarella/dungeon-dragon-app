@@ -374,6 +374,7 @@ export function openDiceOverlay({
             ${entry.context ? `<span class="diceov-history-subtype">${entry.context}</span>` : ''}
             ${entry.inspired ? '<span class="diceov-history-flag">Isp.</span>' : ''}
           </div>
+          <span class="diceov-history-rollmode">${entry.rollModeLabel || '—'}</span>
           <span class="diceov-history-total">${entry.total ?? '—'}</span>
           <span class="diceov-history-date">${formatHistoryDate(entry.timestamp)}</span>
         </div>
@@ -696,6 +697,19 @@ export function openDiceOverlay({
     return { value, total: value + modifier + buffDelta };
   }
 
+  function getHistoryRollModeLabel() {
+    const currentRollMode = getRollMode(overlayEl);
+    if (['TS', 'TA', 'TC'].includes(rollType)) {
+      if (currentRollMode === 'advantage') return 'Vantaggio';
+      if (currentRollMode === 'disadvantage') return 'Svantaggio';
+      return 'Normale';
+    }
+    if ((rollType === 'GEN' || rollType === null) && ['advantage', 'disadvantage'].includes(currentRollMode)) {
+      return currentRollMode === 'advantage' ? 'Vantaggio' : 'Svantaggio';
+    }
+    return null;
+  }
+
   if (inspirationInput) {
     inspirationInput.onchange = () => {
       updateInspiration();
@@ -827,6 +841,7 @@ export function openDiceOverlay({
           subtype: getSelectionLabel(),
           context: historyLabel,
           inspired: state.inspirationConsumed,
+          rollModeLabel: getHistoryRollModeLabel(),
           value: summary.value,
           total: summary.total,
           timestamp: new Date().toISOString()
