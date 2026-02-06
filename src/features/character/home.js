@@ -1216,14 +1216,14 @@ function buildHpShortcutFields(
   primaryRow.appendChild(amountField);
 
   if (allowTempHp) {
-    const tempHpField = document.createElement('label');
-    tempHpField.className = 'hp-shortcut-toggle';
+    const tempHpField = document.createElement('div');
+    tempHpField.className = 'modal-toggle-field hp-shortcut-toggle';
     tempHpField.innerHTML = `
       <span class="hp-shortcut-toggle__label">HP temporanei</span>
-      <span class="diceov-toggle">
+      <label class="diceov-toggle">
         <input type="checkbox" name="temp_hp" />
         <span class="diceov-toggle-track" aria-hidden="true"></span>
-      </span>
+      </label>
     `;
     primaryRow.appendChild(tempHpField);
   }
@@ -1254,15 +1254,15 @@ function buildHpShortcutFields(
   const hitDiceSides = getHitDiceSides(hitDice.die);
   const canUse = remaining > 0 && hitDiceSides;
 
-  const hitDiceField = document.createElement('label');
-  hitDiceField.className = 'hp-shortcut-toggle';
+  const hitDiceField = document.createElement('div');
+  hitDiceField.className = 'modal-toggle-field hp-shortcut-toggle';
   const hitDiceLabel = hitDice.die ? `${hitDice.die}` : 'dado vita';
   hitDiceField.innerHTML = `
     <span class="hp-shortcut-toggle__label">Usa dado vita (${hitDiceLabel}) · rimasti ${remaining}/${hitDiceMax || '-'}</span>
-    <span class="diceov-toggle">
+    <label class="diceov-toggle">
       <input type="checkbox" name="use_hit_dice" ${canUse ? '' : 'disabled'} />
       <span class="diceov-toggle-track" aria-hidden="true"></span>
-    </span>
+    </label>
   `;
 
   const hitDiceCountField = document.createElement('label');
@@ -1307,7 +1307,6 @@ function buildHpShortcutFields(
         countInput.value = '1';
       }
     }
-    hitDiceCountField.style.display = useDice ? 'grid' : 'none';
   };
   checkbox?.addEventListener('change', syncState);
   syncState();
