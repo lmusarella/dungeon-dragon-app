@@ -2428,7 +2428,9 @@ button {
   padding: 10px 12px;
   width: min(580px, 92%);
   max-height: 85vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border: 6px solid #3b5d60;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
 }
@@ -2446,15 +2448,31 @@ button {
   margin: 8px 0 12px;
 }
 
+.modal-header,
+.modal-footer {
+  flex: 0 0 auto;
+}
+
+.modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .modal-card--wide {
   width: min(860px, 95%);
   max-height: 90vh;
-  overflow-y: auto;
 }
 
 .modal-card--scrollable {
   max-height: 90vh;
-  overflow-y: auto;
 }
 
 .modal-actions {
