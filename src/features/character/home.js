@@ -472,7 +472,8 @@ export async function renderHome(container) {
         notation: overlayConfig.notation,
         modifier: overlayConfig.modifier,
         rollType: 'DMG',
-        characterId: activeCharacter?.id
+        characterId: activeCharacter?.id,
+        historyLabel: weapon.name || null
       });
     }));
 
@@ -490,7 +491,7 @@ export async function renderHome(container) {
       mode: 'generic',
       notation: parsed.notation,
       modifier: Number(resource.damage_modifier) || 0,
-      rollType: 'DMG',
+      rollType: 'GEN',
       characterId: activeCharacter?.id,
       historyLabel: resource.name || null
     });
