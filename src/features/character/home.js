@@ -1202,6 +1202,7 @@ function buildHpShortcutFields(
   } = {}
 ) {
   const wrapper = document.createElement('div');
+  wrapper.className = 'hp-shortcut-fields';
   const amountField = buildInput({ label: 'Valore', name: 'amount', type: 'number', value: '1' });
   const amountInput = amountField.querySelector('input');
   if (amountInput) {
@@ -1210,14 +1211,54 @@ function buildHpShortcutFields(
   }
   wrapper.appendChild(amountField);
 
+  const createToggleField = ({
+    name,
+    label,
+    extraClass = '',
+    disabled = false
+  }) => {
+    const field = document.createElement('div');
+    field.className = `hp-shortcut-toggle-field${extraClass ? ` ${extraClass}` : ''}`;
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.name = name;
+    input.className = 'hp-shortcut-toggle-input';
+    if (disabled) {
+      input.disabled = true;
+    }
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'hp-shortcut-toggle-button';
+    button.textContent = label;
+    button.setAttribute('aria-pressed', 'false');
+    if (disabled) {
+      button.disabled = true;
+    }
+    const sync = () => {
+      const selected = Boolean(input.checked);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      field.classList.toggle('is-active', selected);
+    };
+    button.addEventListener('click', () => {
+      if (input.disabled) return;
+      input.checked = !input.checked;
+      sync();
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    sync();
+    field.appendChild(input);
+    field.appendChild(button);
+    return { field, input, button, sync };
+  };
+
+  let tempHpToggle = null;
+
   if (allowTempHp) {
-    const tempHpField = document.createElement('label');
-    tempHpField.className = 'checkbox';
-    tempHpField.innerHTML = `
-      <input type="checkbox" name="temp_hp" />
-      <span>HP temporanei</span>
-    `;
-    wrapper.appendChild(tempHpField);
+    tempHpToggle = createToggleField({
+      name: 'temp_hp',
+      label: 'HP temporanei'
+    });
+    wrapper.appendChild(tempHpToggle.field);
   }
 
   if (!allowHitDice) {
@@ -1244,14 +1285,16 @@ function buildHpShortcutFields(
   const hitDiceSides = getHitDiceSides(hitDice.die);
   const canUse = remaining > 0 && hitDiceSides;
 
-  const hitDiceField = document.createElement('label');
-  hitDiceField.className = 'checkbox';
   const hitDiceLabel = hitDice.die ? `${hitDice.die}` : 'dado vita';
-  hitDiceField.innerHTML = `
-    <input type="checkbox" name="use_hit_dice" ${canUse ? '' : 'disabled'} />
-    <span>Usa dado vita (${hitDiceLabel}) · rimasti ${remaining}/${hitDiceMax || '-'}</span>
-  `;
-  wrapper.appendChild(hitDiceField);
+  const hitDiceRow = document.createElement('div');
+  hitDiceRow.className = 'hp-shortcut-hit-dice-row';
+  const hitDiceToggle = createToggleField({
+    name: 'use_hit_dice',
+    label: `Usa dado vita (${hitDiceLabel}) · rimasti ${remaining}/${hitDiceMax || '-'}`,
+    extraClass: 'hp-shortcut-hit-dice-toggle',
+    disabled: !canUse
+  });
+  hitDiceRow.appendChild(hitDiceToggle.field);
 
   const hitDiceCountField = document.createElement('label');
   hitDiceCountField.className = 'field hit-dice-count';
@@ -1259,7 +1302,8 @@ function buildHpShortcutFields(
     <span>Numero dadi vita</span>
     <input type="number" name="hit_dice_count" min="1" max="${remaining}" value="1" />
   `;
-  wrapper.appendChild(hitDiceCountField);
+  hitDiceRow.appendChild(hitDiceCountField);
+  wrapper.appendChild(hitDiceRow);
 
   if (!canUse) {
     const hint = document.createElement('p');
@@ -1268,7 +1312,7 @@ function buildHpShortcutFields(
     wrapper.appendChild(hint);
   }
 
-  const checkbox = hitDiceField.querySelector('input');
+  const checkbox = hitDiceToggle.input;
   const countInput = hitDiceCountField.querySelector('input');
   if (countInput) {
     countInput.required = false;
@@ -1276,6 +1320,18 @@ function buildHpShortcutFields(
 
   const syncState = () => {
     const useDice = checkbox?.checked;
+    const useTemp = tempHpToggle?.input.checked;
+    if (tempHpToggle?.input && useDice) {
+      tempHpToggle.input.checked = false;
+      tempHpToggle.sync();
+    }
+    if (checkbox) {
+      checkbox.disabled = Boolean(useTemp) || !canUse;
+    }
+    if (hitDiceToggle.button) {
+      hitDiceToggle.button.disabled = Boolean(useTemp) || !canUse;
+    }
+    hitDiceToggle.sync();
     if (!amountInput) return;
     amountInput.disabled = Boolean(useDice);
     amountInput.required = !useDice;
@@ -1294,6 +1350,12 @@ function buildHpShortcutFields(
     hitDiceCountField.style.display = useDice ? 'grid' : 'none';
   };
   checkbox?.addEventListener('change', syncState);
+  tempHpToggle?.input.addEventListener('change', () => {
+    if (tempHpToggle?.input.checked && checkbox) {
+      checkbox.checked = false;
+    }
+    syncState();
+  });
   syncState();
 
   return wrapper;
