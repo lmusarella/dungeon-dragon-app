@@ -1727,6 +1727,7 @@ button {
 .condition-modal__list {
   display: grid;
   gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .condition-modal__grid {
@@ -1746,7 +1747,31 @@ button {
 }
 
 .condition-modal__item {
-  align-items: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 197, 165, 0.7);
+  background: rgba(255, 247, 228, 0.65);
+  font-size: 0.78rem;
+}
+
+.condition-modal__item-label {
+  min-width: 0;
+}
+
+.condition-modal__item-label strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.condition-modal__toggle {
+  flex-shrink: 0;
 }
 
 .condition-modal__item .muted {
