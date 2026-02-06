@@ -958,6 +958,45 @@ button {
   padding: 16px;
 }
 
+.resource-detail-card {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.resource-detail-card h4 {
+  margin: 0 0 6px;
+  grid-column: 2;
+}
+
+.resource-detail-card p {
+  grid-column: 2;
+}
+
+.resource-detail-card .resource-detail-image {
+  width: 100%;
+  max-width: 180px;
+  max-height: 180px;
+  margin-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .resource-detail-card {
+    grid-template-columns: 1fr;
+  }
+
+  .resource-detail-card h4,
+  .resource-detail-card p {
+    grid-column: auto;
+  }
+
+  .resource-detail-card .resource-detail-image {
+    max-width: 100%;
+    max-height: 180px;
+  }
+}
+
 .equipment-preview-card {
   display: grid;
   grid-template-columns: minmax(180px, 240px) 1fr;

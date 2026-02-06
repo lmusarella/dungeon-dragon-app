@@ -109,7 +109,7 @@ export function openResourceDetail(resource, { onUse, onReset } = {}) {
     : 'resource-detail-image resource-detail-image--placeholder';
 
   detail.innerHTML = `
-    <div class="detail-card detail-card--text">
+    <div class="detail-card detail-card--text resource-detail-card">
       <img class="${imageClass}" src="${imageUrl}" alt="${imageAlt}" />
       <h4>${resource.name}</h4>
       <p>${description}</p>
