@@ -1217,9 +1217,9 @@ function buildHpShortcutFields(
 
   if (allowTempHp) {
     const tempHpField = document.createElement('div');
-    tempHpField.className = 'modal-toggle-field hp-shortcut-toggle';
+    tempHpField.className = 'modal-toggle-field';
     tempHpField.innerHTML = `
-      <span class="hp-shortcut-toggle__label">HP temporanei</span>
+      <span class="modal-toggle-field__label">HP temporanei</span>
       <label class="diceov-toggle">
         <input type="checkbox" name="temp_hp" />
         <span class="diceov-toggle-track" aria-hidden="true"></span>
@@ -1255,10 +1255,10 @@ function buildHpShortcutFields(
   const canUse = remaining > 0 && hitDiceSides;
 
   const hitDiceField = document.createElement('div');
-  hitDiceField.className = 'modal-toggle-field hp-shortcut-toggle';
+  hitDiceField.className = 'modal-toggle-field';
   const hitDiceLabel = hitDice.die ? `${hitDice.die}` : 'dado vita';
   hitDiceField.innerHTML = `
-    <span class="hp-shortcut-toggle__label">Usa dado vita (${hitDiceLabel}) · rimasti ${remaining}/${hitDiceMax || '-'}</span>
+    <span class="modal-toggle-field__label">Usa dado vita (${hitDiceLabel}) · rimasti ${remaining}/${hitDiceMax || '-'}</span>
     <label class="diceov-toggle">
       <input type="checkbox" name="use_hit_dice" ${canUse ? '' : 'disabled'} />
       <span class="diceov-toggle-track" aria-hidden="true"></span>

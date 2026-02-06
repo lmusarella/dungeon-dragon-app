@@ -2108,31 +2108,6 @@ button {
   align-items: end;
 }
 
-.hp-shortcut-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 44px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid #d8c5a5;
-  background: #fff7e4;
-  font-size: 0.88rem;
-}
-
-.hp-shortcut-toggle__label {
-  color: #4d4130;
-}
-
-.hp-shortcut-toggle .diceov-toggle {
-  flex-shrink: 0;
-}
-
-.hp-shortcut-toggle input:disabled + .diceov-toggle-track {
-  opacity: 0.5;
-}
-
 .hp-shortcut-fields__count {
   margin-top: 0;
 }
