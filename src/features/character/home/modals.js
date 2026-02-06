@@ -9,7 +9,7 @@ import {
   openFormModal
 } from '../../../ui/components.js';
 import { consumeSpellSlot, saveCharacterData } from './data.js';
-import { formatResourceRecovery, formatSigned, getSpellTypeLabel, sortSpellsByLevel } from './utils.js';
+import { formatSigned, getSpellTypeLabel, sortSpellsByLevel } from './utils.js';
 import { conditionList } from './constants.js';
 
 function getPrepStateLabel(state) {
@@ -97,29 +97,23 @@ export function openResourceDetail(resource, { onUse, onReset } = {}) {
   const isExhausted = maxUses && resource.used >= maxUses;
   const isActive = resource.reset_on !== null && resource.reset_on !== 'none';
   const hasAction = Boolean(maxUses && (isExhausted ? onReset : onUse));
-  const submitLabel = maxUses
-    ? isExhausted
-      ? 'Ripristina'
-      : 'Usa'
-    : 'Chiudi';
-  const usageLabel = maxUses ? `${resource.used}/${resource.max_uses}` : 'Passiva';
+  const description = resource.description?.trim() || 'Nessuna descrizione disponibile per questa risorsa.';
+
   detail.innerHTML = `
     <div class="detail-card detail-card--text">
       <h4>${resource.name}</h4>
-      ${resource.description ? `<p>${resource.description}</p>` : ''}
-      ${isActive ? '' : `
-        ${resource.image_url ? `<img class="resource-detail-image" src="${resource.image_url}" alt="Foto di ${resource.name}" />` : ''}
-        ${resource.cast_time ? `<p class="resource-chip">${resource.cast_time}</p>` : ''}
-        <p class="muted">${formatResourceRecovery(resource)}</p>
-        <p>Cariche: ${usageLabel}</p>
-      `}
+      <p>${description}</p>
     </div>
   `;
+
   openFormModal({
     title: 'Dettaglio risorsa',
-    submitLabel,
-    cancelLabel: hasAction ? 'Chiudi' : null,
-    content: detail
+    submitLabel: hasAction
+      ? (isExhausted ? 'Ripristina' : 'Usa')
+      : 'Chiudi',
+    cancelLabel: isActive ? (hasAction ? 'Chiudi' : null) : null,
+    content: detail,
+    showFooter: isActive
   }).then(async (formData) => {
     if (!formData || !maxUses) return;
     if (isExhausted && onReset) {

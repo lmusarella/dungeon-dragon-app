@@ -75,11 +75,11 @@ export function renderLayout(container) {
         <div class="modal-overlay" data-confirm-overlay></div>
         <div class="modal-card" role="dialog" aria-modal="true">
           <div class="modal-header">
-            <p class="eyebrow modal-title" data-confirm-title>Conferma</p>
+            <p class="modal-title" data-confirm-title>Conferma</p>
             <div class="modal-divider" aria-hidden="true"></div>
           </div>
           <div class="modal-body">
-            <p class="eyebrow" data-confirm-message></p>
+            <p data-confirm-message></p>
           </div>
           <div class="modal-footer">
             <div class="modal-divider" aria-hidden="true"></div>
@@ -98,7 +98,7 @@ export function renderLayout(container) {
         <div class="modal-overlay" data-form-overlay></div>
         <div class="modal-card" role="dialog" aria-modal="true">
           <div class="modal-header">
-            <p class="eyebrow modal-title" data-form-title>Inserisci dati</p>
+            <p class="modal-title" data-form-title>Inserisci dati</p>
             <div class="modal-divider" aria-hidden="true"></div>
           </div>
           <form data-form-body class="modal-form">

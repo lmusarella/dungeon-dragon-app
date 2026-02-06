@@ -947,6 +947,47 @@ button {
   margin-bottom: 12px;
 }
 
+.equipment-preview-card {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.equipment-preview-image {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid #dcc7a3;
+}
+
+.equipment-preview-content h4 {
+  margin: 0 0 8px;
+  color: #3b5d60;
+}
+
+.equipment-preview-content p {
+  margin: 0;
+  line-height: 1.5;
+  font-weight: 500;
+  white-space: pre-wrap;
+}
+
+.modal-card--equipment-preview {
+  width: min(760px, 95%);
+}
+
+@media (max-width: 720px) {
+  .equipment-preview-card {
+    grid-template-columns: 1fr;
+  }
+
+  .equipment-preview-image {
+    max-height: 200px;
+  }
+}
+
 .resource-passive {
   font-size: 0.75rem;
   color: #665a48;

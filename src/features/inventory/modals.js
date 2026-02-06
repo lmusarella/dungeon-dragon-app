@@ -370,16 +370,22 @@ export async function openItemModal(character, item, items, onSave) {
 export function openItemImageModal(item) {
   if (!item?.image_url) return;
   const content = document.createElement('div');
-  content.className = 'resource-detail';
+  content.className = 'equipment-preview-modal';
+  const description = item.description?.trim() || item.notes?.trim() || 'Nessuna descrizione disponibile per questo equipaggiamento.';
   content.innerHTML = `
-    <div class="detail-card detail-card--text">
-      <img class="resource-detail-image" src="${item.image_url}" alt="Foto di ${item.name}" />
+    <div class="detail-card detail-card--text equipment-preview-card">
+      <img class="equipment-preview-image" src="${item.image_url}" alt="Foto di ${item.name}" />
+      <div class="equipment-preview-content">
+        <h4>${item.name}</h4>
+        <p>${description}</p>
+      </div>
     </div>
   `;
   openFormModal({
-    title: item.name,
-    submitLabel: 'Chiudi',
+    title: 'Dettaglio equipaggiamento',
     cancelLabel: null,
-    content
+    content,
+    cardClass: 'modal-card--equipment-preview',
+    showFooter: false
   });
 }

@@ -191,10 +191,6 @@ export function openFormModal({
       } else if (content) {
         fieldsEl.appendChild(content);
       }
-      fieldsEl.querySelectorAll('p').forEach((paragraph) => {
-        if (paragraph.classList.contains('background-modal-description')) return;
-        paragraph.classList.add('eyebrow');
-      });
     }
 
     modal.hidden = false;
