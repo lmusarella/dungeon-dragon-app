@@ -29,6 +29,9 @@ const DICE = (function() {
     var vars = { //todo: make these configurable on init
         frame_rate: 1 / 60,
         scale: 100, //dice size
+        stop_velocity_threshold: 7.5,
+        stop_frames_to_confirm: 2,
+        max_iterations_before_force_stop: 10,
         
         material_options: {
             specular: 0x172022,
@@ -319,8 +322,8 @@ const DICE = (function() {
 
     that.dice_box.prototype.check_if_throw_finished = function() {
         var res = true;
-        var e = 6;
-        if (this.iteration < 10 / vars.frame_rate) {
+        var e = vars.stop_velocity_threshold;
+        if (this.iteration < vars.max_iterations_before_force_stop / vars.frame_rate) {
             for (var i = 0; i < this.dices.length; ++i) {
                 var dice = this.dices[i];
                 if (dice.dice_stopped === true) continue;
@@ -328,7 +331,7 @@ const DICE = (function() {
                 if (Math.abs(a.x) < e && Math.abs(a.y) < e && Math.abs(a.z) < e &&
                         Math.abs(v.x) < e && Math.abs(v.y) < e && Math.abs(v.z) < e) {
                     if (dice.dice_stopped) {
-                        if (this.iteration - dice.dice_stopped > 3) {
+                        if (this.iteration - dice.dice_stopped > vars.stop_frames_to_confirm) {
                             dice.dice_stopped = true;
                             continue;
                         }
