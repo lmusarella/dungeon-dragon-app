@@ -99,7 +99,7 @@ export async function openConditionsModal(character) {
 
   return openFormModal({
     title: 'Condizioni',
-    submitLabel: 'Conferma',
+    submitLabel: 'Applica',
     cancelLabel: 'Annulla',
     content,
     cardClass: 'modal-card--wide'
