@@ -2104,10 +2104,6 @@ button {
   gap: 12px;
 }
 
-.hp-shortcut-fields__row {
-  align-items: end;
-}
-
 .hp-shortcut-fields__count {
   margin-top: 0;
 }
