@@ -59,11 +59,6 @@ export const conditionList = [
     effect: 'Svantaggio ai tiri per colpire e alle prove di caratteristica.'
   },
   {
-    key: 'esausto',
-    label: 'Esausto',
-    effect: 'I livelli di esaurimento applicano penalità cumulative (vedi regole).'
-  },
-  {
     key: 'incapacitato',
     label: 'Incapacitato',
     effect: 'Non può compiere azioni o reazioni.'
