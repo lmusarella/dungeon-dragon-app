@@ -342,6 +342,27 @@ export function openDiceOverlay({
     return null;
   })();
 
+  function getDefaultRollModeState() {
+    const hasWeaknessDisadvantage = Boolean(weaknessReason);
+    const selectionMode = state.selectionRollMode;
+    const hasAdvantage = selectionMode === 'advantage';
+    const hasDisadvantage = hasWeaknessDisadvantage || selectionMode === 'disadvantage';
+
+    if (hasAdvantage && hasDisadvantage) {
+      return {
+        mode: 'normal',
+        weaknessWarning: null,
+        rollModeWarning: 'Vantaggio e svantaggio si annullano: tiro normale.'
+      };
+    }
+
+    return {
+      mode: hasDisadvantage ? 'disadvantage' : (hasAdvantage ? 'advantage' : 'normal'),
+      weaknessWarning: hasDisadvantage ? weaknessReason : null,
+      rollModeWarning: state.selectionRollModeReason
+    };
+  }
+
   function getActiveModifierInput() {
     return mode === 'generic' ? (genericModifierInput || modifierInput) : modifierInput;
   }
@@ -468,25 +489,26 @@ export function openDiceOverlay({
 
   function updateWeaknessWarning() {
     if (!weaknessWarning) return;
-    const shouldShow = Boolean(weaknessReason) && getRollMode(overlayEl) === 'disadvantage';
-    weaknessWarning.textContent = weaknessReason ?? '';
+    const defaults = getDefaultRollModeState();
+    const shouldShow = Boolean(defaults.weaknessWarning) && getRollMode(overlayEl) === 'disadvantage';
+    weaknessWarning.textContent = defaults.weaknessWarning ?? '';
     weaknessWarning.toggleAttribute('hidden', !shouldShow);
   }
 
   function updateRollModeWarning() {
     if (!rollModeWarning) return;
+    const defaults = getDefaultRollModeState();
     const mode = getRollMode(overlayEl);
-    const shouldShow = Boolean(state.selectionRollModeReason)
-      && state.selectionRollMode === mode;
-    rollModeWarning.textContent = state.selectionRollModeReason ?? '';
+    const shouldShow = Boolean(defaults.rollModeWarning)
+      && defaults.mode === mode;
+    rollModeWarning.textContent = defaults.rollModeWarning ?? '';
     rollModeWarning.toggleAttribute('hidden', !shouldShow);
   }
 
   function applyDefaultRollMode() {
     if (!rollModeInput) return;
-    rollModeInput.value = weaknessReason
-      ? 'disadvantage'
-      : (state.selectionRollMode || 'normal');
+    const defaults = getDefaultRollModeState();
+    rollModeInput.value = defaults.mode;
     updateWeaknessWarning();
     updateRollModeWarning();
     updateNotationFromMode();
