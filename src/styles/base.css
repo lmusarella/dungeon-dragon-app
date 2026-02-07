@@ -2526,6 +2526,8 @@ button {
   background: #fffaf1;
   padding: 16px;
   overflow-y: auto;
+  border: 3px solid rgba(255, 244, 224, 0.7);
+  border-radius: 20px;
 }
 
 .drawer.drawer--menu-background .drawer-panel {

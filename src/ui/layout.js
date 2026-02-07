@@ -215,7 +215,6 @@ function buildMenuContent() {
   const wrapper = document.createElement('div');
   wrapper.className = 'menu-list';
   wrapper.innerHTML = `
-    <h2>Menu</h2>
     <a class="menu-item" href="#/characters" data-drawer-close>Seleziona personaggi</a>
     <button class="menu-item menu-item--danger" type="button" data-logout data-drawer-close>Logout</button>
   `;
