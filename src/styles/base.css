@@ -2782,6 +2782,11 @@ button {
   justify-content: center;
   padding: 24px;
   width: 100%;
+  background-image:
+    linear-gradient(140deg, rgba(255, 250, 241, 0.66), rgba(241, 234, 220, 0.72)),
+    url('/img/sfondo_login.jpg');
+  background-size: cover;
+  background-position: center;
 }
 
 .auth-screen {
@@ -2803,6 +2808,11 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
+  background-image:
+    linear-gradient(140deg, rgba(255, 250, 241, 0.58), rgba(241, 234, 220, 0.66)),
+    url('/img/sfondo_selezione.webp');
+  background-size: cover;
+  background-position: center;
 }
 
 .character-select-card {
