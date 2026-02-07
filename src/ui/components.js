@@ -19,6 +19,8 @@ export function openDrawer(content) {
   if (!drawer || !body) return;
   body.innerHTML = '';
   body.appendChild(content);
+  const isMainMenu = content.classList.contains('menu-list');
+  drawer.classList.toggle('drawer--menu-background', isMainMenu);
   drawer.classList.add('open');
 }
 
@@ -26,6 +28,7 @@ export function closeDrawer() {
   const drawer = document.querySelector('[data-drawer]');
   if (drawer) {
     drawer.classList.remove('open');
+    drawer.classList.remove('drawer--menu-background');
   }
 }
 
