@@ -318,10 +318,15 @@ button {
   padding-bottom: 140px;
 }
 
+.app-shell--auth {
+  min-height: 100dvh;
+}
+
 .app-shell--auth .app-main {
   padding-bottom: 0;
-  min-height: 100vh;
+  min-height: 0;
   display: flex;
+  overflow: hidden;
 }
 
 .bottom-nav {
@@ -2826,20 +2831,22 @@ button {
   flex: 1;
   min-height: 100%;
   width: 100%;
-  padding: 32px;
+  padding: clamp(12px, 2vw, 24px);
+  padding-left: clamp(8px, 1.5vw, 18px);
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   background-image:
     url('/img/sfondo_selezione.webp');
   background-size: cover;
-  background-position: center;
+  background-position: center right;
+  overflow: hidden;
 }
 
 .character-select-card {
   width: min(400px, 100%);
   margin: 0;
-  margin-left: 0;
 }
 
 .character-select-header {
