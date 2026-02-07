@@ -77,12 +77,9 @@ export async function renderInventory(container) {
             <input type="checkbox" data-magic-filter />
             <span>Oggetti magici</span>
           </label>
+          <span class="resource-chip inventory-carry-chip">Carico totale: <strong data-carry-total>${formatWeight(totalWeight, weightUnit)}</strong></span>
         </div>
-        <div class="carry-widget">
-          <span>Carico totale</span>
-          <strong data-carry-total>${formatWeight(totalWeight, weightUnit)}</strong>
-        </div>
-        <div data-inventory-list></div>
+        <div class="inventory-list-scroll" data-inventory-list></div>
       </section>
       <div class="inventory-side">
         <section class="card inventory-wallet">
