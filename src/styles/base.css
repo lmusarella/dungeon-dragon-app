@@ -169,6 +169,11 @@ button {
 .modal-title {
   color: #3b5d60;
   text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.9rem;
+  font-weight: 800;
+  margin: 0;
 }
 
 .app-shell {
@@ -947,6 +952,81 @@ button {
   margin-bottom: 12px;
 }
 
+.resource-detail-image--placeholder {
+  object-fit: contain;
+  background: #f3e6d2;
+  padding: 16px;
+}
+
+.resource-detail-card {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.resource-detail-card p {
+  grid-column: 2;
+}
+
+.resource-detail-card .resource-detail-image {
+  width: 100%;
+  max-width: 180px;
+  max-height: 180px;
+  margin-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .resource-detail-card {
+    grid-template-columns: 1fr;
+  }
+
+  .resource-detail-card p {
+    grid-column: auto;
+  }
+
+  .resource-detail-card .resource-detail-image {
+    max-width: 100%;
+    max-height: 180px;
+  }
+}
+
+.equipment-preview-card {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.equipment-preview-image {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid #dcc7a3;
+}
+
+.equipment-preview-content p {
+  margin: 0;
+  line-height: 1.5;
+  font-weight: 500;
+  white-space: pre-wrap;
+}
+
+.modal-card--equipment-preview {
+  width: min(760px, 95%);
+}
+
+@media (max-width: 720px) {
+  .equipment-preview-card {
+    grid-template-columns: 1fr;
+  }
+
+  .equipment-preview-image {
+    max-height: 200px;
+  }
+}
+
 .resource-passive {
   font-size: 0.75rem;
   color: #665a48;
@@ -1185,9 +1265,26 @@ button {
   gap: 12px;
 }
 
-.background-modal-block strong {
-  display: block;
-  margin-bottom: 6px;
+.background-modal-block {
+  padding: 6px 4px;
+}
+
+.background-modal-description {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.7;
+  font-weight: 500;
+  color: #2e2418;
+  white-space: pre-wrap;
+}
+
+.modal-card--background {
+  width: min(780px, 95%);
+}
+
+.modal-card--background .detail-card {
+  background: linear-gradient(135deg, #fffaf1, #f9f0df);
+  border-color: #dbc7a5;
 }
 
 .proficiency-chip {

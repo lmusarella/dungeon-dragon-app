@@ -9,7 +9,7 @@ import {
   openFormModal
 } from '../../../ui/components.js';
 import { consumeSpellSlot, saveCharacterData } from './data.js';
-import { formatResourceRecovery, formatSigned, getSpellTypeLabel, sortSpellsByLevel } from './utils.js';
+import { formatSigned, getSpellTypeLabel, sortSpellsByLevel } from './utils.js';
 import { conditionList } from './constants.js';
 
 function getPrepStateLabel(state) {
@@ -26,44 +26,28 @@ function getPrepStateLabel(state) {
 export function openBackgroundModal(character) {
   if (!character) return;
   const data = character.data || {};
-  const background = data.background || 'Background non impostato.';
   const description = data.description || 'Aggiungi una descrizione del background.';
   const content = document.createElement('div');
   content.className = 'background-modal';
-
-  const backgroundCard = document.createElement('div');
-  backgroundCard.className = 'detail-card detail-card--text';
-  const backgroundBlock = document.createElement('div');
-  backgroundBlock.className = 'background-modal-block';
-  const backgroundTitle = document.createElement('strong');
-  backgroundTitle.textContent = 'Background';
-  const backgroundText = document.createElement('p');
-  backgroundText.textContent = background;
-  backgroundBlock.appendChild(backgroundTitle);
-  backgroundBlock.appendChild(backgroundText);
-  backgroundCard.appendChild(backgroundBlock);
 
   const descriptionCard = document.createElement('div');
   descriptionCard.className = 'detail-card detail-card--text';
   const descriptionBlock = document.createElement('div');
   descriptionBlock.className = 'background-modal-block';
-  const descriptionTitle = document.createElement('strong');
-  descriptionTitle.textContent = 'Descrizione';
   const descriptionText = document.createElement('p');
+  descriptionText.className = 'background-modal-description';
   descriptionText.textContent = description;
-  descriptionBlock.appendChild(descriptionTitle);
   descriptionBlock.appendChild(descriptionText);
   descriptionCard.appendChild(descriptionBlock);
 
-  content.appendChild(backgroundCard);
   content.appendChild(descriptionCard);
 
   openFormModal({
-    title: 'Background',
-    submitLabel: 'Chiudi',
+    title: 'Descrizione background',
     cancelLabel: null,
     content,
-    cardClass: 'modal-card--scrollable'
+    cardClass: ['modal-card--scrollable', 'modal-card--background'],
+    showFooter: false
   });
 }
 
@@ -113,29 +97,32 @@ export function openResourceDetail(resource, { onUse, onReset } = {}) {
   const isExhausted = maxUses && resource.used >= maxUses;
   const isActive = resource.reset_on !== null && resource.reset_on !== 'none';
   const hasAction = Boolean(maxUses && (isExhausted ? onReset : onUse));
-  const submitLabel = maxUses
-    ? isExhausted
-      ? 'Ripristina'
-      : 'Usa'
-    : 'Chiudi';
-  const usageLabel = maxUses ? `${resource.used}/${resource.max_uses}` : 'Passiva';
+  const description = resource.description?.trim() || 'Nessuna descrizione disponibile per questa risorsa.';
+  const placeholderImage = `${import.meta.env.BASE_URL}icons/icon.svg`;
+  const imageUrl = resource.image_url?.trim() || placeholderImage;
+  const hasCustomImage = Boolean(resource.image_url?.trim());
+  const imageAlt = hasCustomImage
+    ? `Immagine di ${resource.name}`
+    : `Immagine placeholder per ${resource.name}`;
+  const imageClass = hasCustomImage
+    ? 'resource-detail-image'
+    : 'resource-detail-image resource-detail-image--placeholder';
+
   detail.innerHTML = `
-    <div class="detail-card detail-card--text">
-      <h4>${resource.name}</h4>
-      ${resource.description ? `<p>${resource.description}</p>` : ''}
-      ${isActive ? '' : `
-        ${resource.image_url ? `<img class="resource-detail-image" src="${resource.image_url}" alt="Foto di ${resource.name}" />` : ''}
-        ${resource.cast_time ? `<p class="resource-chip">${resource.cast_time}</p>` : ''}
-        <p class="muted">${formatResourceRecovery(resource)}</p>
-        <p>Cariche: ${usageLabel}</p>
-      `}
+    <div class="detail-card detail-card--text resource-detail-card">
+      <img class="${imageClass}" src="${imageUrl}" alt="${imageAlt}" />
+      <p>${description}</p>
     </div>
   `;
+
   openFormModal({
-    title: 'Dettaglio risorsa',
-    submitLabel,
-    cancelLabel: hasAction ? 'Chiudi' : null,
-    content: detail
+    title: resource.name || 'Risorsa',
+    submitLabel: hasAction
+      ? (isExhausted ? 'Ripristina' : 'Usa')
+      : 'Chiudi',
+    cancelLabel: isActive ? (hasAction ? 'Chiudi' : null) : null,
+    content: detail,
+    showFooter: isActive
   }).then(async (formData) => {
     if (!formData || !maxUses) return;
     if (isExhausted && onReset) {
@@ -330,7 +317,11 @@ export function openSpellListModal(character, onRender) {
     .forEach((button) => button.addEventListener('click', async () => {
       const spell = spells.find((entry) => entry.id === button.dataset.spellDelete);
       if (!spell) return;
-      const shouldDelete = await openConfirmModal({ message: `Eliminare l'incantesimo ${spell.name}?` });
+      const shouldDelete = await openConfirmModal({
+        title: 'Conferma eliminazione incantesimo',
+        message: `Stai per eliminare l'incantesimo "${spell.name}" dalla scheda del personaggio. Questa azione non può essere annullata.`,
+        confirmLabel: 'Elimina'
+      });
       if (!shouldDelete) return;
       const nextSpells = spells.filter((entry) => entry.id !== spell.id);
       const nextData = {

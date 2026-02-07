@@ -106,7 +106,11 @@ export async function renderJournal(container) {
       .forEach((btn) => btn.addEventListener('click', async () => {
         const entry = entries.find((item) => item.id === btn.dataset.delete);
         if (!entry) return;
-        const shouldDelete = await openConfirmModal({ message: 'Eliminare voce?' });
+        const shouldDelete = await openConfirmModal({
+          title: 'Conferma eliminazione voce',
+          message: `Stai per eliminare la voce "${entry.title || 'Senza titolo'}" dal diario. Questa azione non può essere annullata.`,
+          confirmLabel: 'Elimina'
+        });
         if (!shouldDelete) return;
         try {
           await deleteEntry(entry.id);

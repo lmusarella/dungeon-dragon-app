@@ -154,7 +154,11 @@ export async function renderInventory(container) {
       .forEach((btn) => btn.addEventListener('click', async () => {
         const item = items.find((entry) => entry.id === btn.dataset.delete);
         if (!item) return;
-        const shouldDelete = await openConfirmModal({ message: 'Eliminare oggetto?' });
+        const shouldDelete = await openConfirmModal({
+          title: 'Conferma eliminazione oggetto',
+          message: `Stai per eliminare l'oggetto "${item.name}" dall'inventario. Questa azione non può essere annullata.`,
+          confirmLabel: 'Elimina'
+        });
         if (!shouldDelete) return;
         try {
           await deleteItem(item.id);
@@ -481,7 +485,11 @@ export async function renderInventory(container) {
     .forEach((button) => button.addEventListener('click', async () => {
       const transaction = transactions.find((entry) => entry.id === button.dataset.deleteTransaction);
       if (!transaction) return;
-      const shouldDelete = await openConfirmModal({ message: 'Eliminare transazione?' });
+      const shouldDelete = await openConfirmModal({
+        title: 'Conferma eliminazione transazione',
+        message: "Stai per eliminare una transazione dal registro del denaro. I saldi verranno aggiornati di conseguenza e l'azione non può essere annullata.",
+        confirmLabel: 'Elimina'
+      });
       if (!shouldDelete) return;
       const currentAmounts = transactionAmount(transaction);
       const delta = Object.fromEntries(

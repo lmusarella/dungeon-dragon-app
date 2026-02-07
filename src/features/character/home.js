@@ -543,7 +543,11 @@ export async function renderHome(container) {
     .forEach((button) => button.addEventListener('click', async () => {
       const resource = resources.find((entry) => entry.id === button.dataset.deleteResource);
       if (!resource) return;
-      const shouldDelete = await openConfirmModal({ message: 'Eliminare risorsa?' });
+      const shouldDelete = await openConfirmModal({
+        title: 'Conferma eliminazione risorsa',
+        message: `Stai per eliminare la risorsa "${resource.name}". Questa azione non può essere annullata.`,
+        confirmLabel: 'Elimina'
+      });
       if (!shouldDelete) return;
       try {
         await deleteResource(resource.id);
@@ -1065,7 +1069,13 @@ function handleDiceAction(type) {
 async function handleRestAction(resetOn, container) {
   const { activeCharacter } = getHomeContext();
   if (!activeCharacter) return;
-  const shouldRest = await openConfirmModal({ message: 'Confermi il riposo?' });
+  const shouldRest = await openConfirmModal({
+    title: 'Conferma riposo',
+    message: resetOn === 'long_rest'
+      ? 'Stai per effettuare un riposo lungo: risorse, slot e recuperi verranno aggiornati in base alle regole configurate.'
+      : 'Stai per effettuare un riposo breve: verranno aggiornate solo le risorse che si recuperano con questo tipo di riposo.',
+    confirmLabel: 'Conferma riposo'
+  });
   if (!shouldRest) return;
   try {
     await updateResourcesReset(activeCharacter.id, resetOn);

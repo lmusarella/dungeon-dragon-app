@@ -140,6 +140,7 @@ export function openFormModal({
   submitLabel = 'Conferma',
   cancelLabel = 'Annulla',
   cardClass = '',
+  showFooter = true,
   onOpen
 } = {}) {
   return new Promise((resolve) => {
@@ -154,6 +155,7 @@ export function openFormModal({
     const fieldsEl = modal.querySelector('[data-form-fields]');
     const submitButton = modal.querySelector('[data-form-submit]');
     const cancelButton = modal.querySelector('[data-form-cancel]');
+    const footerEl = modal.querySelector('.modal-footer');
     const overlay = modal.querySelector('[data-form-overlay]');
     const previousClasses = modal.dataset.formCardClasses?.split(' ').filter(Boolean) ?? [];
     if (modalCard && previousClasses.length) {
@@ -171,6 +173,9 @@ export function openFormModal({
 
     if (titleEl) titleEl.textContent = title;
     if (submitButton) submitButton.textContent = submitLabel;
+    if (footerEl) {
+      footerEl.hidden = !showFooter;
+    }
     if (cancelButton) {
       if (cancelLabel === null) {
         cancelButton.hidden = true;
@@ -186,7 +191,6 @@ export function openFormModal({
       } else if (content) {
         fieldsEl.appendChild(content);
       }
-      fieldsEl.querySelectorAll('p').forEach((paragraph) => paragraph.classList.add('eyebrow'));
     }
 
     modal.hidden = false;
