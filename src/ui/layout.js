@@ -142,10 +142,10 @@ export function renderLayout(container) {
   }
 
   container.addEventListener('click', (event) => {
-    /*const target = event.target.closest('[data-drawer-close]');
+    const target = event.target.closest('[data-drawer-close]');
     if (target) {
       closeDrawer();
-    }*/
+    }
     if (actionsFab && actionsFab.classList.contains('is-open')) {
       const insideFab = event.target.closest('[data-actions-fab]');
       if (!insideFab) {

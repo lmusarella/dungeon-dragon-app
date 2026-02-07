@@ -2785,6 +2785,8 @@ button {
 }
 
 .auth-screen {
+  flex: 1;
+  min-height: 100%;
   background-image:
     linear-gradient(140deg, rgba(255, 250, 241, 0.92), rgba(241, 234, 220, 0.96)),
     url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="%23fdf7ea"/><path d="M0 32h160M0 80h160M0 128h160" stroke="%23eadfc9" stroke-width="1"/><circle cx="24" cy="24" r="6" fill="%23e8dcc6"/><circle cx="120" cy="104" r="8" fill="%23efe6d6"/></svg>');
@@ -2794,12 +2796,18 @@ button {
 }
 
 .character-select-view {
+  flex: 1;
+  min-height: 100%;
+  width: 100%;
   padding: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .character-select-card {
-  max-width: 960px;
-  margin: 0 auto;
+  width: min(960px, 100%);
+  margin: 0;
 }
 
 .character-select-header {
@@ -2840,6 +2848,13 @@ button {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.character-card-info h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  color: #2f2418;
 }
 
 .character-card-meta {
