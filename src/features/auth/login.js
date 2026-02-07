@@ -15,7 +15,7 @@ export function renderLogin(container) {
           </div>
         </div>
         <p class="login-subtitle">Usa email e password per entrare o creare l'account.</p>
-        <form data-login-form>
+        <form class="login-form" data-login-form>
           <label class="field">
             <span >Email</span>
             <input type="email" name="email" required placeholder="nome@email.it" />
@@ -24,23 +24,44 @@ export function renderLogin(container) {
             <span>Password</span>
             <input type="password" name="password" required minlength="6" />
           </label>
-          <label class="checkbox">
-            <input type="checkbox" name="signup" />
+          <div class="login-form__toggle-row">
             <span>Nuovo account</span>
-          </label>
-          <button class="primary" type="submit">Accedi</button>
+            <label class="diceov-toggle condition-modal__toggle" aria-label="Nuovo account">
+              <input type="checkbox" name="signup" />
+              <span class="diceov-toggle-track" aria-hidden="true"></span>
+            </label>
+          </div>
+          <div class="login-form__actions">
+            <button class="primary" type="submit" data-login-submit>Accedi</button>
+          </div>
         </form>
       </div>
     </section>
   `;
 
   const form = container.querySelector('[data-login-form]');
+  const signupInput = form.querySelector('input[name="signup"]');
+  const submitButton = form.querySelector('[data-login-submit]');
+  const syncSubmitLabel = () => {
+    if (!submitButton || !signupInput) return;
+    submitButton.textContent = signupInput.checked ? 'Registrati' : 'Accedi';
+  };
+  signupInput?.addEventListener('change', syncSubmitLabel);
+  syncSubmitLabel();
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(form);
     const email = String(formData.get('email'));
     const password = String(formData.get('password'));
     const signup = formData.get('signup') === 'on';
+
+    const showDuplicateAccountToast = () => {
+      createToast('Esiste già un account con questa email. Prova ad accedere.', 'error');
+    };
+    const showConfirmEmailToast = () => {
+      createToast("Registrazione completata. Conferma l'email prima di procedere con il login.", 'success');
+    };
 
     try {
       const response = signup
@@ -49,13 +70,32 @@ export function renderLogin(container) {
       if (response.error) {
         throw response.error;
       }
+
+      if (signup) {
+        const identities = response.data.user?.identities;
+        if (Array.isArray(identities) && identities.length === 0) {
+          showDuplicateAccountToast();
+          return;
+        }
+
+        showConfirmEmailToast();
+        form.reset();
+        syncSubmitLabel();
+        return;
+      }
+
       const user = response.data.user;
       if (user) {
         setState({ user });
         await ensureProfile(user);
-        window.location.hash = '#/home';
+        window.location.hash = '#/characters';
       }
     } catch (error) {
+      const message = String(error?.message || '');
+      if (signup && /already\s+(registered|exists|in use)|user\s+already/i.test(message)) {
+        showDuplicateAccountToast();
+        return;
+      }
       createToast(error.message ?? 'Errore login', 'error');
     }
   });

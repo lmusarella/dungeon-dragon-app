@@ -2777,6 +2777,28 @@ button {
   margin: 0 0 8px;
 }
 
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-form__toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #3b5d60;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.login-form__actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 2px;
+}
 .login-view {
   flex: 1;
   display: flex;
